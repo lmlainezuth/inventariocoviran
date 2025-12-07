@@ -282,11 +282,6 @@
         <!-- Página Escanear -->
         <div id="scanPage" class="page-section active">
             <div class="scanner-section">
-                <div class="controls">
-                    <button id="startBtn" class="btn-primary">Iniciar Escáner</button>
-                    <button id="stopBtn" class="btn-secondary" style="display: none;">Detener</button>
-                </div>
-                
                 <div id="reader"></div>
                 
                 <div id="result" class="result">
@@ -369,9 +364,7 @@
         // Inicializar
         displayInventory();
         updateStats();
-        
-        document.getElementById('startBtn').addEventListener('click', startScanner);
-        document.getElementById('stopBtn').addEventListener('click', stopScanner);
+        startScanner(); // Auto-iniciar escáner al cargar
         
         // Navegación entre páginas
         function switchPage(page) {
@@ -389,11 +382,23 @@
             if (page === 'scan') {
                 document.getElementById('scanPage').classList.add('active');
                 document.querySelectorAll('.nav-item')[0].classList.add('active');
+                // Auto-iniciar escáner al entrar a la página
+                if (!isScanning) {
+                    startScanner();
+                }
             } else if (page === 'inventory') {
+                // Detener escáner al salir de scan
+                if (isScanning) {
+                    stopScanner();
+                }
                 document.getElementById('inventoryPage').classList.add('active');
                 document.querySelectorAll('.nav-item')[1].classList.add('active');
                 displayInventory(); // Actualizar inventario
             } else if (page === 'admin') {
+                // Detener escáner al salir de scan
+                if (isScanning) {
+                    stopScanner();
+                }
                 document.getElementById('adminPage').classList.add('active');
                 document.querySelectorAll('.nav-item')[2].classList.add('active');
                 updateStats(); // Actualizar estadísticas
@@ -444,8 +449,6 @@
                     return;
                 }
                 Quagga.start();
-                document.getElementById('startBtn').style.display = 'none';
-                document.getElementById('stopBtn').style.display = 'block';
             });
             
             Quagga.onDetected(onBarcodeDetected);
@@ -457,8 +460,6 @@
                 Quagga.offDetected(onBarcodeDetected);
                 isScanning = false;
             }
-            document.getElementById('startBtn').style.display = 'block';
-            document.getElementById('stopBtn').style.display = 'none';
         }
         
         function onBarcodeDetected(result) {
@@ -568,6 +569,13 @@
             // Actualizar vista
             displayInventory();
             updateStats();
+            
+            // Reiniciar escáner
+            setTimeout(() => {
+                if (!isScanning) {
+                    startScanner();
+                }
+            }, 500);
             
             currentCode = null;
         }
