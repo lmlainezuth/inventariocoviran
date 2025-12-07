@@ -255,6 +255,8 @@
         let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
         let lastDetectedCode = null;
         let detectionTimeout = null;
+        let detectionCounter = {};
+        const DETECTION_THRESHOLD = 3;
         
         // Inicializar
         displayInventory();
@@ -264,6 +266,7 @@
         
         function startScanner() {
             isScanning = true;
+            detectionCounter = {}; // Limpiar contador
             
             Quagga.init({
                 inputStream: {
@@ -327,36 +330,53 @@
             
             const code = result.codeResult.code;
             
-            // Evitar duplicados muy rápidos
-            if (code === lastDetectedCode) return;
+            // Verificar calidad de detección (confianza mínima del 80%)
+            const errors = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0);
+            const errorRate = errors / result.codeResult.decodedCodes.length;
             
-            // Verificar que el código sea válido (mínimo 8 caracteres)
-            if (!code || code.length < 8) return;
-            
-            lastDetectedCode = code;
-            currentCode = code;
-            
-            // Limpiar timeout anterior
-            if (detectionTimeout) {
-                clearTimeout(detectionTimeout);
+            if (errorRate > 0.2) {
+                console.log('Baja calidad, descartado:', code, 'Error rate:', errorRate);
+                return;
             }
             
-            // Mostrar resultado
-            document.getElementById('scannedCode').textContent = code;
-            document.getElementById('result').classList.add('show');
-            document.getElementById('productForm').classList.add('show');
-            document.getElementById('productName').focus();
+            // Verificar que el código sea válido (mínimo 8 caracteres para EAN/UPC)
+            if (!code || code.length < 8) return;
             
-            // Dar beep de confirmación
-            playBeep();
+            // Sistema de conteo para confirmar detección
+            if (!detectionCounter[code]) {
+                detectionCounter[code] = 1;
+            } else {
+                detectionCounter[code]++;
+            }
             
-            // Detener escáner
-            stopScanner();
+            console.log('Detectado:', code, 'Cuenta:', detectionCounter[code], 'Error rate:', errorRate.toFixed(3));
             
-            // Resetear después de 3 segundos
-            detectionTimeout = setTimeout(() => {
-                lastDetectedCode = null;
-            }, 3000);
+            // Solo aceptar después de múltiples detecciones consistentes
+            if (detectionCounter[code] >= DETECTION_THRESHOLD) {
+                lastDetectedCode = code;
+                currentCode = code;
+                
+                // Limpiar contadores
+                detectionCounter = {};
+                
+                // Mostrar resultado
+                document.getElementById('scannedCode').textContent = code;
+                document.getElementById('result').classList.add('show');
+                document.getElementById('productForm').classList.add('show');
+                document.getElementById('productName').focus();
+                
+                // Dar beep de confirmación
+                playBeep();
+                
+                // Detener escáner
+                stopScanner();
+                
+                // Resetear después de 3 segundos
+                if (detectionTimeout) clearTimeout(detectionTimeout);
+                detectionTimeout = setTimeout(() => {
+                    lastDetectedCode = null;
+                }, 3000);
+            }
         }
         
         function playBeep() {
