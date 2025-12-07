@@ -305,6 +305,11 @@
             <div class="scanner-section">
                 <div id="reader"></div>
                 
+                <div id="scanStatus" style="text-align: center; padding: 10px; margin: 10px 0; background: #f3f4f6; border-radius: 8px; display: none;">
+                    <div style="font-size: 14px; color: #6b7280;">Escaneando...</div>
+                    <div id="detectionProgress" style="font-size: 12px; color: #9ca3af; margin-top: 5px;"></div>
+                </div>
+                
                 <div id="result" class="result">
                     <div class="result-code">Código escaneado: <span id="scannedCode"></span></div>
                 </div>
@@ -490,7 +495,8 @@
         let lastDetectedCode = null;
         let detectionTimeout = null;
         let detectionCounter = {};
-        const DETECTION_THRESHOLD = 3;
+        const DETECTION_THRESHOLD = 5; // Aumentado a 5 detecciones consecutivas
+        let scanTimeout = null;
         
         // Inicializar
         displayInventory();
@@ -539,6 +545,8 @@
         function startScanner() {
             isScanning = true;
             detectionCounter = {}; // Limpiar contador
+            document.getElementById('scanStatus').style.display = 'block';
+            document.getElementById('detectionProgress').textContent = 'Apunta al código de barras...';
             
             Quagga.init({
                 inputStream: {
@@ -590,6 +598,7 @@
                 Quagga.stop();
                 Quagga.offDetected(onBarcodeDetected);
                 isScanning = false;
+                document.getElementById('scanStatus').style.display = 'none';
             }
         }
         
@@ -598,17 +607,26 @@
             
             const code = result.codeResult.code;
             
-            // Verificar calidad de detección (confianza mínima del 80%)
+            // Verificar calidad de detección (confianza mínima del 85%)
             const errors = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0);
             const errorRate = errors / result.codeResult.decodedCodes.length;
             
-            if (errorRate > 0.2) {
-                console.log('Baja calidad, descartado:', code, 'Error rate:', errorRate);
+            if (errorRate > 0.15) {
+                console.log('⚠️ Baja calidad, descartado:', code, 'Error rate:', errorRate.toFixed(3));
                 return;
             }
             
-            // Verificar que el código sea válido (mínimo 8 caracteres para EAN/UPC)
-            if (!code || code.length < 8) return;
+            // Verificar que el código sea válido
+            if (!code || code.length < 8) {
+                console.log('⚠️ Código muy corto, descartado:', code);
+                return;
+            }
+            
+            // Verificar que no contenga caracteres extraños (solo números y letras)
+            if (!/^[A-Z0-9]+$/i.test(code)) {
+                console.log('⚠️ Código con caracteres inválidos, descartado:', code);
+                return;
+            }
             
             // Sistema de conteo para confirmar detección
             if (!detectionCounter[code]) {
@@ -617,7 +635,17 @@
                 detectionCounter[code]++;
             }
             
-            console.log('Detectado:', code, 'Cuenta:', detectionCounter[code], 'Error rate:', errorRate.toFixed(3));
+            console.log('✓ Detectado:', code, 'Cuenta:', detectionCounter[code], '/', DETECTION_THRESHOLD, 'Error rate:', errorRate.toFixed(3));
+            
+            // Mostrar progreso
+            document.getElementById('detectionProgress').textContent = `Detectando: ${code} (${detectionCounter[code]}/${DETECTION_THRESHOLD})`;
+            
+            // Limpiar contador de otros códigos (solo queremos lecturas consecutivas del mismo código)
+            for (let key in detectionCounter) {
+                if (key !== code && detectionCounter[key] < DETECTION_THRESHOLD) {
+                    delete detectionCounter[key];
+                }
+            }
             
             // Solo aceptar después de múltiples detecciones consistentes
             if (detectionCounter[code] >= DETECTION_THRESHOLD) {
@@ -628,6 +656,7 @@
                 detectionCounter = {};
                 
                 // Mostrar resultado
+                console.log('✅ CÓDIGO CONFIRMADO:', code);
                 document.getElementById('scannedCode').textContent = code;
                 document.getElementById('result').classList.add('show');
                 document.getElementById('productForm').classList.add('show');
@@ -680,6 +709,24 @@
         }
         
         function saveProduct() {
+            // Validar que haya un código escaneado
+            if (!currentCode) {
+                alert('❌ ERROR: No hay código de barras válido.\n\nPor favor escanea un código antes de guardar.');
+                return;
+            }
+            
+            // Validar que el código tenga formato válido
+            if (currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
+                alert('❌ ERROR: El código escaneado no es válido.\n\nCódigo: ' + currentCode + '\n\nPor favor vuelve a escanear.');
+                clearProductForm();
+                setTimeout(() => {
+                    if (!isScanning) {
+                        startScanner();
+                    }
+                }, 500);
+                return;
+            }
+            
             const name = document.getElementById('productName').value.trim();
             const quantity = parseFloat(document.getElementById('productQuantity').value);
             const unit = document.getElementById('productUnit').value;
@@ -687,9 +734,9 @@
             const maxQuantity = parseFloat(document.getElementById('maxQuantity').value) || null;
             const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
             const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
-            const category = document.getElementById('category').value.trim();
-            const brand = document.getElementById('brand').value.trim();
-            const location = document.getElementById('location').value.trim();
+            const category = document.getElementById('category').value;
+            const brand = document.getElementById('brand').value;
+            const location = document.getElementById('location').value;
             
             if (!name) {
                 alert('Por favor ingresa el nombre del producto');
@@ -701,7 +748,7 @@
             
             if (existingIndex !== -1) {
                 // Actualizar producto existente
-                if (confirm('Este código ya existe. ¿Quieres actualizar el producto o solo sumar la cantidad?')) {
+                if (confirm('Este código ya existe en el inventario.\n\n¿Quieres actualizar toda la información del producto?\n\nSI = Actualizar todo\nNO = Solo sumar la cantidad')) {
                     // Actualizar todo
                     inventory[existingIndex] = {
                         code: currentCode,
@@ -716,7 +763,7 @@
                         brand: brand,
                         location: location,
                         photo: currentPhotoBase64,
-                        date: new Date().toISOString(),
+                        date: inventory[existingIndex].date, // Mantener fecha original
                         updated: new Date().toISOString()
                     };
                 } else {
