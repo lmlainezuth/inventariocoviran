@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - COVIRÁN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 80px;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .settings-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        /* Search Bar */
+        .search-container {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
+        }
+        
+        .search-box {
+            background: rgba(255,255,255,0.9);
+            border-radius: 25px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: none;
+            font-size: 16px;
+            outline: none;
+            color: #374151;
+        }
+        
+        .search-box input::placeholder {
+            color: #9ca3af;
+        }
+        
+        /* Filters */
+        .filters {
+            padding: 15px 20px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .filters::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .filter-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        /* Product List */
+        .product-list {
+            padding: 0 10px;
+        }
+        
+        .product-item {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .product-item:active {
+            transform: scale(0.98);
+            background: #f9fafb;
+        }
+        
+        .product-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #f3f4f6;
+            flex-shrink: 0;
+        }
+        
+        .product-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .product-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .product-quantity {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 2px;
+        }
+        
+        .product-code {
+            font-size: 12px;
+            color: #9ca3af;
+            font-family: monospace;
+        }
+        
+        .product-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .badge-min {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-max {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .badge-normal {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        
+        .arrow-icon {
+            color: #d1d5db;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #6b7280;
+            text-decoration: none;
+        }
+        
+        .nav-item.active {
+            color: #2563eb;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .nav-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+        
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>COVIRÁN</h1>
+        <button class="settings-btn" onclick="window.location.href='inventario.html'">⚙️</button>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="search-container">
+        <div class="search-box">
+            <span style="color: #9ca3af;">🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar" onkeyup="filterProducts()">
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters">
+        <button class="filter-btn active" onclick="filterByType('all')">
+            Ordenar ▼
+        </button>
+        <button class="filter-btn" onclick="filterByType('quantity')">
+            Cantidad ▼
+        </button>
+        <button class="filter-btn" onclick="filterByType('reference')">
+            Referencia ▼
+        </button>
+        <button class="filter-btn" onclick="filterByType('provider')">
+            Proveedor ▼
+        </button>
+    </div>
+    
+    <!-- Product List -->
+    <div class="product-list" id="productList">
+        <!-- Products will be loaded here -->
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="inventario.html" class="nav-item">
+            <div class="nav-icon">📱</div>
+            <div class="nav-label">Escanear</div>
+        </a>
+        <a href="inventario-lista.html" class="nav-item active">
+            <div class="nav-icon">📦</div>
+            <div class="nav-label">Inventario</div>
+        </a>
+        <a href="#" class="nav-item" onclick="showIOPage(); return false;">
+            <div class="nav-icon">⇄</div>
+            <div class="nav-label">IO</div>
+        </a>
+        <a href="#" class="nav-item" onclick="showAdminPage(); return false;">
+            <div class="nav-icon">👑</div>
+            <div class="nav-label">Admin</div>
+        </a>
+        <a href="inventario.html" class="nav-item">
+            <div class="nav-icon">⚙️</div>
+            <div class="nav-label">Ajustes</div>
+        </a>
+    </div>
+
+    <script>
+        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+        let currentFilter = 'all';
+        let currentSort = 'name';
+        
+        // Cargar productos al iniciar
+        loadProducts();
+        
+        function loadProducts() {
+            const container = document.getElementById('productList');
+            
+            if (inventory.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                            No hay productos
+                        </div>
+                        <div>Comienza escaneando códigos de barras</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Ordenar productos
+            let sortedInventory = [...inventory];
+            if (currentSort === 'name') {
+                sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (currentSort === 'quantity') {
+                sortedInventory.sort((a, b) => b.quantity - a.quantity);
+            } else if (currentSort === 'code') {
+                sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
+            }
+            
+            container.innerHTML = sortedInventory.map((item, index) => {
+                const badge = getStockBadge(item);
+                const imageUrl = item.photo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect width="60" height="60" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em"%3E📦%3C/text%3E%3C/svg%3E';
+                
+                return `
+                    <div class="product-item" onclick="viewProduct(${index})">
+                        <img src="${imageUrl}" class="product-image" alt="${item.name}">
+                        <div class="product-info">
+                            <div class="product-name">${item.name}</div>
+                            <div class="product-quantity">Cantidad: ${item.quantity} ${item.unit || 'unidad'}</div>
+                            <div class="product-code">${item.code}</div>
+                        </div>
+                        <div class="product-badge badge-${badge.type}">${badge.text}</div>
+                        <div class="arrow-icon">›</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function getStockBadge(item) {
+            if (item.quantity <= item.minQuantity) {
+                return { type: 'min', text: 'min' };
+            } else if (item.maxQuantity && item.quantity >= item.maxQuantity) {
+                return { type: 'max', text: 'max' };
+            } else {
+                return { type: 'normal', text: 'ok' };
+            }
+        }
+        
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const allItems = document.querySelectorAll('.product-item');
+            
+            allItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        function filterByType(type) {
+            // Remover active de todos los botones
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Activar botón clickeado
+            event.target.classList.add('active');
+            
+            if (type === 'all') {
+                currentSort = 'name';
+            } else if (type === 'quantity') {
+                currentSort = 'quantity';
+            } else if (type === 'reference') {
+                currentSort = 'code';
+            }
+            
+            loadProducts();
+        }
+        
+        function viewProduct(index) {
+            // Guardar el índice del producto a ver
+            localStorage.setItem('viewProductIndex', index);
+            // Redirigir a página de detalles (la crearemos después)
+            window.location.href = 'inventario.html#view-' + index;
+        }
+        
+        function showIOPage() {
+            alert('Página de Entrada/Salida (IO) - En desarrollo');
+        }
+        
+        function showAdminPage() {
+            window.location.href = 'inventario.html#admin';
+        }
+    </script>
+</body>
+</html>
