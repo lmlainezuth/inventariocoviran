@@ -256,7 +256,7 @@
     <!-- Header -->
     <div class="header">
         <h1>COVIRÁN</h1>
-        <button class="settings-btn" onclick="window.location.href='inventario.html'">⚙️</button>
+        <button class="settings-btn" onclick="window.location.href='index.html#admin'">⚙️</button>
     </div>
     
     <!-- Search Bar -->
@@ -290,7 +290,7 @@
     
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
-        <a href="inventario.html" class="nav-item">
+        <a href="index.html" class="nav-item">
             <div class="nav-icon">📱</div>
             <div class="nav-label">Escanear</div>
         </a>
@@ -298,17 +298,9 @@
             <div class="nav-icon">📦</div>
             <div class="nav-label">Inventario</div>
         </a>
-        <a href="#" class="nav-item" onclick="showIOPage(); return false;">
-            <div class="nav-icon">⇄</div>
-            <div class="nav-label">IO</div>
-        </a>
-        <a href="#" class="nav-item" onclick="showAdminPage(); return false;">
+        <a href="index.html#admin" class="nav-item">
             <div class="nav-icon">👑</div>
             <div class="nav-label">Admin</div>
-        </a>
-        <a href="inventario.html" class="nav-item">
-            <div class="nav-icon">⚙️</div>
-            <div class="nav-label">Ajustes</div>
         </a>
     </div>
 
@@ -412,16 +404,8 @@
         function viewProduct(index) {
             // Guardar el índice del producto a ver
             localStorage.setItem('viewProductIndex', index);
-            // Redirigir a página de detalles (la crearemos después)
-            window.location.href = 'inventario.html#view-' + index;
-        }
-        
-        function showIOPage() {
-            alert('Página de Entrada/Salida (IO) - En desarrollo');
-        }
-        
-        function showAdminPage() {
-            window.location.href = 'inventario.html#admin';
+            // Redirigir a página de detalles
+            window.location.href = 'index.html#view-' + index;
         }
     </script>
 </body>
