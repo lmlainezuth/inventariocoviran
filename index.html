@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - Escáner de Códigos</title>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 24px;
+        }
+        
+        .scanner-section {
+            padding: 20px;
+        }
+        
+        #reader {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            min-height: 300px;
+        }
+        
+        #reader canvas,
+        #reader video {
+            width: 100% !important;
+            height: auto !important;
+        }
+        
+        #reader canvas.drawingBuffer {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #475569;
+        }
+        
+        .result {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result-code {
+            font-size: 18px;
+            font-weight: bold;
+            color: #166534;
+            margin-bottom: 10px;
+        }
+        
+        .product-form {
+            display: none;
+        }
+        
+        .product-form.show {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .inventory-list {
+            padding: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .inventory-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1f2937;
+        }
+        
+        .inventory-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .item-code {
+            font-size: 12px;
+            color: #6b7280;
+            font-family: monospace;
+        }
+        
+        .item-quantity {
+            background: #2563eb;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 Inventario</h1>
+        </header>
+        
+        <div class="scanner-section">
+            <div class="controls">
+                <button id="startBtn" class="btn-primary">Iniciar Escáner</button>
+                <button id="stopBtn" class="btn-secondary" style="display: none;">Detener</button>
+            </div>
+            
+            <div id="reader"></div>
+            
+            <div id="result" class="result">
+                <div class="result-code">Código escaneado: <span id="scannedCode"></span></div>
+            </div>
+            
+            <div id="productForm" class="product-form">
+                <div class="form-group">
+                    <label>Nombre del producto</label>
+                    <input type="text" id="productName" placeholder="Ej: Leche Entera">
+                </div>
+                <div class="form-group">
+                    <label>Cantidad</label>
+                    <input type="number" id="productQuantity" value="1" min="1">
+                </div>
+                <button onclick="saveProduct()" class="btn-primary" style="width: 100%;">Guardar Producto</button>
+            </div>
+        </div>
+        
+        <div class="inventory-list">
+            <div class="inventory-title">Productos en Inventario</div>
+            <div id="inventoryItems"></div>
+        </div>
+    </div>
+
+    <script>
+        let isScanning = false;
+        let currentCode = null;
+        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+        let lastDetectedCode = null;
+        let detectionTimeout = null;
+        
+        // Inicializar
+        displayInventory();
+        
+        document.getElementById('startBtn').addEventListener('click', startScanner);
+        document.getElementById('stopBtn').addEventListener('click', stopScanner);
+        
+        function startScanner() {
+            isScanning = true;
+            
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#reader'),
+                    constraints: {
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                },
+                decoder: {
+                    readers: [
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_128_reader",
+                        "code_39_reader",
+                        "upc_reader",
+                        "upc_e_reader"
+                    ],
+                    debug: {
+                        drawBoundingBox: true,
+                        showFrequency: true,
+                        drawScanline: true,
+                        showPattern: true
+                    }
+                },
+                locate: true,
+                locator: {
+                    halfSample: true,
+                    patchSize: "medium"
+                },
+                frequency: 10,
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert('Error al iniciar cámara: ' + err);
+                    return;
+                }
+                Quagga.start();
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'block';
+            });
+            
+            Quagga.onDetected(onBarcodeDetected);
+        }
+        
+        function stopScanner() {
+            if (isScanning) {
+                Quagga.stop();
+                Quagga.offDetected(onBarcodeDetected);
+                isScanning = false;
+            }
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+        
+        function onBarcodeDetected(result) {
+            if (!isScanning) return;
+            
+            const code = result.codeResult.code;
+            
+            // Evitar duplicados muy rápidos
+            if (code === lastDetectedCode) return;
+            
+            // Verificar que el código sea válido (mínimo 8 caracteres)
+            if (!code || code.length < 8) return;
+            
+            lastDetectedCode = code;
+            currentCode = code;
+            
+            // Limpiar timeout anterior
+            if (detectionTimeout) {
+                clearTimeout(detectionTimeout);
+            }
+            
+            // Mostrar resultado
+            document.getElementById('scannedCode').textContent = code;
+            document.getElementById('result').classList.add('show');
+            document.getElementById('productForm').classList.add('show');
+            document.getElementById('productName').focus();
+            
+            // Dar beep de confirmación
+            playBeep();
+            
+            // Detener escáner
+            stopScanner();
+            
+            // Resetear después de 3 segundos
+            detectionTimeout = setTimeout(() => {
+                lastDetectedCode = null;
+            }, 3000);
+        }
+        
+        function playBeep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+        
+        function saveProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const quantity = parseInt(document.getElementById('productQuantity').value);
+            
+            if (!name) {
+                alert('Por favor ingresa el nombre del producto');
+                return;
+            }
+            
+            // Verificar si el producto ya existe
+            const existingIndex = inventory.findIndex(item => item.code === currentCode);
+            
+            if (existingIndex !== -1) {
+                // Actualizar cantidad
+                inventory[existingIndex].quantity += quantity;
+            } else {
+                // Agregar nuevo producto
+                inventory.push({
+                    code: currentCode,
+                    name: name,
+                    quantity: quantity,
+                    date: new Date().toISOString()
+                });
+            }
+            
+            // Guardar en localStorage
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            
+            // Limpiar formulario
+            document.getElementById('productName').value = '';
+            document.getElementById('productQuantity').value = '1';
+            document.getElementById('result').classList.remove('show');
+            document.getElementById('productForm').classList.remove('show');
+            
+            // Actualizar vista
+            displayInventory();
+            
+            currentCode = null;
+        }
+        
+        function displayInventory() {
+            const container = document.getElementById('inventoryItems');
+            
+            if (inventory.length === 0) {
+                container.innerHTML = '<div class="empty-state">No hay productos en el inventario.<br>Escanea un código para comenzar.</div>';
+                return;
+            }
+            
+            container.innerHTML = inventory.map((item, index) => `
+                <div class="inventory-item">
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-code">${item.code}</div>
+                    </div>
+                    <span class="item-quantity">${item.quantity}</span>
+                    <button class="btn-delete" onclick="deleteProduct(${index})">🗑️</button>
+                </div>
+            `).join('');
+        }
+        
+        function deleteProduct(index) {
+            if (confirm('¿Eliminar este producto del inventario?')) {
+                inventory.splice(index, 1);
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+                displayInventory();
+            }
+        }
+    </script>
+</body>
+</html>
