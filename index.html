@@ -129,6 +129,21 @@
             margin-bottom: 15px;
         }
         
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .photo-upload {
+            margin-bottom: 10px;
+        }
+        
+        .photo-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
         label {
             display: block;
             margin-bottom: 5px;
@@ -137,12 +152,18 @@
         }
         
         input[type="text"],
-        input[type="number"] {
+        input[type="number"],
+        select {
             width: 100%;
             padding: 10px;
             border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 16px;
+        }
+        
+        select {
+            background: white;
+            cursor: pointer;
         }
         
         .inventory-list {
@@ -289,15 +310,92 @@
                 </div>
                 
                 <div id="productForm" class="product-form">
+                    <!-- Foto del Producto -->
                     <div class="form-group">
-                        <label>Nombre del producto</label>
-                        <input type="text" id="productName" placeholder="Ej: Leche Entera">
+                        <label>Foto del Producto</label>
+                        <div class="photo-upload">
+                            <img id="productPhoto" src="" alt="Vista previa" style="display: none; width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
+                            <div class="photo-buttons">
+                                <button type="button" onclick="document.getElementById('cameraInput').click()" class="btn-secondary" style="flex: 1;">
+                                    📷 Cámara
+                                </button>
+                                <button type="button" onclick="document.getElementById('galleryInput').click()" class="btn-secondary" style="flex: 1;">
+                                    🖼️ Galería
+                                </button>
+                            </div>
+                            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoUpload(event)">
+                            <input type="file" id="galleryInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                        </div>
                     </div>
+                    
+                    <!-- Nombre del producto -->
                     <div class="form-group">
-                        <label>Cantidad</label>
-                        <input type="number" id="productQuantity" value="1" min="1">
+                        <label>Nombre del producto *</label>
+                        <input type="text" id="productName" placeholder="Ej: Leche Entera" required>
                     </div>
-                    <button onclick="saveProduct()" class="btn-primary" style="width: 100%;">Guardar Producto</button>
+                    
+                    <!-- Cantidad y Unidad -->
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Cantidad *</label>
+                            <input type="number" id="productQuantity" value="1" min="0" step="0.01">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Unidad</label>
+                            <select id="productUnit">
+                                <option value="unidad">Unidad</option>
+                                <option value="kilogramo">Kilogramo (kg)</option>
+                                <option value="gramo">Gramo (g)</option>
+                                <option value="litro">Litro (L)</option>
+                                <option value="mililitro">Mililitro (ml)</option>
+                                <option value="centilitro">Centilitro (cl)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Min y Max Cantidad -->
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Cantidad Mínima</label>
+                            <input type="number" id="minQuantity" value="0" min="0" step="0.01">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Cantidad Máxima</label>
+                            <input type="number" id="maxQuantity" value="" min="0" step="0.01" placeholder="Opcional">
+                        </div>
+                    </div>
+                    
+                    <!-- Precios -->
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Precio Compra (€)</label>
+                            <input type="number" id="purchasePrice" value="" min="0" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Precio Público (€)</label>
+                            <input type="number" id="publicPrice" value="" min="0" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <!-- Categoría y Marca -->
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Categoría</label>
+                            <input type="text" id="category" placeholder="Ej: Lácteos">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Marca</label>
+                            <input type="text" id="brand" placeholder="Ej: Pascual">
+                        </div>
+                    </div>
+                    
+                    <!-- Ubicación -->
+                    <div class="form-group">
+                        <label>Ubicación</label>
+                        <input type="text" id="location" placeholder="Ej: Estante A3">
+                    </div>
+                    
+                    <button onclick="saveProduct()" class="btn-primary" style="width: 100%;">💾 Guardar Producto</button>
                 </div>
             </div>
         </div>
@@ -532,9 +630,33 @@
             oscillator.stop(audioContext.currentTime + 0.1);
         }
         
+        let currentPhotoBase64 = null;
+        
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentPhotoBase64 = e.target.result;
+                const img = document.getElementById('productPhoto');
+                img.src = currentPhotoBase64;
+                img.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
         function saveProduct() {
             const name = document.getElementById('productName').value.trim();
-            const quantity = parseInt(document.getElementById('productQuantity').value);
+            const quantity = parseFloat(document.getElementById('productQuantity').value);
+            const unit = document.getElementById('productUnit').value;
+            const minQuantity = parseFloat(document.getElementById('minQuantity').value) || 0;
+            const maxQuantity = parseFloat(document.getElementById('maxQuantity').value) || null;
+            const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
+            const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
+            const category = document.getElementById('category').value.trim();
+            const brand = document.getElementById('brand').value.trim();
+            const location = document.getElementById('location').value.trim();
             
             if (!name) {
                 alert('Por favor ingresa el nombre del producto');
@@ -545,15 +667,47 @@
             const existingIndex = inventory.findIndex(item => item.code === currentCode);
             
             if (existingIndex !== -1) {
-                // Actualizar cantidad
-                inventory[existingIndex].quantity += quantity;
+                // Actualizar producto existente
+                if (confirm('Este código ya existe. ¿Quieres actualizar el producto o solo sumar la cantidad?')) {
+                    // Actualizar todo
+                    inventory[existingIndex] = {
+                        code: currentCode,
+                        name: name,
+                        quantity: quantity,
+                        unit: unit,
+                        minQuantity: minQuantity,
+                        maxQuantity: maxQuantity,
+                        purchasePrice: purchasePrice,
+                        publicPrice: publicPrice,
+                        category: category,
+                        brand: brand,
+                        location: location,
+                        photo: currentPhotoBase64,
+                        date: new Date().toISOString(),
+                        updated: new Date().toISOString()
+                    };
+                } else {
+                    // Solo sumar cantidad
+                    inventory[existingIndex].quantity += quantity;
+                    inventory[existingIndex].updated = new Date().toISOString();
+                }
             } else {
                 // Agregar nuevo producto
                 inventory.push({
                     code: currentCode,
                     name: name,
                     quantity: quantity,
-                    date: new Date().toISOString()
+                    unit: unit,
+                    minQuantity: minQuantity,
+                    maxQuantity: maxQuantity,
+                    purchasePrice: purchasePrice,
+                    publicPrice: publicPrice,
+                    category: category,
+                    brand: brand,
+                    location: location,
+                    photo: currentPhotoBase64,
+                    date: new Date().toISOString(),
+                    updated: new Date().toISOString()
                 });
             }
             
@@ -561,10 +715,7 @@
             localStorage.setItem('inventory', JSON.stringify(inventory));
             
             // Limpiar formulario
-            document.getElementById('productName').value = '';
-            document.getElementById('productQuantity').value = '1';
-            document.getElementById('result').classList.remove('show');
-            document.getElementById('productForm').classList.remove('show');
+            clearProductForm();
             
             // Actualizar vista
             displayInventory();
@@ -578,6 +729,24 @@
             }, 500);
             
             currentCode = null;
+            currentPhotoBase64 = null;
+        }
+        
+        function clearProductForm() {
+            document.getElementById('productName').value = '';
+            document.getElementById('productQuantity').value = '1';
+            document.getElementById('productUnit').value = 'unidad';
+            document.getElementById('minQuantity').value = '0';
+            document.getElementById('maxQuantity').value = '';
+            document.getElementById('purchasePrice').value = '';
+            document.getElementById('publicPrice').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('brand').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('productPhoto').style.display = 'none';
+            document.getElementById('productPhoto').src = '';
+            document.getElementById('result').classList.remove('show');
+            document.getElementById('productForm').classList.remove('show');
         }
         
         function displayInventory() {
@@ -588,16 +757,36 @@
                 return;
             }
             
-            container.innerHTML = inventory.map((item, index) => `
-                <div class="inventory-item">
-                    <div class="item-info">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-code">${item.code}</div>
+            container.innerHTML = inventory.map((item, index) => {
+                const lowStock = item.quantity <= item.minQuantity;
+                const stockWarning = lowStock ? '<span style="color: #ef4444; font-size: 12px;">⚠️ Stock bajo</span>' : '';
+                const photoHtml = item.photo ? `<img src="${item.photo}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 10px;">` : '';
+                
+                return `
+                    <div class="inventory-item" style="flex-direction: column; align-items: flex-start;">
+                        <div style="display: flex; width: 100%; margin-bottom: 10px;">
+                            ${photoHtml}
+                            <div class="item-info" style="flex: 1;">
+                                <div class="item-name">${item.name}</div>
+                                <div class="item-code">${item.code}</div>
+                                ${item.category ? `<div style="font-size: 12px; color: #6b7280;">📁 ${item.category}</div>` : ''}
+                                ${item.brand ? `<div style="font-size: 12px; color: #6b7280;">🏷️ ${item.brand}</div>` : ''}
+                                ${item.location ? `<div style="font-size: 12px; color: #6b7280;">📍 ${item.location}</div>` : ''}
+                            </div>
+                            <div style="display: flex; gap: 5px; align-items: flex-start;">
+                                <span class="item-quantity" style="${lowStock ? 'background: #ef4444;' : ''}">${item.quantity} ${item.unit}</span>
+                                <button class="btn-delete" onclick="deleteProduct(${index})">🗑️</button>
+                            </div>
+                        </div>
+                        ${stockWarning}
+                        <div style="display: flex; gap: 15px; font-size: 12px; color: #6b7280; width: 100%; margin-top: 5px;">
+                            ${item.purchasePrice > 0 ? `<span>💰 Compra: ${item.purchasePrice.toFixed(2)}€</span>` : ''}
+                            ${item.publicPrice > 0 ? `<span>🏷️ Venta: ${item.publicPrice.toFixed(2)}€</span>` : ''}
+                            ${item.publicPrice > 0 && item.purchasePrice > 0 ? `<span style="color: #16a34a;">📈 Margen: ${((item.publicPrice - item.purchasePrice) / item.purchasePrice * 100).toFixed(1)}%</span>` : ''}
+                        </div>
                     </div>
-                    <span class="item-quantity">${item.quantity}</span>
-                    <button class="btn-delete" onclick="deleteProduct(${index})">🗑️</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
         
         function deleteProduct(index) {
@@ -624,11 +813,15 @@
                 return;
             }
             
-            // Crear CSV
-            let csv = 'Código,Nombre,Cantidad,Fecha\n';
+            // Crear CSV con todos los campos
+            let csv = 'Código,Nombre,Cantidad,Unidad,Min,Max,Precio Compra,Precio Venta,Margen %,Categoría,Marca,Ubicación,Fecha\n';
             inventory.forEach(item => {
                 const date = new Date(item.date).toLocaleDateString('es-ES');
-                csv += `${item.code},"${item.name}",${item.quantity},${date}\n`;
+                const margin = item.publicPrice > 0 && item.purchasePrice > 0 
+                    ? ((item.publicPrice - item.purchasePrice) / item.purchasePrice * 100).toFixed(2)
+                    : '';
+                    
+                csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.minQuantity || 0},${item.maxQuantity || ''},${item.purchasePrice || 0},${item.publicPrice || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
             });
             
             // Descargar archivo
