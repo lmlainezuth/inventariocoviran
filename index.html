@@ -381,18 +381,51 @@
                     <div class="form-row">
                         <div class="form-group" style="flex: 1;">
                             <label>Categoría</label>
-                            <input type="text" id="category" placeholder="Ej: Lácteos">
+                            <select id="category">
+                                <option value="">Seleccionar...</option>
+                                <option value="Bebidas">Bebidas</option>
+                                <option value="Licores">Licores</option>
+                                <option value="Vinos">Vinos</option>
+                                <option value="Iluminación">Iluminación</option>
+                                <option value="Lácteos">Lácteos</option>
+                                <option value="Panadería">Panadería</option>
+                                <option value="Carnes">Carnes</option>
+                                <option value="Pescados">Pescados</option>
+                                <option value="Frutas y Verduras">Frutas y Verduras</option>
+                                <option value="Congelados">Congelados</option>
+                                <option value="Conservas">Conservas</option>
+                                <option value="Limpieza">Limpieza</option>
+                                <option value="Higiene">Higiene</option>
+                                <option value="Charcutería">Charcutería</option>
+                                <option value="Otros">Otros</option>
+                            </select>
                         </div>
                         <div class="form-group" style="flex: 1;">
                             <label>Marca</label>
-                            <input type="text" id="brand" placeholder="Ej: Pascual">
+                            <select id="brand">
+                                <option value="">Seleccionar...</option>
+                                <option value="Covirán">Covirán</option>
+                                <option value="Marca Blanca">Marca Blanca</option>
+                                <option value="Coca-Cola">Coca-Cola</option>
+                                <option value="Pepsi">Pepsi</option>
+                                <option value="Nestlé">Nestlé</option>
+                                <option value="Danone">Danone</option>
+                                <option value="Pascual">Pascual</option>
+                                <option value="Central Lechera Asturiana">Central Lechera Asturiana</option>
+                                <option value="Otro">Otro</option>
+                            </select>
                         </div>
                     </div>
                     
                     <!-- Ubicación -->
                     <div class="form-group">
                         <label>Ubicación</label>
-                        <input type="text" id="location" placeholder="Ej: Estante A3">
+                        <select id="location">
+                            <option value="">Seleccionar...</option>
+                            <option value="Iztieta 9103">Iztieta 9103</option>
+                            <option value="Gabierrota">Gabierrota</option>
+                            <option value="El Antiguo">El Antiguo</option>
+                        </select>
                     </div>
                     
                     <button onclick="saveProduct()" class="btn-primary" style="width: 100%;">💾 Guardar Producto</button>
