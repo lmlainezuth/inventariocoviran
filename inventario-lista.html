@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Inventario - Escáner de Códigos</title>
-        <script
-            src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - COVIRÁN</title>
+    <style>
         * {
             margin: 0;
             padding: 0;
@@ -16,221 +14,187 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f5;
-            padding: 20px;
+            padding-bottom: 80px;
         }
         
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        header {
-            background: #2563eb;
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
             color: white;
-            padding: 20px;
-            text-align: center;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        h1 {
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .settings-btn {
+            background: none;
+            border: none;
+            color: white;
             font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
         }
         
-        .scanner-section {
-            padding: 20px;
+        /* Search Bar */
+        .search-container {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
         }
         
-        #reader {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            position: relative;
-            min-height: 300px;
+        .search-box {
+            background: rgba(255,255,255,0.9);
+            border-radius: 25px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        #reader canvas,
-        #reader video {
-            width: 100% !important;
-            height: auto !important;
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: none;
+            font-size: 16px;
+            outline: none;
+            color: #374151;
         }
         
-        #reader canvas.drawingBuffer {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .search-box input::placeholder {
+            color: #9ca3af;
         }
         
-        .controls {
+        /* Filters */
+        .filters {
+            padding: 15px 20px;
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
         }
         
-        button {
-            flex: 1;
+        .filters::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .filter-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        /* Product List */
+        .product-list {
+            padding: 0 10px;
+        }
+        
+        .product-item {
+            background: white;
+            border-radius: 12px;
             padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             cursor: pointer;
             transition: all 0.3s;
         }
         
-        .btn-primary {
-            background: #2563eb;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #1d4ed8;
-        }
-        
-        .btn-secondary {
-            background: #64748b;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #475569;
-        }
-        
-        .result {
-            background: #f0fdf4;
-            border: 1px solid #86efac;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .result.show {
-            display: block;
-        }
-        
-        .result-code {
-            font-size: 18px;
-            font-weight: bold;
-            color: #166534;
-            margin-bottom: 10px;
-        }
-        
-        .product-form {
-            display: none;
-        }
-        
-        .product-form.show {
-            display: block;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .photo-upload {
-            margin-bottom: 10px;
-        }
-        
-        .photo-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #374151;
-        }
-        
-        input[type="text"],
-        input[type="number"],
-        select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        
-        select {
-            background: white;
-            cursor: pointer;
-        }
-        
-        .inventory-list {
-            padding: 20px;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .inventory-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #1f2937;
-        }
-        
-        .inventory-item {
+        .product-item:active {
+            transform: scale(0.98);
             background: #f9fafb;
-            padding: 15px;
+        }
+        
+        .product-image {
+            width: 60px;
+            height: 60px;
             border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            object-fit: cover;
+            background: #f3f4f6;
+            flex-shrink: 0;
         }
         
-        .item-info {
+        .product-info {
             flex: 1;
+            min-width: 0;
         }
         
-        .item-name {
+        .product-name {
+            font-size: 15px;
             font-weight: 600;
             color: #1f2937;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
-        .item-code {
-            font-size: 12px;
+        .product-quantity {
+            font-size: 13px;
             color: #6b7280;
+            margin-bottom: 2px;
+        }
+        
+        .product-code {
+            font-size: 12px;
+            color: #9ca3af;
             font-family: monospace;
         }
         
-        .item-quantity {
-            background: #2563eb;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
+        .product-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
         }
         
-        .btn-delete {
-            background: #ef4444;
-            color: white;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 6px;
-            margin-left: 10px;
-            cursor: pointer;
+        .badge-min {
+            background: #fef3c7;
+            color: #92400e;
         }
         
-        .btn-delete:hover {
-            background: #dc2626;
+        .badge-max {
+            background: #dcfce7;
+            color: #166534;
         }
         
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #9ca3af;
+        .badge-normal {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        
+        .arrow-icon {
+            color: #d1d5db;
+            font-size: 18px;
+            flex-shrink: 0;
         }
         
         /* Bottom Navigation */
@@ -245,7 +209,6 @@
             justify-content: space-around;
             padding: 10px 0;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
         }
         
         .nav-item {
@@ -256,19 +219,14 @@
             gap: 4px;
             padding: 8px;
             cursor: pointer;
-            transition: all 0.3s;
             border: none;
             background: none;
             color: #6b7280;
+            text-decoration: none;
         }
         
         .nav-item.active {
             color: #2563eb;
-        }
-        
-        .nav-item:hover {
-            background: #f3f4f6;
-            border-radius: 8px;
         }
         
         .nav-icon {
@@ -280,707 +238,230 @@
             font-weight: 500;
         }
         
-        /* Page sections */
-        .page-section {
-            display: none;
-            padding-bottom: 80px;
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
         }
         
-        .page-section.active {
-            display: block;
-        }
-        
-        body {
-            padding-bottom: 80px;
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
         }
     </style>
-
-       <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
-    </head>
-    <body>
-        <div class="container">
-            <header>
-                <h1>📦 Inventario</h1>
-            </header>
-
-            <!-- Página Escanear -->
-            <div id="scanPage" class="page-section active">
-                <div class="scanner-section">
-                    
-                    <div id="scannerContainer">
-                        <div id="reader"></div>
-
-                        <div id="scanStatus"
-                            style="text-align: center; padding: 10px; margin: 10px 0; background: #f3f4f6; border-radius: 8px; display: none;">
-                            <div
-                                style="font-size: 14px; color: #6b7280;">Escaneando...</div>
-                            <div id="detectionProgress"
-                                style="font-size: 12px; color: #9ca3af; margin-top: 5px;"></div>
-                        </div>
-                    </div>
-
-                    <div id="result" class="result">
-                        <div class="result-code">Código escaneado: <span
-                                id="scannedCode"></span></div>
-                    </div>
-
-                    <div id="productForm" class="product-form">
-                        <!-- Foto del Producto -->
-                        <div class="form-group">
-                            <label>Foto del Producto</label>
-                            <div class="photo-upload">
-                                <img id="productPhoto" src alt="Vista previa"
-                                    style="display: none; width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
-                                <div class="photo-buttons">
-                                    <button type="button"
-                                        onclick="document.getElementById('cameraInput').click()"
-                                        class="btn-secondary" style="flex: 1;">
-                                        📷 Cámara
-                                    </button>
-                                    <button type="button"
-                                        onclick="document.getElementById('galleryInput').click()"
-                                        class="btn-secondary" style="flex: 1;">
-                                        🖼️ Galería
-                                    </button>
-                                </div>
-                                <input type="file" id="cameraInput"
-                                    accept="image/*" capture="environment"
-                                    style="display: none;"
-                                    onchange="handlePhotoUpload(event)">
-                                <input type="file" id="galleryInput"
-                                    accept="image/*" style="display: none;"
-                                    onchange="handlePhotoUpload(event)">
-                            </div>
-                        </div>
-
-                        <!-- Nombre del producto -->
-                        <div class="form-group">
-                            <label>Nombre del producto *</label>
-                            <input type="text" id="productName"
-                                placeholder="Ej: Leche Entera" required>
-                        </div>
-
-                        <!-- Cantidad y Unidad -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad *</label>
-                                <input type="number" id="productQuantity"
-                                    value="1" min="0" step="0.01">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Unidad</label>
-                                <select id="productUnit">
-                                    <option value="unidad">Unidad</option>
-                                    <option value="kilogramo">Kilogramo
-                                        (kg)</option>
-                                    <option value="gramo">Gramo (g)</option>
-                                    <option value="litro">Litro (L)</option>
-                                    <option value="mililitro">Mililitro
-                                        (ml)</option>
-                                    <option value="centilitro">Centilitro
-                                        (cl)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Min y Max Cantidad -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad Mínima</label>
-                                <input type="number" id="minQuantity" value="0"
-                                    min="0" step="0.01">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad Máxima</label>
-                                <input type="number" id="maxQuantity" value
-                                    min="0" step="0.01" placeholder="Opcional">
-                            </div>
-                        </div>
-
-                        <!-- Precios -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Precio Compra (€)</label>
-                                <input type="number" id="purchasePrice" value
-                                    min="0" step="0.01" placeholder="0.00">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Precio Público (€)</label>
-                                <input type="number" id="publicPrice" value
-                                    min="0" step="0.01" placeholder="0.00">
-                            </div>
-                        </div>
-
-                        <!-- Categoría y Marca -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Categoría</label>
-                                <select id="category">
-                                    <option value>Seleccionar...</option>
-                                    <option value="Bebidas">Bebidas</option>
-                                    <option value="Licores">Licores</option>
-                                    <option value="Vinos">Vinos</option>
-                                    <option
-                                        value="Iluminación">Iluminación</option>
-                                    <option value="Lácteos">Lácteos</option>
-                                    <option value="Panadería">Panadería</option>
-                                    <option value="Carnes">Carnes</option>
-                                    <option value="Pescados">Pescados</option>
-                                    <option value="Frutas y Verduras">Frutas y
-                                        Verduras</option>
-                                    <option
-                                        value="Congelados">Congelados</option>
-                                    <option value="Conservas">Conservas</option>
-                                    <option value="Limpieza">Limpieza</option>
-                                    <option value="Higiene">Higiene</option>
-                                    <option
-                                        value="Charcutería">Charcutería</option>
-                                    <option value="Otros">Otros</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Marca</label>
-                                <select id="brand">
-                                    <option value>Seleccionar...</option>
-                                    <option value="Covirán">Covirán</option>
-                                    <option value="Marca Blanca">Marca
-                                        Blanca</option>
-                                    <option value="Coca-Cola">Coca-Cola</option>
-                                    <option value="Pepsi">Pepsi</option>
-                                    <option value="Nestlé">Nestlé</option>
-                                    <option value="Danone">Danone</option>
-                                    <option value="Pascual">Pascual</option>
-                                    <option
-                                        value="Central Lechera Asturiana">Central
-                                        Lechera Asturiana</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Ubicación -->
-                        <div class="form-group">
-                            <label>Ubicación</label>
-                            <select id="location">
-                                <option value>Seleccionar...</option>
-                                <option value="Iztieta 9103">Iztieta
-                                    9103</option>
-                                <option value="Gabierrota">Gabierrota</option>
-                                <option value="El Antiguo">El Antiguo</option>
-                            </select>
-                        </div>
-
-                        <button onclick="saveProduct()" class="btn-primary"
-                            style="width: 100%;">💾 Guardar Producto</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Página Admin -->
-            <div id="adminPage" class="page-section">
-                <div class="scanner-section">
-                    <h2 style="margin-bottom: 20px;">Administración</h2>
-
-                    <div class="form-group">
-                        <button onclick="exportInventory()" class="btn-primary"
-                            style="width: 100%; margin-bottom: 10px;">
-                            📥 Exportar Inventario (CSV)
-                        </button>
-                    </div>
-
-                    <div class="form-group">
-                        <button onclick="clearInventory()" class="btn-secondary"
-                            style="width: 100%; background: #ef4444;">
-                            🗑️ Borrar Todo el Inventario
-                        </button>
-                    </div>
-
-                    <div
-                        style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 8px;">
-                        <h3
-                            style="font-size: 16px; margin-bottom: 10px;">Estadísticas</h3>
-                        <p style="color: #6b7280;">Total de productos: <strong
-                                id="totalProducts">0</strong></p>
-                        <p style="color: #6b7280;">Total de unidades: <strong
-                                id="totalUnits">0</strong></p>
-                    </div>
-                </div>
-            </div>
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>📦 Inventario</h1>
+        <button class="settings-btn" onclick="window.location.href='inventario.html#admin'">⚙️</button>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="search-container">
+        <div class="search-box">
+            <span style="color: #9ca3af;">🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar" onkeyup="filterProducts()">
         </div>
-
-        <!-- Bottom Navigation -->
-        <div class="bottom-nav">
-            <button class="nav-item active" onclick="switchPage('scan')">
-                <div class="nav-icon">📱</div>
-                <div class="nav-label">Escanear</div>
-            </button>
-            <a href="inventario-lista.html" class="nav-item">
-                <div class="nav-icon">📦</div>
-                <div class="nav-label">Inventario</div>
-            </a>
-            <button class="nav-item" onclick="switchPage('admin')">
-                <div class="nav-icon">👑</div>
-                <div class="nav-label">Admin</div>
-            </button>
-        </div>
-
-      <script>
-// Esperar a que se cargue Supabase
-let supabaseClient;
-let isScanning = false;
-let currentCode = null;
-let inventory = [];
-let lastDetectedCode = null;
-let detectionTimeout = null;
-let detectionCounter = {};
-let currentPhotoBase64 = null;
-const DETECTION_THRESHOLD = 5;
-let scanTimeout = null;
-
-// Inicializar cuando la página esté lista
-window.addEventListener('DOMContentLoaded', function() {
-    // Configuración de Supabase
-    const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
-    const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
+    </div>
     
-    // Crear cliente de Supabase
-    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    <!-- Filters -->
+    <div class="filters">
+        <button class="filter-btn active" onclick="filterByType('all')">
+            Ordenar ▼
+        </button>
+        <button class="filter-btn" onclick="filterByType('quantity')">
+            Cantidad ▼
+        </button>
+        <button class="filter-btn" onclick="filterByType('reference')">
+            Referencia ▼
+        </button>
+    </div>
     
-    // Verificar si viene un código en la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get('code');
+    <!-- Product List -->
+    <div class="product-list" id="productList">
+        <!-- Products will be loaded here -->
+    </div>
     
-    // Inicializar app
-    loadInventory().then(() => {
-        updateStats();
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <div class="nav-icon">📱</div>
+            <div class="nav-label">Escanear</div>
+        </a>
+        <a href="inventario-lista.html" class="nav-item active">
+            <div class="nav-icon">📦</div>
+            <div class="nav-label">Inventario</div>
+        </a>
+        <a href="index.html" class="nav-item">
+            <div class="nav-icon">👑</div>
+            <div class="nav-label">Admin</div>
+        </a>
+    </div>
+
+    <script>
+        // Configurar Supabase
+        const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
+        const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         
-        if (codeFromUrl) {
-            // Si viene código desde la lista, cargar ese producto directamente SIN ESCÁNER
-            currentCode = codeFromUrl;
-            document.getElementById('scannedCode').textContent = codeFromUrl;
-            document.getElementById('result').classList.add('show');
-            document.getElementById('scannerContainer').style.display = 'none'; // OCULTAR ESCÁNER
-            loadProductData(codeFromUrl);
-        } else {
-            // Si no, iniciar el escáner normalmente
-            startScanner();
-        }
-    });
-});
-
-// Resto de funciones (copiar todo lo demás desde aquí)
-function switchPage(page) {
-    document.querySelectorAll('.page-section').forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    
-    if (page === 'scan') {
-        document.getElementById('scanPage').classList.add('active');
-        document.querySelectorAll('.nav-item')[0].classList.add('active');
-        if (!isScanning) {
-            startScanner();
-        }
-    } else if (page === 'admin') {
-        if (isScanning) {
-            stopScanner();
-        }
-        document.getElementById('adminPage').classList.add('active');
-        document.querySelectorAll('.nav-item')[2].classList.add('active');
-        updateStats();
-    }
-}
-
-function startScanner() {
-    isScanning = true;
-    detectionCounter = {};
-    document.getElementById('scanStatus').style.display = 'block';
-    document.getElementById('detectionProgress').textContent = 'Apunta al código de barras...';
-    
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: document.querySelector('#reader'),
-            constraints: {
-                facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-        },
-        decoder: {
-            readers: [
-                "ean_reader",
-                "ean_8_reader",
-                "code_128_reader",
-                "code_39_reader",
-                "upc_reader",
-                "upc_e_reader"
-            ],
-            debug: {
-                drawBoundingBox: true,
-                showFrequency: true,
-                drawScanline: true,
-                showPattern: true
-            }
-        },
-        locate: true,
-        locator: {
-            halfSample: true,
-            patchSize: "medium"
-        },
-        frequency: 10,
-    }, function(err) {
-        if (err) {
-            console.error(err);
-            alert('Error al iniciar cámara: ' + err);
-            return;
-        }
-        Quagga.start();
-    });
-    
-    Quagga.onDetected(onBarcodeDetected);
-}
-
-function stopScanner() {
-    if (isScanning) {
-        Quagga.stop();
-        Quagga.offDetected(onBarcodeDetected);
-        isScanning = false;
-        document.getElementById('scanStatus').style.display = 'none';
-    }
-}
-
-function onBarcodeDetected(result) {
-    if (!isScanning) return;
-    
-    const code = result.codeResult.code;
-    const errors = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0);
-    const errorRate = errors / result.codeResult.decodedCodes.length;
-    
-    if (errorRate > 0.15) return;
-    if (!code || code.length < 8) return;
-    if (!/^[A-Z0-9]+$/i.test(code)) return;
-    
-    if (!detectionCounter[code]) {
-        detectionCounter[code] = 1;
-    } else {
-        detectionCounter[code]++;
-    }
-    
-    document.getElementById('detectionProgress').textContent = `Detectando: ${code} (${detectionCounter[code]}/${DETECTION_THRESHOLD})`;
-    
-    for (let key in detectionCounter) {
-        if (key !== code && detectionCounter[key] < DETECTION_THRESHOLD) {
-            delete detectionCounter[key];
-        }
-    }
-    
-    if (detectionCounter[code] >= DETECTION_THRESHOLD) {
-        lastDetectedCode = code;
-        currentCode = code;
-        detectionCounter = {};
+        let inventory = [];
+        let currentFilter = 'all';
+        let currentSort = 'name';
         
-        document.getElementById('scannedCode').textContent = code;
-        document.getElementById('result').classList.add('show');
+        // Cargar productos al iniciar
+        loadProducts();
         
-        playBeep();
-        stopScanner();
-        
-        // Cargar datos del producto si existe
-        loadProductData(code);
-        
-        if (detectionTimeout) clearTimeout(detectionTimeout);
-        detectionTimeout = setTimeout(() => {
-            lastDetectedCode = null;
-        }, 3000);
-    }
-}
-
-function playBeep() {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    gainNode.gain.value = 0.3;
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.1);
-}
-
-async function loadProductData(code) {
-    try {
-        const { data: existingProduct, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('code', code)
-            .maybeSingle();
-        
-        if (error) throw error;
-        
-        // Ocultar el área del escáner
-        document.getElementById('scannerContainer').style.display = 'none';
-        
-        if (existingProduct) {
-            // Producto existe - llenar formulario
-            document.getElementById('productName').value = existingProduct.name;
-            document.getElementById('productQuantity').value = existingProduct.quantity;
-            document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
-            document.getElementById('minQuantity').value = existingProduct.min_quantity || 0;
-            document.getElementById('maxQuantity').value = existingProduct.max_quantity || '';
-            document.getElementById('purchasePrice').value = existingProduct.purchase_price || '';
-            document.getElementById('publicPrice').value = existingProduct.public_price || '';
-            document.getElementById('category').value = existingProduct.category || '';
-            document.getElementById('brand').value = existingProduct.brand || '';
-            document.getElementById('location').value = existingProduct.location || '';
+        async function loadProducts() {
+            const container = document.getElementById('productList');
             
-            // Mostrar foto si existe
-            if (existingProduct.photo) {
-                document.getElementById('productPhoto').src = existingProduct.photo;
-                document.getElementById('productPhoto').style.display = 'block';
-                currentPhotoBase64 = existingProduct.photo;
-            }
-            
-            // Mensaje de producto encontrado
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
-        } else {
-            // Producto nuevo
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `
-                <div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>
-            `;
-        }
-        
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
-        
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('scannerContainer').style.display = 'none';
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
-    }
-}
-
-async function uploadImageToSupabase(file) {
-    try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `products/${fileName}`;
-        
-        const { data, error } = await supabaseClient.storage
-            .from('product-images')
-            .upload(filePath, file);
-        
-        if (error) throw error;
-        
-        const { data: urlData } = supabaseClient.storage
-            .from('product-images')
-            .getPublicUrl(filePath);
-        
-        return urlData.publicUrl;
-    } catch (error) {
-        alert('Error subiendo imagen: ' + error.message);
-        return null;
-    }
-}
-
-async function handlePhotoUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = document.getElementById('productPhoto');
-        img.src = e.target.result;
-        img.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-    
-    const imageUrl = await uploadImageToSupabase(file);
-    if (imageUrl) {
-        currentPhotoBase64 = imageUrl;
-    }
-}
-
-async function saveProduct() {
-    if (!currentCode) {
-        alert('❌ ERROR: No hay código de barras válido.');
-        return;
-    }
-    
-    if (currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
-        alert('❌ ERROR: El código escaneado no es válido.');
-        clearProductForm();
-        setTimeout(() => {
-            if (!isScanning) startScanner();
-        }, 500);
-        return;
-    }
-    
-    const name = document.getElementById('productName').value.trim();
-    if (!name) {
-        alert('Por favor ingresa el nombre del producto');
-        return;
-    }
-    
-    const quantity = parseFloat(document.getElementById('productQuantity').value);
-    const unit = document.getElementById('productUnit').value;
-    const minQuantity = parseFloat(document.getElementById('minQuantity').value) || 0;
-    const maxQuantity = parseFloat(document.getElementById('maxQuantity').value) || null;
-    const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
-    const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
-    const category = document.getElementById('category').value;
-    const brand = document.getElementById('brand').value;
-    const location = document.getElementById('location').value;
-    
-    try {
-        const { data: existingProduct } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('code', currentCode)
-            .maybeSingle();
-        
-        if (existingProduct) {
-            if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
-                await supabaseClient
-                    .from('products')
-                    .update({
-                        name, quantity, unit, min_quantity: minQuantity,
-                        max_quantity: maxQuantity, purchase_price: purchasePrice,
-                        public_price: publicPrice, category, brand, location,
-                        photo: currentPhotoBase64
-                    })
-                    .eq('code', currentCode);
-            } else {
-                await supabaseClient
-                    .from('products')
-                    .update({ quantity: existingProduct.quantity + quantity })
-                    .eq('code', currentCode);
-            }
-        } else {
-            await supabaseClient
-                .from('products')
-                .insert([{
-                    code: currentCode, name, quantity, unit,
-                    min_quantity: minQuantity, max_quantity: maxQuantity,
-                    purchase_price: purchasePrice, public_price: publicPrice,
-                    category, brand, location, photo: currentPhotoBase64
-                }]);
-        }
-        
-        alert('✅ Producto guardado');
-        clearProductForm();
-        await loadInventory();
-        updateStats();
-        
-        setTimeout(() => {
-            if (!isScanning) startScanner();
-        }, 500);
-        
-        currentCode = null;
-        currentPhotoBase64 = null;
-        
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
-}
-
-async function loadInventory() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .order('name', { ascending: true });
-        
-        if (error) throw error;
-        inventory = data || [];
-    } catch (error) {
-        inventory = [];
-    }
-}
-
-function clearProductForm() {
-    document.getElementById('productName').value = '';
-    document.getElementById('productQuantity').value = '1';
-    document.getElementById('productUnit').value = 'unidad';
-    document.getElementById('minQuantity').value = '0';
-    document.getElementById('maxQuantity').value = '';
-    document.getElementById('purchasePrice').value = '';
-    document.getElementById('publicPrice').value = '';
-    document.getElementById('category').value = '';
-    document.getElementById('brand').value = '';
-    document.getElementById('location').value = '';
-    document.getElementById('productPhoto').style.display = 'none';
-    document.getElementById('productPhoto').src = '';
-    document.getElementById('result').classList.remove('show');
-    document.getElementById('productForm').classList.remove('show');
-    document.getElementById('scannerContainer').style.display = 'block';
-}
-
-async function updateStats() {
-    await loadInventory();
-    const totalProducts = inventory.length;
-    const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
-    
-    document.getElementById('totalProducts').textContent = totalProducts;
-    document.getElementById('totalUnits').textContent = totalUnits.toFixed(2);
-}
-
-async function exportInventory() {
-    await loadInventory();
-    
-    if (inventory.length === 0) {
-        alert('No hay productos para exportar');
-        return;
-    }
-    
-    let csv = 'Código,Nombre,Cantidad,Unidad,Min,Max,Precio Compra,Precio Venta,Margen %,Categoría,Marca,Ubicación,Fecha\n';
-    inventory.forEach(item => {
-        const date = new Date(item.created_at).toLocaleDateString('es-ES');
-        const margin = item.public_price > 0 && item.purchase_price > 0 
-            ? ((item.public_price - item.purchase_price) / item.purchase_price * 100).toFixed(2)
-            : '';
-            
-        csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.min_quantity || 0},${item.max_quantity || ''},${item.purchase_price || 0},${item.public_price || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
-    });
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-
-async function clearInventory() {
-    if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario?')) {
-        if (confirm('Confirmación final: ¿Realmente quieres borrar todos los productos?')) {
             try {
-                await supabaseClient
-                    .from('products')
-                    .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000');
+                // Mostrar loading
+                container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
                 
-                inventory = [];
-                updateStats();
-                alert('Inventario borrado');
+                // Obtener productos de Supabase
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .order('name', { ascending: true });
+                
+                if (error) throw error;
+                
+                inventory = data || [];
+                
+                if (inventory.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                                No hay productos
+                            </div>
+                            <div>Comienza escaneando códigos de barras</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Ordenar productos
+                let sortedInventory = [...inventory];
+                if (currentSort === 'name') {
+                    sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
+                } else if (currentSort === 'quantity') {
+                    sortedInventory.sort((a, b) => b.quantity - a.quantity);
+                } else if (currentSort === 'code') {
+                    sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
+                }
+                
+                container.innerHTML = sortedInventory.map((item) => {
+                    const badge = getStockBadge(item);
+                    
+                    // Debug: ver qué URL tiene la foto
+                    console.log('Producto:', item.name, 'Foto URL:', item.photo);
+                    
+                    const imageUrl = item.photo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect width="60" height="60" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em"%3E📦%3C/text%3E%3C/svg%3E';
+                    const priceDisplay = item.public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600; margin-top: 2px;">${item.public_price.toFixed(2)}€</div>` : '';
+                    
+                    return `
+                        <div class="product-item">
+                            <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E'; console.error('Error cargando imagen:', '${imageUrl}');" onclick="viewProduct('${item.code}')">
+                            <div class="product-info" onclick="viewProduct('${item.code}')">
+                                <div class="product-name">${item.name}</div>
+                                <div class="product-quantity">Cantidad: ${item.quantity} ${item.unit || 'unidad'}</div>
+                                <div class="product-code">${item.code}</div>
+                                ${priceDisplay}
+                            </div>
+                            <div class="product-badge badge-${badge.type}" onclick="viewProduct('${item.code}')">${badge.text}</div>
+                            <button onclick="event.stopPropagation(); deleteProduct('${item.code}', '${item.name.replace(/'/g, "\\'")}');" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; margin-left: 8px;">🗑️</button>
+                        </div>
+                    `;
+                }).join('');
+                
             } catch (error) {
-                alert('Error: ' + error.message);
+                console.error('Error cargando productos:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef4444;">
+                            Error al cargar productos
+                        </div>
+                        <div>${error.message}</div>
+                    </div>
+                `;
             }
         }
-    }
-}
-</script>
-    </body>
+        
+        function getStockBadge(item) {
+            if (item.quantity <= item.min_quantity) {
+                return { type: 'min', text: 'MIN' };
+            } else if (item.max_quantity && item.quantity >= item.max_quantity) {
+                return { type: 'max', text: 'MAX' };
+            } else {
+                return { type: 'normal', text: 'OK' };
+            }
+        }
+        
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const allItems = document.querySelectorAll('.product-item');
+            
+            allItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        function filterByType(type) {
+            // Remover active de todos los botones
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Activar botón clickeado
+            event.target.classList.add('active');
+            
+            if (type === 'all') {
+                currentSort = 'name';
+            } else if (type === 'quantity') {
+                currentSort = 'quantity';
+            } else if (type === 'reference') {
+                currentSort = 'code';
+            }
+            
+            loadProducts();
+        }
+        
+        function viewProduct(code) {
+            // Redirigir a página de escaneo con el código
+            window.location.href = 'index.html?code=' + code;
+        }
+        
+        async function deleteProduct(code, name) {
+            if (confirm(`⚠️ ¿Estás seguro de eliminar "${name}"?`)) {
+                try {
+                    const { error } = await supabaseClient
+                        .from('products')
+                        .delete()
+                        .eq('code', code);
+                    
+                    if (error) throw error;
+                    
+                    alert('✅ Producto eliminado correctamente');
+                    
+                    // Recargar la lista
+                    loadProducts();
+                    
+                } catch (error) {
+                    alert('Error al eliminar: ' + error.message);
+                }
+            }
+        }
+    </script>
+</body>
 </html>

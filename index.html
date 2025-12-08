@@ -555,8 +555,11 @@ window.addEventListener('DOMContentLoaded', function() {
         updateStats();
         
         if (codeFromUrl) {
-            // Si viene código desde la lista, cargar ese producto directamente
+            // Si viene código desde la lista, cargar ese producto directamente SIN ESCÁNER
             currentCode = codeFromUrl;
+            document.getElementById('scannedCode').textContent = codeFromUrl;
+            document.getElementById('result').classList.add('show');
+            document.getElementById('scannerContainer').style.display = 'none'; // OCULTAR ESCÁNER
             loadProductData(codeFromUrl);
         } else {
             // Si no, iniciar el escáner normalmente
