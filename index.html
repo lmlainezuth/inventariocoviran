@@ -521,214 +521,182 @@
             </button>
         </div>
 
-        <script>
-        // Configuración de Supabase
-     
-       const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqcmR3aHh1ZHd5eXhtbGpuY2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NzM0MjAsImV4cCI6MjA0OTI0OTQyMH0.S7YpTpWOYD8yiB-D5GvKXfN3HE0XKkL-k7V1R-c-ddk';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
-        // Después de: let inventory = [];
-// Agregar:
+      <script>
+// Esperar a que se cargue Supabase
+let supabaseClient;
+let isScanning = false;
+let currentCode = null;
+let inventory = [];
 let lastDetectedCode = null;
 let detectionTimeout = null;
 let detectionCounter = {};
-        let isScanning = false;
-        let currentCode = null;
-        let inventory = [];
-        const DETECTION_THRESHOLD = 5; // Aumentado a 5 detecciones consecutivas
-        let scanTimeout = null;
-        
-        // Inicializar
-       loadInventory().then(() => {
-            updateStats();
+let currentPhotoBase64 = null;
+const DETECTION_THRESHOLD = 5;
+let scanTimeout = null;
+
+// Inicializar cuando la página esté lista
+window.addEventListener('DOMContentLoaded', function() {
+    // Configuración de Supabase
+    const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqcmR3aHh1ZHd5eXhtbGpuY2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NzM0MjAsImV4cCI6MjA0OTI0OTQyMH0.S7YpTpWOYD8yiB-D5GvKXfN3HE0XKkL-k7V1R-c-ddk';
+    
+    // Crear cliente de Supabase
+    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    
+    // Inicializar app
+    loadInventory().then(() => {
+        updateStats();
+        startScanner();
+    });
+});
+
+// Resto de funciones (copiar todo lo demás desde aquí)
+function switchPage(page) {
+    document.querySelectorAll('.page-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    if (page === 'scan') {
+        document.getElementById('scanPage').classList.add('active');
+        document.querySelectorAll('.nav-item')[0].classList.add('active');
+        if (!isScanning) {
             startScanner();
-        });
-        
-        // Navegación entre páginas
-        function switchPage(page) {
-            // Ocultar todas las páginas
-            document.querySelectorAll('.page-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            // Remover active de todos los nav items
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Mostrar página seleccionada
-            if (page === 'scan') {
-                document.getElementById('scanPage').classList.add('active');
-                document.querySelectorAll('.nav-item')[0].classList.add('active');
-                // Auto-iniciar escáner al entrar a la página
-                if (!isScanning) {
-                    startScanner();
-                }
-            } else if (page === 'admin') {
-                // Detener escáner al salir de scan
-                if (isScanning) {
-                    stopScanner();
-                }
-                document.getElementById('adminPage').classList.add('active');
-                document.querySelectorAll('.nav-item')[2].classList.add('active');
-                updateStats(); // Actualizar estadísticas
-            }
         }
-        
-        function startScanner() {
-            isScanning = true;
-            detectionCounter = {}; // Limpiar contador
-            document.getElementById('scanStatus').style.display = 'block';
-            document.getElementById('detectionProgress').textContent = 'Apunta al código de barras...';
-            
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#reader'),
-                    constraints: {
-                        facingMode: "environment",
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                },
-                decoder: {
-                    readers: [
-                        "ean_reader",
-                        "ean_8_reader",
-                        "code_128_reader",
-                        "code_39_reader",
-                        "upc_reader",
-                        "upc_e_reader"
-                    ],
-                    debug: {
-                        drawBoundingBox: true,
-                        showFrequency: true,
-                        drawScanline: true,
-                        showPattern: true
-                    }
-                },
-                locate: true,
-                locator: {
-                    halfSample: true,
-                    patchSize: "medium"
-                },
-                frequency: 10,
-            }, function(err) {
-                if (err) {
-                    console.error(err);
-                    alert('Error al iniciar cámara: ' + err);
-                    return;
-                }
-                Quagga.start();
-            });
-            
-            Quagga.onDetected(onBarcodeDetected);
+    } else if (page === 'admin') {
+        if (isScanning) {
+            stopScanner();
         }
-        
-        function stopScanner() {
-            if (isScanning) {
-                Quagga.stop();
-                Quagga.offDetected(onBarcodeDetected);
-                isScanning = false;
-                document.getElementById('scanStatus').style.display = 'none';
+        document.getElementById('adminPage').classList.add('active');
+        document.querySelectorAll('.nav-item')[2].classList.add('active');
+        updateStats();
+    }
+}
+
+function startScanner() {
+    isScanning = true;
+    detectionCounter = {};
+    document.getElementById('scanStatus').style.display = 'block';
+    document.getElementById('detectionProgress').textContent = 'Apunta al código de barras...';
+    
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#reader'),
+            constraints: {
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+        },
+        decoder: {
+            readers: [
+                "ean_reader",
+                "ean_8_reader",
+                "code_128_reader",
+                "code_39_reader",
+                "upc_reader",
+                "upc_e_reader"
+            ],
+            debug: {
+                drawBoundingBox: true,
+                showFrequency: true,
+                drawScanline: true,
+                showPattern: true
             }
+        },
+        locate: true,
+        locator: {
+            halfSample: true,
+            patchSize: "medium"
+        },
+        frequency: 10,
+    }, function(err) {
+        if (err) {
+            console.error(err);
+            alert('Error al iniciar cámara: ' + err);
+            return;
         }
-        
-        function onBarcodeDetected(result) {
-            if (!isScanning) return;
-            
-            const code = result.codeResult.code;
-            
-            // Verificar calidad de detección (confianza mínima del 85%)
-            const errors = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0);
-            const errorRate = errors / result.codeResult.decodedCodes.length;
-            
-            if (errorRate > 0.15) {
-                console.log('⚠️ Baja calidad, descartado:', code, 'Error rate:', errorRate.toFixed(3));
-                return;
-            }
-            
-            // Verificar que el código sea válido
-            if (!code || code.length < 8) {
-                console.log('⚠️ Código muy corto, descartado:', code);
-                return;
-            }
-            
-            // Verificar que no contenga caracteres extraños (solo números y letras)
-            if (!/^[A-Z0-9]+$/i.test(code)) {
-                console.log('⚠️ Código con caracteres inválidos, descartado:', code);
-                return;
-            }
-            
-            // Sistema de conteo para confirmar detección
-            if (!detectionCounter[code]) {
-                detectionCounter[code] = 1;
-            } else {
-                detectionCounter[code]++;
-            }
-            
-            console.log('✓ Detectado:', code, 'Cuenta:', detectionCounter[code], '/', DETECTION_THRESHOLD, 'Error rate:', errorRate.toFixed(3));
-            
-            // Mostrar progreso
-            document.getElementById('detectionProgress').textContent = `Detectando: ${code} (${detectionCounter[code]}/${DETECTION_THRESHOLD})`;
-            
-            // Limpiar contador de otros códigos (solo queremos lecturas consecutivas del mismo código)
-            for (let key in detectionCounter) {
-                if (key !== code && detectionCounter[key] < DETECTION_THRESHOLD) {
-                    delete detectionCounter[key];
-                }
-            }
-            
-            // Solo aceptar después de múltiples detecciones consistentes
-            if (detectionCounter[code] >= DETECTION_THRESHOLD) {
-                lastDetectedCode = code;
-                currentCode = code;
-                
-                // Limpiar contadores
-                detectionCounter = {};
-                
-                // Mostrar resultado
-                console.log('✅ CÓDIGO CONFIRMADO:', code);
-                document.getElementById('scannedCode').textContent = code;
-                document.getElementById('result').classList.add('show');
-                document.getElementById('productForm').classList.add('show');
-                document.getElementById('productName').focus();
-                
-                // Dar beep de confirmación
-                playBeep();
-                
-                // Detener escáner
-                stopScanner();
-                
-                // Resetear después de 3 segundos
-                if (detectionTimeout) clearTimeout(detectionTimeout);
-                detectionTimeout = setTimeout(() => {
-                    lastDetectedCode = null;
-                }, 3000);
-            }
+        Quagga.start();
+    });
+    
+    Quagga.onDetected(onBarcodeDetected);
+}
+
+function stopScanner() {
+    if (isScanning) {
+        Quagga.stop();
+        Quagga.offDetected(onBarcodeDetected);
+        isScanning = false;
+        document.getElementById('scanStatus').style.display = 'none';
+    }
+}
+
+function onBarcodeDetected(result) {
+    if (!isScanning) return;
+    
+    const code = result.codeResult.code;
+    const errors = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0);
+    const errorRate = errors / result.codeResult.decodedCodes.length;
+    
+    if (errorRate > 0.15) return;
+    if (!code || code.length < 8) return;
+    if (!/^[A-Z0-9]+$/i.test(code)) return;
+    
+    if (!detectionCounter[code]) {
+        detectionCounter[code] = 1;
+    } else {
+        detectionCounter[code]++;
+    }
+    
+    document.getElementById('detectionProgress').textContent = `Detectando: ${code} (${detectionCounter[code]}/${DETECTION_THRESHOLD})`;
+    
+    for (let key in detectionCounter) {
+        if (key !== code && detectionCounter[key] < DETECTION_THRESHOLD) {
+            delete detectionCounter[key];
         }
+    }
+    
+    if (detectionCounter[code] >= DETECTION_THRESHOLD) {
+        lastDetectedCode = code;
+        currentCode = code;
+        detectionCounter = {};
         
-        function playBeep() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            gainNode.gain.value = 0.3;
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.1);
-        }
+        document.getElementById('scannedCode').textContent = code;
+        document.getElementById('result').classList.add('show');
+        document.getElementById('productForm').classList.add('show');
+        document.getElementById('productName').focus();
         
-        let currentPhotoBase64 = null;
+        playBeep();
+        stopScanner();
         
-     // Agregar esta función NUEVA para subir a Supabase Storage
+        if (detectionTimeout) clearTimeout(detectionTimeout);
+        detectionTimeout = setTimeout(() => {
+            lastDetectedCode = null;
+        }, 3000);
+    }
+}
+
+function playBeep() {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.3;
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.1);
+}
+
 async function uploadImageToSupabase(file) {
     try {
         const fileExt = file.name.split('.').pop();
@@ -741,24 +709,21 @@ async function uploadImageToSupabase(file) {
         
         if (error) throw error;
         
-        // Obtener URL pública
         const { data: urlData } = supabaseClient.storage
             .from('product-images')
             .getPublicUrl(filePath);
         
         return urlData.publicUrl;
     } catch (error) {
-        console.error('Error subiendo imagen:', error);
+        alert('Error subiendo imagen: ' + error.message);
         return null;
     }
 }
 
-// REEMPLAZAR la función handlePhotoUpload
 async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Mostrar preview local primero
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = document.getElementById('productPhoto');
@@ -767,35 +732,33 @@ async function handlePhotoUpload(event) {
     };
     reader.readAsDataURL(file);
     
-    // Subir a Supabase Storage
     const imageUrl = await uploadImageToSupabase(file);
     if (imageUrl) {
-        currentPhotoBase64 = imageUrl; // Guardar URL en lugar de base64
-        console.log('Imagen subida:', imageUrl);
-    } else {
-        alert('Error al subir la imagen');
+        currentPhotoBase64 = imageUrl;
     }
 }
-        async function saveProduct() {
-    // Validar que haya un código escaneado
+
+async function saveProduct() {
     if (!currentCode) {
-        alert('❌ ERROR: No hay código de barras válido.\n\nPor favor escanea un código antes de guardar.');
+        alert('❌ ERROR: No hay código de barras válido.');
         return;
     }
     
-    // Validar que el código tenga formato válido
     if (currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
-        alert('❌ ERROR: El código escaneado no es válido.\n\nCódigo: ' + currentCode + '\n\nPor favor vuelve a escanear.');
+        alert('❌ ERROR: El código escaneado no es válido.');
         clearProductForm();
         setTimeout(() => {
-            if (!isScanning) {
-                startScanner();
-            }
+            if (!isScanning) startScanner();
         }, 500);
         return;
     }
     
     const name = document.getElementById('productName').value.trim();
+    if (!name) {
+        alert('Por favor ingresa el nombre del producto');
+        return;
+    }
+    
     const quantity = parseFloat(document.getElementById('productQuantity').value);
     const unit = document.getElementById('productUnit').value;
     const minQuantity = parseFloat(document.getElementById('minQuantity').value) || 0;
@@ -806,148 +769,99 @@ async function handlePhotoUpload(event) {
     const brand = document.getElementById('brand').value;
     const location = document.getElementById('location').value;
     
-    if (!name) {
-        alert('Por favor ingresa el nombre del producto');
-        return;
-    }
-    
     try {
-        // Verificar si el producto ya existe
-        const { data: existingProduct, error: searchError } = await supabaseClient
+        const { data: existingProduct } = await supabaseClient
             .from('products')
             .select('*')
             .eq('code', currentCode)
-            .single();
+            .maybeSingle();
         
         if (existingProduct) {
-            // Actualizar producto existente
-            if (confirm('Este código ya existe en el inventario.\n\n¿Quieres actualizar toda la información del producto?\n\nSI = Actualizar todo\nNO = Solo sumar la cantidad')) {
-                // Actualizar todo
-                const { error } = await supabaseClient
+            if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
+                await supabaseClient
                     .from('products')
                     .update({
-                        name: name,
-                        quantity: quantity,
-                        unit: unit,
-                        min_quantity: minQuantity,
-                        max_quantity: maxQuantity,
-                        purchase_price: purchasePrice,
-                        public_price: publicPrice,
-                        category: category,
-                        brand: brand,
-                        location: location,
+                        name, quantity, unit, min_quantity: minQuantity,
+                        max_quantity: maxQuantity, purchase_price: purchasePrice,
+                        public_price: publicPrice, category, brand, location,
                         photo: currentPhotoBase64
                     })
                     .eq('code', currentCode);
-                
-                if (error) throw error;
             } else {
-                // Solo sumar cantidad
-                const { error } = await supabaseClient
+                await supabaseClient
                     .from('products')
-                    .update({
-                        quantity: existingProduct.quantity + quantity
-                    })
+                    .update({ quantity: existingProduct.quantity + quantity })
                     .eq('code', currentCode);
-                
-                if (error) throw error;
             }
         } else {
-            // Agregar nuevo producto
-            const { error } = await supabaseClient
+            await supabaseClient
                 .from('products')
                 .insert([{
-                    code: currentCode,
-                    name: name,
-                    quantity: quantity,
-                    unit: unit,
-                    min_quantity: minQuantity,
-                    max_quantity: maxQuantity,
-                    purchase_price: purchasePrice,
-                    public_price: publicPrice,
-                    category: category,
-                    brand: brand,
-                    location: location,
-                    photo: currentPhotoBase64
+                    code: currentCode, name, quantity, unit,
+                    min_quantity: minQuantity, max_quantity: maxQuantity,
+                    purchase_price: purchasePrice, public_price: publicPrice,
+                    category, brand, location, photo: currentPhotoBase64
                 }]);
-            
-            if (error) throw error;
         }
         
-        // Limpiar formulario
+        alert('✅ Producto guardado');
         clearProductForm();
-        
-        // Actualizar vista
         await loadInventory();
         updateStats();
         
-        // Reiniciar escáner
         setTimeout(() => {
-            if (!isScanning) {
-                startScanner();
-            }
+            if (!isScanning) startScanner();
         }, 500);
         
         currentCode = null;
         currentPhotoBase64 = null;
         
     } catch (error) {
-        console.error('Error guardando producto:', error);
-        alert('Error al guardar el producto: ' + error.message);
+        alert('Error: ' + error.message);
     }
 }
-    
-        // Agregar esta función NUEVA después de saveProduct()
-        async function loadInventory() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('products')
-                    .select('*')
-                    .order('name', { ascending: true });
-                
-                if (error) throw error;
-                
-                inventory = data || [];
-            } catch (error) {
-                console.error('Error cargando inventario:', error);
-                inventory = [];
-            }
-        }
-        function clearProductForm() {
-            document.getElementById('productName').value = '';
-            document.getElementById('productQuantity').value = '1';
-            document.getElementById('productUnit').value = 'unidad';
-            document.getElementById('minQuantity').value = '0';
-            document.getElementById('maxQuantity').value = '';
-            document.getElementById('purchasePrice').value = '';
-            document.getElementById('publicPrice').value = '';
-            document.getElementById('category').value = '';
-            document.getElementById('brand').value = '';
-            document.getElementById('location').value = '';
-            document.getElementById('productPhoto').style.display = 'none';
-            document.getElementById('productPhoto').src = '';
-            document.getElementById('result').classList.remove('show');
-            document.getElementById('productForm').classList.remove('show');
-        }
-        
-        function deleteProduct(index) {
-            if (confirm('¿Eliminar este producto del inventario?')) {
-                inventory.splice(index, 1);
-                localStorage.setItem('inventory', JSON.stringify(inventory));
-                updateStats();
-            }
-        }
-        
-          async function updateStats() {
-            await loadInventory(); // Recargar datos
-            const totalProducts = inventory.length;
-            const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
-            
-            document.getElementById('totalProducts').textContent = totalProducts;
-            document.getElementById('totalUnits').textContent = totalUnits.toFixed(2);
-        }
 
-        async function exportInventory() {
+async function loadInventory() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .order('name', { ascending: true });
+        
+        if (error) throw error;
+        inventory = data || [];
+    } catch (error) {
+        inventory = [];
+    }
+}
+
+function clearProductForm() {
+    document.getElementById('productName').value = '';
+    document.getElementById('productQuantity').value = '1';
+    document.getElementById('productUnit').value = 'unidad';
+    document.getElementById('minQuantity').value = '0';
+    document.getElementById('maxQuantity').value = '';
+    document.getElementById('purchasePrice').value = '';
+    document.getElementById('publicPrice').value = '';
+    document.getElementById('category').value = '';
+    document.getElementById('brand').value = '';
+    document.getElementById('location').value = '';
+    document.getElementById('productPhoto').style.display = 'none';
+    document.getElementById('productPhoto').src = '';
+    document.getElementById('result').classList.remove('show');
+    document.getElementById('productForm').classList.remove('show');
+}
+
+async function updateStats() {
+    await loadInventory();
+    const totalProducts = inventory.length;
+    const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
+    
+    document.getElementById('totalProducts').textContent = totalProducts;
+    document.getElementById('totalUnits').textContent = totalUnits.toFixed(2);
+}
+
+async function exportInventory() {
     await loadInventory();
     
     if (inventory.length === 0) {
@@ -955,7 +869,6 @@ async function handlePhotoUpload(event) {
         return;
     }
     
-    // Crear CSV con todos los campos
     let csv = 'Código,Nombre,Cantidad,Unidad,Min,Max,Precio Compra,Precio Venta,Margen %,Categoría,Marca,Ubicación,Fecha\n';
     inventory.forEach(item => {
         const date = new Date(item.created_at).toLocaleDateString('es-ES');
@@ -966,7 +879,6 @@ async function handlePhotoUpload(event) {
         csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.min_quantity || 0},${item.max_quantity || ''},${item.purchase_price || 0},${item.public_price || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
     });
     
-    // Descargar archivo
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -975,28 +887,25 @@ async function handlePhotoUpload(event) {
     a.click();
     window.URL.revokeObjectURL(url);
 }
-        async function clearInventory() {
-    if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario? Esta acción no se puede deshacer.')) {
+
+async function clearInventory() {
+    if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario?')) {
         if (confirm('Confirmación final: ¿Realmente quieres borrar todos los productos?')) {
             try {
-                const { error } = await supabaseClient
+                await supabaseClient
                     .from('products')
                     .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000'); // Borra todo
-                
-                if (error) throw error;
+                    .neq('id', '00000000-0000-0000-0000-000000000000');
                 
                 inventory = [];
                 updateStats();
-                alert('Inventario borrado completamente');
+                alert('Inventario borrado');
             } catch (error) {
-                console.error('Error borrando inventario:', error);
-                alert('Error al borrar el inventario: ' + error.message);
+                alert('Error: ' + error.message);
             }
         }
     }
 }
-    
-    </script>
+</script>
     </body>
 </html>
