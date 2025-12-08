@@ -546,10 +546,22 @@ window.addEventListener('DOMContentLoaded', function() {
     // Crear cliente de Supabase
     supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     
+    // Verificar si viene un código en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    
     // Inicializar app
     loadInventory().then(() => {
         updateStats();
-        startScanner();
+        
+        if (codeFromUrl) {
+            // Si viene código desde la lista, cargar ese producto directamente
+            currentCode = codeFromUrl;
+            loadProductData(codeFromUrl);
+        } else {
+            // Si no, iniciar el escáner normalmente
+            startScanner();
+        }
     });
 });
 
