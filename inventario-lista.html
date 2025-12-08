@@ -357,12 +357,16 @@
                 
                 container.innerHTML = sortedInventory.map((item) => {
                     const badge = getStockBadge(item);
+                    
+                    // Debug: ver qué URL tiene la foto
+                    console.log('Producto:', item.name, 'Foto URL:', item.photo);
+                    
                     const imageUrl = item.photo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect width="60" height="60" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em"%3E📦%3C/text%3E%3C/svg%3E';
                     const priceDisplay = item.public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600; margin-top: 2px;">${item.public_price.toFixed(2)}€</div>` : '';
                     
                     return `
                         <div class="product-item" onclick="viewProduct('${item.code}')">
-                            <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E'">
+                            <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E'; console.error('Error cargando imagen:', '${imageUrl}');">
                             <div class="product-info">
                                 <div class="product-name">${item.name}</div>
                                 <div class="product-quantity">Cantidad: ${item.quantity} ${item.unit || 'unidad'}</div>
