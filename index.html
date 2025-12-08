@@ -530,6 +530,11 @@
         const { createClient } = supabase;
         const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
+        // Después de: let inventory = [];
+// Agregar:
+let lastDetectedCode = null;
+let detectionTimeout = null;
+let detectionCounter = {};
         let isScanning = false;
         let currentCode = null;
         let inventory = [];
@@ -725,20 +730,54 @@
         
         let currentPhotoBase64 = null;
         
-        function handlePhotoUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentPhotoBase64 = e.target.result;
-                const img = document.getElementById('productPhoto');
-                img.src = currentPhotoBase64;
-                img.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
+     // Agregar esta función NUEVA para subir a Supabase Storage
+async function uploadImageToSupabase(file) {
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `products/${fileName}`;
         
+        const { data, error } = await supabaseClient.storage
+            .from('product-images')
+            .upload(filePath, file);
+        
+        if (error) throw error;
+        
+        // Obtener URL pública
+        const { data: urlData } = supabaseClient.storage
+            .from('product-images')
+            .getPublicUrl(filePath);
+        
+        return urlData.publicUrl;
+    } catch (error) {
+        console.error('Error subiendo imagen:', error);
+        return null;
+    }
+}
+
+// REEMPLAZAR la función handlePhotoUpload
+async function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Mostrar preview local primero
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.getElementById('productPhoto');
+        img.src = e.target.result;
+        img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    
+    // Subir a Supabase Storage
+    const imageUrl = await uploadImageToSupabase(file);
+    if (imageUrl) {
+        currentPhotoBase64 = imageUrl; // Guardar URL en lugar de base64
+        console.log('Imagen subida:', imageUrl);
+    } else {
+        alert('Error al subir la imagen');
+    }
+}
         async function saveProduct() {
     // Validar que haya un código escaneado
     if (!currentCode) {
