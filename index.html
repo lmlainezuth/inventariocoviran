@@ -321,6 +321,40 @@
                                 id="scannedCode"></span></div>
                     </div>
 
+                    <!-- Tarjeta de Producto Existente -->
+                    <div id="productCard" style="display: none; background: white; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <img id="cardPhoto" src="" alt="Producto" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb;">
+                            <div style="flex: 1;">
+                                <h3 id="cardName" style="margin: 0; font-size: 18px; color: #1f2937;"></h3>
+                                <p id="cardCode" style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280; font-family: monospace;"></p>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; background: #f9fafb; border-radius: 8px;">
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280;">Stock actual</div>
+                                <div id="cardStock" style="font-size: 20px; font-weight: bold; color: #2563eb;"></div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280;">Precio público</div>
+                                <div id="cardPrice" style="font-size: 20px; font-weight: bold; color: #059669;"></div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280;">Categoría</div>
+                                <div id="cardCategory" style="font-size: 14px; font-weight: 600; color: #374151;"></div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280;">Ubicación</div>
+                                <div id="cardLocation" style="font-size: 14px; font-weight: 600; color: #374151;"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
+                            ⬇️ Modifica los campos que necesites actualizar
+                        </div>
+                    </div>
+
                     <div id="productForm" class="product-form">
                         <!-- Foto del Producto -->
                         <div class="form-group">
@@ -709,7 +743,28 @@ async function loadProductData(code) {
         if (error) throw error;
         
         if (existingProduct) {
-            // Producto existe - mostrar sus datos
+            // Producto existe - mostrar tarjeta visual
+            const productCard = document.getElementById('productCard');
+            
+            // Actualizar tarjeta
+            document.getElementById('cardName').textContent = existingProduct.name;
+            document.getElementById('cardCode').textContent = `Código: ${code}`;
+            document.getElementById('cardStock').textContent = `${existingProduct.quantity} ${existingProduct.unit || 'unidad'}`;
+            document.getElementById('cardPrice').textContent = existingProduct.public_price ? `${existingProduct.public_price}€` : 'No definido';
+            document.getElementById('cardCategory').textContent = existingProduct.category || 'Sin categoría';
+            document.getElementById('cardLocation').textContent = existingProduct.location || 'Sin ubicación';
+            
+            // Foto
+            if (existingProduct.photo) {
+                document.getElementById('cardPhoto').src = existingProduct.photo;
+                document.getElementById('cardPhoto').style.display = 'block';
+            } else {
+                document.getElementById('cardPhoto').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e5e7eb"/><text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="30" fill="%239ca3af">📦</text></svg>';
+            }
+            
+            productCard.style.display = 'block';
+            
+            // Llenar formulario con datos existentes
             document.getElementById('productName').value = existingProduct.name;
             document.getElementById('productQuantity').value = existingProduct.quantity;
             document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
@@ -721,23 +776,21 @@ async function loadProductData(code) {
             document.getElementById('brand').value = existingProduct.brand || '';
             document.getElementById('location').value = existingProduct.location || '';
             
-            // Mostrar foto si existe
+            // Mostrar foto en formulario si existe
             if (existingProduct.photo) {
                 document.getElementById('productPhoto').src = existingProduct.photo;
                 document.getElementById('productPhoto').style.display = 'block';
                 currentPhotoBase64 = existingProduct.photo;
             }
             
-            // Mostrar mensaje de producto existente
+            // Mensaje en resultado
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = `
-                <div class="result-code">✅ Producto encontrado: <span id="scannedCode">${code}</span></div>
-                <div style="font-size: 14px; color: #059669; margin-top: 5px;">
-                    Stock actual: <strong>${existingProduct.quantity} ${existingProduct.unit || 'unidad'}</strong>
-                </div>
+                <div class="result-code">✅ Producto encontrado</div>
             `;
         } else {
-            // Producto no existe - formulario vacío
+            // Producto no existe - ocultar tarjeta
+            document.getElementById('productCard').style.display = 'none';
             document.getElementById('scannedCode').textContent = code;
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = `
@@ -753,6 +806,7 @@ async function loadProductData(code) {
         
     } catch (error) {
         console.error('Error cargando producto:', error);
+        document.getElementById('productCard').style.display = 'none';
         document.getElementById('productForm').classList.add('show');
         document.getElementById('productName').focus();
     }
@@ -911,6 +965,7 @@ function clearProductForm() {
     document.getElementById('productPhoto').src = '';
     document.getElementById('result').classList.remove('show');
     document.getElementById('productForm').classList.remove('show');
+    document.getElementById('productCard').style.display = 'none';
 }
 
 async function updateStats() {
