@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Categorías y Marcas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 80px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .add-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-add {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-add:hover {
+            background: #1d4ed8;
+        }
+        
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .item-name {
+            font-size: 15px;
+            color: #1f2937;
+            font-weight: 500;
+        }
+        
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9ca3af;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #6b7280;
+            text-decoration: none;
+        }
+        
+        .nav-item.active {
+            color: #2563eb;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .nav-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>⚙️ Administración</h1>
+    </div>
+    
+    <div class="container">
+        <!-- Categorías -->
+        <div class="section">
+            <div class="section-title">📁 Categorías</div>
+            
+            <div class="add-form">
+                <input type="text" id="newCategory" placeholder="Nueva categoría...">
+                <button class="btn-add" onclick="addCategory()">➕ Añadir</button>
+            </div>
+            
+            <div class="item-list" id="categoriesList">
+                <div class="empty-state">Cargando...</div>
+            </div>
+        </div>
+        
+        <!-- Marcas -->
+        <div class="section">
+            <div class="section-title">🏷️ Marcas</div>
+            
+            <div class="add-form">
+                <input type="text" id="newBrand" placeholder="Nueva marca...">
+                <button class="btn-add" onclick="addBrand()">➕ Añadir</button>
+            </div>
+            
+            <div class="item-list" id="brandsList">
+                <div class="empty-state">Cargando...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <div class="nav-icon">📱</div>
+            <div class="nav-label">Escanear</div>
+        </a>
+        <a href="inventario-lista.html" class="nav-item">
+            <div class="nav-icon">📦</div>
+            <div class="nav-label">Inventario</div>
+        </a>
+        <a href="admin.html" class="nav-item active">
+            <div class="nav-icon">👑</div>
+            <div class="nav-label">Admin</div>
+        </a>
+    </div>
+    
+    <script>
+        // Configurar Supabase
+        const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
+        const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Cargar al iniciar
+        window.addEventListener('DOMContentLoaded', function() {
+            loadCategories();
+            loadBrands();
+        });
+        
+        // CATEGORÍAS
+        async function loadCategories() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('categories')
+                    .select('*')
+                    .order('name', { ascending: true });
+                
+                if (error) throw error;
+                
+                const container = document.getElementById('categoriesList');
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No hay categorías. ¡Añade la primera!</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.map(cat => `
+                    <div class="item">
+                        <span class="item-name">${cat.name}</span>
+                        <button class="btn-delete" onclick="deleteCategory('${cat.id}', '${cat.name.replace(/'/g, "\\'")}')">🗑️</button>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error cargando categorías:', error);
+                document.getElementById('categoriesList').innerHTML = '<div class="empty-state" style="color: #ef4444;">Error al cargar categorías</div>';
+            }
+        }
+        
+        async function addCategory() {
+            const input = document.getElementById('newCategory');
+            const name = input.value.trim();
+            
+            if (!name) {
+                alert('Por favor ingresa un nombre para la categoría');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('categories')
+                    .insert([{ name }]);
+                
+                if (error) {
+                    if (error.code === '23505') {
+                        alert('Esta categoría ya existe');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+                
+                input.value = '';
+                loadCategories();
+                
+            } catch (error) {
+                console.error('Error añadiendo categoría:', error);
+                alert('Error al añadir categoría: ' + error.message);
+            }
+        }
+        
+        async function deleteCategory(id, name) {
+            if (!confirm(`¿Eliminar la categoría "${name}"?`)) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('categories')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                loadCategories();
+                
+            } catch (error) {
+                console.error('Error eliminando categoría:', error);
+                alert('Error al eliminar categoría: ' + error.message);
+            }
+        }
+        
+        // MARCAS
+        async function loadBrands() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('brands')
+                    .select('*')
+                    .order('name', { ascending: true });
+                
+                if (error) throw error;
+                
+                const container = document.getElementById('brandsList');
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No hay marcas. ¡Añade la primera!</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.map(brand => `
+                    <div class="item">
+                        <span class="item-name">${brand.name}</span>
+                        <button class="btn-delete" onclick="deleteBrand('${brand.id}', '${brand.name.replace(/'/g, "\\'")}')">🗑️</button>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error cargando marcas:', error);
+                document.getElementById('brandsList').innerHTML = '<div class="empty-state" style="color: #ef4444;">Error al cargar marcas</div>';
+            }
+        }
+        
+        async function addBrand() {
+            const input = document.getElementById('newBrand');
+            const name = input.value.trim();
+            
+            if (!name) {
+                alert('Por favor ingresa un nombre para la marca');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('brands')
+                    .insert([{ name }]);
+                
+                if (error) {
+                    if (error.code === '23505') {
+                        alert('Esta marca ya existe');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+                
+                input.value = '';
+                loadBrands();
+                
+            } catch (error) {
+                console.error('Error añadiendo marca:', error);
+                alert('Error al añadir marca: ' + error.message);
+            }
+        }
+        
+        async function deleteBrand(id, name) {
+            if (!confirm(`¿Eliminar la marca "${name}"?`)) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('brands')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                loadBrands();
+                
+            } catch (error) {
+                console.error('Error eliminando marca:', error);
+                alert('Error al eliminar marca: ' + error.message);
+            }
+        }
+        
+        // Enter key para añadir
+        document.getElementById('newCategory').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addCategory();
+        });
+        
+        document.getElementById('newBrand').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addBrand();
+        });
+    </script>
+</body>
+</html>
