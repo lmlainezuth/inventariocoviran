@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario - Escáner de Códigos</title>
-    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Inventario - Escáner de Códigos</title>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+        <style>
         * {
             margin: 0;
             padding: 0;
@@ -293,206 +294,253 @@
             padding-bottom: 80px;
         }
     </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>📦 Inventario</h1>
-        </header>
-        
-        <!-- Página Escanear -->
-        <div id="scanPage" class="page-section active">
-            <div class="scanner-section">
-                <div id="reader"></div>
-                
-                <div id="scanStatus" style="text-align: center; padding: 10px; margin: 10px 0; background: #f3f4f6; border-radius: 8px; display: none;">
-                    <div style="font-size: 14px; color: #6b7280;">Escaneando...</div>
-                    <div id="detectionProgress" style="font-size: 12px; color: #9ca3af; margin-top: 5px;"></div>
-                </div>
-                
-                <div id="result" class="result">
-                    <div class="result-code">Código escaneado: <span id="scannedCode"></span></div>
-                </div>
-                
-                <div id="productForm" class="product-form">
-                    <!-- Foto del Producto -->
-                    <div class="form-group">
-                        <label>Foto del Producto</label>
-                        <div class="photo-upload">
-                            <img id="productPhoto" src="" alt="Vista previa" style="display: none; width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
-                            <div class="photo-buttons">
-                                <button type="button" onclick="document.getElementById('cameraInput').click()" class="btn-secondary" style="flex: 1;">
-                                    📷 Cámara
-                                </button>
-                                <button type="button" onclick="document.getElementById('galleryInput').click()" class="btn-secondary" style="flex: 1;">
-                                    🖼️ Galería
-                                </button>
-                            </div>
-                            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoUpload(event)">
-                            <input type="file" id="galleryInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
-                        </div>
-                    </div>
-                    
-                    <!-- Nombre del producto -->
-                    <div class="form-group">
-                        <label>Nombre del producto *</label>
-                        <input type="text" id="productName" placeholder="Ej: Leche Entera" required>
-                    </div>
-                    
-                    <!-- Cantidad y Unidad -->
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1;">
-                            <label>Cantidad *</label>
-                            <input type="number" id="productQuantity" value="1" min="0" step="0.01">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>Unidad</label>
-                            <select id="productUnit">
-                                <option value="unidad">Unidad</option>
-                                <option value="kilogramo">Kilogramo (kg)</option>
-                                <option value="gramo">Gramo (g)</option>
-                                <option value="litro">Litro (L)</option>
-                                <option value="mililitro">Mililitro (ml)</option>
-                                <option value="centilitro">Centilitro (cl)</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Min y Max Cantidad -->
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1;">
-                            <label>Cantidad Mínima</label>
-                            <input type="number" id="minQuantity" value="0" min="0" step="0.01">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>Cantidad Máxima</label>
-                            <input type="number" id="maxQuantity" value="" min="0" step="0.01" placeholder="Opcional">
-                        </div>
-                    </div>
-                    
-                    <!-- Precios -->
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1;">
-                            <label>Precio Compra (€)</label>
-                            <input type="number" id="purchasePrice" value="" min="0" step="0.01" placeholder="0.00">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>Precio Público (€)</label>
-                            <input type="number" id="publicPrice" value="" min="0" step="0.01" placeholder="0.00">
-                        </div>
-                    </div>
-                    
-                    <!-- Categoría y Marca -->
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1;">
-                            <label>Categoría</label>
-                            <select id="category">
-                                <option value="">Seleccionar...</option>
-                                <option value="Bebidas">Bebidas</option>
-                                <option value="Licores">Licores</option>
-                                <option value="Vinos">Vinos</option>
-                                <option value="Iluminación">Iluminación</option>
-                                <option value="Lácteos">Lácteos</option>
-                                <option value="Panadería">Panadería</option>
-                                <option value="Carnes">Carnes</option>
-                                <option value="Pescados">Pescados</option>
-                                <option value="Frutas y Verduras">Frutas y Verduras</option>
-                                <option value="Congelados">Congelados</option>
-                                <option value="Conservas">Conservas</option>
-                                <option value="Limpieza">Limpieza</option>
-                                <option value="Higiene">Higiene</option>
-                                <option value="Charcutería">Charcutería</option>
-                                <option value="Otros">Otros</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>Marca</label>
-                            <select id="brand">
-                                <option value="">Seleccionar...</option>
-                                <option value="Covirán">Covirán</option>
-                                <option value="Marca Blanca">Marca Blanca</option>
-                                <option value="Coca-Cola">Coca-Cola</option>
-                                <option value="Pepsi">Pepsi</option>
-                                <option value="Nestlé">Nestlé</option>
-                                <option value="Danone">Danone</option>
-                                <option value="Pascual">Pascual</option>
-                                <option value="Central Lechera Asturiana">Central Lechera Asturiana</option>
-                                <option value="Otro">Otro</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Ubicación -->
-                    <div class="form-group">
-                        <label>Ubicación</label>
-                        <select id="location">
-                            <option value="">Seleccionar...</option>
-                            <option value="Iztieta 9103">Iztieta 9103</option>
-                            <option value="Gabierrota">Gabierrota</option>
-                            <option value="El Antiguo">El Antiguo</option>
-                        </select>
-                    </div>
-                    
-                    <button onclick="saveProduct()" class="btn-primary" style="width: 100%;">💾 Guardar Producto</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Página Admin -->
-        <div id="adminPage" class="page-section">
-            <div class="scanner-section">
-                <h2 style="margin-bottom: 20px;">Administración</h2>
-                
-                <div class="form-group">
-                    <button onclick="exportInventory()" class="btn-primary" style="width: 100%; margin-bottom: 10px;">
-                        📥 Exportar Inventario (CSV)
-                    </button>
-                </div>
-                
-                <div class="form-group">
-                    <button onclick="clearInventory()" class="btn-secondary" style="width: 100%; background: #ef4444;">
-                        🗑️ Borrar Todo el Inventario
-                    </button>
-                </div>
-                
-                <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 8px;">
-                    <h3 style="font-size: 16px; margin-bottom: 10px;">Estadísticas</h3>
-                    <p style="color: #6b7280;">Total de productos: <strong id="totalProducts">0</strong></p>
-                    <p style="color: #6b7280;">Total de unidades: <strong id="totalUnits">0</strong></p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Bottom Navigation -->
-    <div class="bottom-nav">
-        <button class="nav-item active" onclick="switchPage('scan')">
-            <div class="nav-icon">📱</div>
-            <div class="nav-label">Escanear</div>
-        </button>
-        <a href="inventario-lista.html" class="nav-item">
-            <div class="nav-icon">📦</div>
-            <div class="nav-label">Inventario</div>
-        </a>
-        <button class="nav-item" onclick="switchPage('admin')">
-            <div class="nav-icon">👑</div>
-            <div class="nav-label">Admin</div>
-        </button>
-    </div>
 
-    <script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>📦 Inventario</h1>
+            </header>
+
+            <!-- Página Escanear -->
+            <div id="scanPage" class="page-section active">
+                <div class="scanner-section">
+                    <div id="reader"></div>
+
+                    <div id="scanStatus"
+                        style="text-align: center; padding: 10px; margin: 10px 0; background: #f3f4f6; border-radius: 8px; display: none;">
+                        <div
+                            style="font-size: 14px; color: #6b7280;">Escaneando...</div>
+                        <div id="detectionProgress"
+                            style="font-size: 12px; color: #9ca3af; margin-top: 5px;"></div>
+                    </div>
+
+                    <div id="result" class="result">
+                        <div class="result-code">Código escaneado: <span
+                                id="scannedCode"></span></div>
+                    </div>
+
+                    <div id="productForm" class="product-form">
+                        <!-- Foto del Producto -->
+                        <div class="form-group">
+                            <label>Foto del Producto</label>
+                            <div class="photo-upload">
+                                <img id="productPhoto" src alt="Vista previa"
+                                    style="display: none; width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
+                                <div class="photo-buttons">
+                                    <button type="button"
+                                        onclick="document.getElementById('cameraInput').click()"
+                                        class="btn-secondary" style="flex: 1;">
+                                        📷 Cámara
+                                    </button>
+                                    <button type="button"
+                                        onclick="document.getElementById('galleryInput').click()"
+                                        class="btn-secondary" style="flex: 1;">
+                                        🖼️ Galería
+                                    </button>
+                                </div>
+                                <input type="file" id="cameraInput"
+                                    accept="image/*" capture="environment"
+                                    style="display: none;"
+                                    onchange="handlePhotoUpload(event)">
+                                <input type="file" id="galleryInput"
+                                    accept="image/*" style="display: none;"
+                                    onchange="handlePhotoUpload(event)">
+                            </div>
+                        </div>
+
+                        <!-- Nombre del producto -->
+                        <div class="form-group">
+                            <label>Nombre del producto *</label>
+                            <input type="text" id="productName"
+                                placeholder="Ej: Leche Entera" required>
+                        </div>
+
+                        <!-- Cantidad y Unidad -->
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Cantidad *</label>
+                                <input type="number" id="productQuantity"
+                                    value="1" min="0" step="0.01">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Unidad</label>
+                                <select id="productUnit">
+                                    <option value="unidad">Unidad</option>
+                                    <option value="kilogramo">Kilogramo
+                                        (kg)</option>
+                                    <option value="gramo">Gramo (g)</option>
+                                    <option value="litro">Litro (L)</option>
+                                    <option value="mililitro">Mililitro
+                                        (ml)</option>
+                                    <option value="centilitro">Centilitro
+                                        (cl)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Min y Max Cantidad -->
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Cantidad Mínima</label>
+                                <input type="number" id="minQuantity" value="0"
+                                    min="0" step="0.01">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Cantidad Máxima</label>
+                                <input type="number" id="maxQuantity" value
+                                    min="0" step="0.01" placeholder="Opcional">
+                            </div>
+                        </div>
+
+                        <!-- Precios -->
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Precio Compra (€)</label>
+                                <input type="number" id="purchasePrice" value
+                                    min="0" step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Precio Público (€)</label>
+                                <input type="number" id="publicPrice" value
+                                    min="0" step="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <!-- Categoría y Marca -->
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Categoría</label>
+                                <select id="category">
+                                    <option value>Seleccionar...</option>
+                                    <option value="Bebidas">Bebidas</option>
+                                    <option value="Licores">Licores</option>
+                                    <option value="Vinos">Vinos</option>
+                                    <option
+                                        value="Iluminación">Iluminación</option>
+                                    <option value="Lácteos">Lácteos</option>
+                                    <option value="Panadería">Panadería</option>
+                                    <option value="Carnes">Carnes</option>
+                                    <option value="Pescados">Pescados</option>
+                                    <option value="Frutas y Verduras">Frutas y
+                                        Verduras</option>
+                                    <option
+                                        value="Congelados">Congelados</option>
+                                    <option value="Conservas">Conservas</option>
+                                    <option value="Limpieza">Limpieza</option>
+                                    <option value="Higiene">Higiene</option>
+                                    <option
+                                        value="Charcutería">Charcutería</option>
+                                    <option value="Otros">Otros</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Marca</label>
+                                <select id="brand">
+                                    <option value>Seleccionar...</option>
+                                    <option value="Covirán">Covirán</option>
+                                    <option value="Marca Blanca">Marca
+                                        Blanca</option>
+                                    <option value="Coca-Cola">Coca-Cola</option>
+                                    <option value="Pepsi">Pepsi</option>
+                                    <option value="Nestlé">Nestlé</option>
+                                    <option value="Danone">Danone</option>
+                                    <option value="Pascual">Pascual</option>
+                                    <option
+                                        value="Central Lechera Asturiana">Central
+                                        Lechera Asturiana</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Ubicación -->
+                        <div class="form-group">
+                            <label>Ubicación</label>
+                            <select id="location">
+                                <option value>Seleccionar...</option>
+                                <option value="Iztieta 9103">Iztieta
+                                    9103</option>
+                                <option value="Gabierrota">Gabierrota</option>
+                                <option value="El Antiguo">El Antiguo</option>
+                            </select>
+                        </div>
+
+                        <button onclick="saveProduct()" class="btn-primary"
+                            style="width: 100%;">💾 Guardar Producto</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Página Admin -->
+            <div id="adminPage" class="page-section">
+                <div class="scanner-section">
+                    <h2 style="margin-bottom: 20px;">Administración</h2>
+
+                    <div class="form-group">
+                        <button onclick="exportInventory()" class="btn-primary"
+                            style="width: 100%; margin-bottom: 10px;">
+                            📥 Exportar Inventario (CSV)
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <button onclick="clearInventory()" class="btn-secondary"
+                            style="width: 100%; background: #ef4444;">
+                            🗑️ Borrar Todo el Inventario
+                        </button>
+                    </div>
+
+                    <div
+                        style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 8px;">
+                        <h3
+                            style="font-size: 16px; margin-bottom: 10px;">Estadísticas</h3>
+                        <p style="color: #6b7280;">Total de productos: <strong
+                                id="totalProducts">0</strong></p>
+                        <p style="color: #6b7280;">Total de unidades: <strong
+                                id="totalUnits">0</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <button class="nav-item active" onclick="switchPage('scan')">
+                <div class="nav-icon">📱</div>
+                <div class="nav-label">Escanear</div>
+            </button>
+            <a href="inventario-lista.html" class="nav-item">
+                <div class="nav-icon">📦</div>
+                <div class="nav-label">Inventario</div>
+            </a>
+            <button class="nav-item" onclick="switchPage('admin')">
+                <div class="nav-icon">👑</div>
+                <div class="nav-label">Admin</div>
+            </button>
+        </div>
+
+        <script>
+        // Configuración de Supabase
+     
+       const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqcmR3aHh1ZHd5eXhtbGpuY2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NzM0MjAsImV4cCI6MjA0OTI0OTQyMH0.S7YpTpWOYD8yiB-D5GvKXfN3HE0XKkL-k7V1R-c-ddk';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
         let isScanning = false;
         let currentCode = null;
-        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-        let lastDetectedCode = null;
-        let detectionTimeout = null;
-        let detectionCounter = {};
+        let inventory = [];
         const DETECTION_THRESHOLD = 5; // Aumentado a 5 detecciones consecutivas
         let scanTimeout = null;
         
         // Inicializar
-        updateStats();
-        startScanner(); // Auto-iniciar escáner al cargar
+       loadInventory().then(() => {
+            updateStats();
+            startScanner();
+        });
         
         // Navegación entre páginas
         function switchPage(page) {
@@ -691,109 +739,143 @@
             reader.readAsDataURL(file);
         }
         
-        function saveProduct() {
-            // Validar que haya un código escaneado
-            if (!currentCode) {
-                alert('❌ ERROR: No hay código de barras válido.\n\nPor favor escanea un código antes de guardar.');
-                return;
+        async function saveProduct() {
+    // Validar que haya un código escaneado
+    if (!currentCode) {
+        alert('❌ ERROR: No hay código de barras válido.\n\nPor favor escanea un código antes de guardar.');
+        return;
+    }
+    
+    // Validar que el código tenga formato válido
+    if (currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
+        alert('❌ ERROR: El código escaneado no es válido.\n\nCódigo: ' + currentCode + '\n\nPor favor vuelve a escanear.');
+        clearProductForm();
+        setTimeout(() => {
+            if (!isScanning) {
+                startScanner();
             }
-            
-            // Validar que el código tenga formato válido
-            if (currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
-                alert('❌ ERROR: El código escaneado no es válido.\n\nCódigo: ' + currentCode + '\n\nPor favor vuelve a escanear.');
-                clearProductForm();
-                setTimeout(() => {
-                    if (!isScanning) {
-                        startScanner();
-                    }
-                }, 500);
-                return;
-            }
-            
-            const name = document.getElementById('productName').value.trim();
-            const quantity = parseFloat(document.getElementById('productQuantity').value);
-            const unit = document.getElementById('productUnit').value;
-            const minQuantity = parseFloat(document.getElementById('minQuantity').value) || 0;
-            const maxQuantity = parseFloat(document.getElementById('maxQuantity').value) || null;
-            const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
-            const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
-            const category = document.getElementById('category').value;
-            const brand = document.getElementById('brand').value;
-            const location = document.getElementById('location').value;
-            
-            if (!name) {
-                alert('Por favor ingresa el nombre del producto');
-                return;
-            }
-            
-            // Verificar si el producto ya existe
-            const existingIndex = inventory.findIndex(item => item.code === currentCode);
-            
-            if (existingIndex !== -1) {
-                // Actualizar producto existente
-                if (confirm('Este código ya existe en el inventario.\n\n¿Quieres actualizar toda la información del producto?\n\nSI = Actualizar todo\nNO = Solo sumar la cantidad')) {
-                    // Actualizar todo
-                    inventory[existingIndex] = {
-                        code: currentCode,
+        }, 500);
+        return;
+    }
+    
+    const name = document.getElementById('productName').value.trim();
+    const quantity = parseFloat(document.getElementById('productQuantity').value);
+    const unit = document.getElementById('productUnit').value;
+    const minQuantity = parseFloat(document.getElementById('minQuantity').value) || 0;
+    const maxQuantity = parseFloat(document.getElementById('maxQuantity').value) || null;
+    const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
+    const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
+    const category = document.getElementById('category').value;
+    const brand = document.getElementById('brand').value;
+    const location = document.getElementById('location').value;
+    
+    if (!name) {
+        alert('Por favor ingresa el nombre del producto');
+        return;
+    }
+    
+    try {
+        // Verificar si el producto ya existe
+        const { data: existingProduct, error: searchError } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('code', currentCode)
+            .single();
+        
+        if (existingProduct) {
+            // Actualizar producto existente
+            if (confirm('Este código ya existe en el inventario.\n\n¿Quieres actualizar toda la información del producto?\n\nSI = Actualizar todo\nNO = Solo sumar la cantidad')) {
+                // Actualizar todo
+                const { error } = await supabaseClient
+                    .from('products')
+                    .update({
                         name: name,
                         quantity: quantity,
                         unit: unit,
-                        minQuantity: minQuantity,
-                        maxQuantity: maxQuantity,
-                        purchasePrice: purchasePrice,
-                        publicPrice: publicPrice,
+                        min_quantity: minQuantity,
+                        max_quantity: maxQuantity,
+                        purchase_price: purchasePrice,
+                        public_price: publicPrice,
                         category: category,
                         brand: brand,
                         location: location,
-                        photo: currentPhotoBase64,
-                        date: inventory[existingIndex].date, // Mantener fecha original
-                        updated: new Date().toISOString()
-                    };
-                } else {
-                    // Solo sumar cantidad
-                    inventory[existingIndex].quantity += quantity;
-                    inventory[existingIndex].updated = new Date().toISOString();
-                }
+                        photo: currentPhotoBase64
+                    })
+                    .eq('code', currentCode);
+                
+                if (error) throw error;
             } else {
-                // Agregar nuevo producto
-                inventory.push({
+                // Solo sumar cantidad
+                const { error } = await supabaseClient
+                    .from('products')
+                    .update({
+                        quantity: existingProduct.quantity + quantity
+                    })
+                    .eq('code', currentCode);
+                
+                if (error) throw error;
+            }
+        } else {
+            // Agregar nuevo producto
+            const { error } = await supabaseClient
+                .from('products')
+                .insert([{
                     code: currentCode,
                     name: name,
                     quantity: quantity,
                     unit: unit,
-                    minQuantity: minQuantity,
-                    maxQuantity: maxQuantity,
-                    purchasePrice: purchasePrice,
-                    publicPrice: publicPrice,
+                    min_quantity: minQuantity,
+                    max_quantity: maxQuantity,
+                    purchase_price: purchasePrice,
+                    public_price: publicPrice,
                     category: category,
                     brand: brand,
                     location: location,
-                    photo: currentPhotoBase64,
-                    date: new Date().toISOString(),
-                    updated: new Date().toISOString()
-                });
-            }
+                    photo: currentPhotoBase64
+                }]);
             
-            // Guardar en localStorage
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            
-            // Limpiar formulario
-            clearProductForm();
-            
-            // Actualizar vista
-            updateStats();
-            
-            // Reiniciar escáner
-            setTimeout(() => {
-                if (!isScanning) {
-                    startScanner();
-                }
-            }, 500);
-            
-            currentCode = null;
-            currentPhotoBase64 = null;
+            if (error) throw error;
         }
         
+        // Limpiar formulario
+        clearProductForm();
+        
+        // Actualizar vista
+        await loadInventory();
+        updateStats();
+        
+        // Reiniciar escáner
+        setTimeout(() => {
+            if (!isScanning) {
+                startScanner();
+            }
+        }, 500);
+        
+        currentCode = null;
+        currentPhotoBase64 = null;
+        
+    } catch (error) {
+        console.error('Error guardando producto:', error);
+        alert('Error al guardar el producto: ' + error.message);
+    }
+}
+    
+        // Agregar esta función NUEVA después de saveProduct()
+        async function loadInventory() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .order('name', { ascending: true });
+                
+                if (error) throw error;
+                
+                inventory = data || [];
+            } catch (error) {
+                console.error('Error cargando inventario:', error);
+                inventory = [];
+            }
+        }
         function clearProductForm() {
             document.getElementById('productName').value = '';
             document.getElementById('productQuantity').value = '1';
@@ -819,52 +901,65 @@
             }
         }
         
-        // Funciones Admin
-        function updateStats() {
+          async function updateStats() {
+            await loadInventory(); // Recargar datos
             const totalProducts = inventory.length;
             const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
             
             document.getElementById('totalProducts').textContent = totalProducts;
-            document.getElementById('totalUnits').textContent = totalUnits;
+            document.getElementById('totalUnits').textContent = totalUnits.toFixed(2);
         }
-        
-        function exportInventory() {
-            if (inventory.length === 0) {
-                alert('No hay productos para exportar');
-                return;
-            }
+
+        async function exportInventory() {
+    await loadInventory();
+    
+    if (inventory.length === 0) {
+        alert('No hay productos para exportar');
+        return;
+    }
+    
+    // Crear CSV con todos los campos
+    let csv = 'Código,Nombre,Cantidad,Unidad,Min,Max,Precio Compra,Precio Venta,Margen %,Categoría,Marca,Ubicación,Fecha\n';
+    inventory.forEach(item => {
+        const date = new Date(item.created_at).toLocaleDateString('es-ES');
+        const margin = item.public_price > 0 && item.purchase_price > 0 
+            ? ((item.public_price - item.purchase_price) / item.purchase_price * 100).toFixed(2)
+            : '';
             
-            // Crear CSV con todos los campos
-            let csv = 'Código,Nombre,Cantidad,Unidad,Min,Max,Precio Compra,Precio Venta,Margen %,Categoría,Marca,Ubicación,Fecha\n';
-            inventory.forEach(item => {
-                const date = new Date(item.date).toLocaleDateString('es-ES');
-                const margin = item.publicPrice > 0 && item.purchasePrice > 0 
-                    ? ((item.publicPrice - item.purchasePrice) / item.purchasePrice * 100).toFixed(2)
-                    : '';
-                    
-                csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.minQuantity || 0},${item.maxQuantity || ''},${item.purchasePrice || 0},${item.publicPrice || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
-            });
-            
-            // Descargar archivo
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-        
-        function clearInventory() {
-            if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario? Esta acción no se puede deshacer.')) {
-                if (confirm('Confirmación final: ¿Realmente quieres borrar todos los productos?')) {
-                    inventory = [];
-                    localStorage.setItem('inventory', JSON.stringify(inventory));
-                    updateStats();
-                    alert('Inventario borrado completamente');
-                }
+        csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.min_quantity || 0},${item.max_quantity || ''},${item.purchase_price || 0},${item.public_price || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
+    });
+    
+    // Descargar archivo
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+        async function clearInventory() {
+    if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario? Esta acción no se puede deshacer.')) {
+        if (confirm('Confirmación final: ¿Realmente quieres borrar todos los productos?')) {
+            try {
+                const { error } = await supabaseClient
+                    .from('products')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000'); // Borra todo
+                
+                if (error) throw error;
+                
+                inventory = [];
+                updateStats();
+                alert('Inventario borrado completamente');
+            } catch (error) {
+                console.error('Error borrando inventario:', error);
+                alert('Error al borrar el inventario: ' + error.message);
             }
         }
+    }
+}
+    
     </script>
-</body>
+    </body>
 </html>
