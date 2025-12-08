@@ -526,9 +526,8 @@
         // Configuración de Supabase
      
        const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqcmR3aHh1ZHd5eXhtbGpuY2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NzM0MjAsImV4cCI6MjA0OTI0OTQyMH0.S7YpTpWOYD8yiB-D5GvKXfN3HE0XKkL-k7V1R-c-ddk';
-        const { createClient } = supabase;
-        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqcmR3aHh1ZHd5eXhtbGpuY2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NzM0MjAsImV4cCI6MjA0OTI0OTQyMH0.S7YpTpWOYD8yiB-D5GvKXfN3HE0XKkL-k7V1R-c-ddk';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         // Después de: let inventory = [];
 // Agregar:
