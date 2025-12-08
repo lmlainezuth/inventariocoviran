@@ -306,6 +306,12 @@
             <!-- Página Escanear -->
             <div id="scanPage" class="page-section active">
                 <div class="scanner-section">
+                    
+                    <!-- Panel de Debug Visible -->
+                    <div id="debugPanel" style="background: #1f2937; color: #10b981; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-family: monospace; font-size: 11px; max-height: 150px; overflow-y: auto;">
+                        <div>🔍 Debug Log:</div>
+                    </div>
+                    
                     <div id="reader"></div>
 
                     <div id="scanStatus"
@@ -556,6 +562,26 @@
         </div>
 
       <script>
+// Función para mostrar logs en pantalla
+function debugLog(message, type = 'info') {
+    const debugPanel = document.getElementById('debugPanel');
+    const timestamp = new Date().toLocaleTimeString();
+    const colors = {
+        info: '#10b981',
+        success: '#22c55e',
+        error: '#ef4444',
+        warning: '#f59e0b'
+    };
+    
+    const logLine = document.createElement('div');
+    logLine.style.color = colors[type];
+    logLine.textContent = `[${timestamp}] ${message}`;
+    debugPanel.appendChild(logLine);
+    debugPanel.scrollTop = debugPanel.scrollHeight;
+    
+    console.log(message);
+}
+
 // Esperar a que se cargue Supabase
 let supabaseClient;
 let isScanning = false;
@@ -733,6 +759,8 @@ function playBeep() {
 }
 
 async function loadProductData(code) {
+    debugLog('🔍 Buscando: ' + code);
+    
     try {
         const { data: existingProduct, error } = await supabaseClient
             .from('products')
@@ -740,11 +768,19 @@ async function loadProductData(code) {
             .eq('code', code)
             .maybeSingle();
         
-        if (error) throw error;
+        debugLog('📦 Datos: ' + JSON.stringify(existingProduct));
+        
+        if (error) {
+            debugLog('❌ Error: ' + error.message, 'error');
+            throw error;
+        }
         
         if (existingProduct) {
+            debugLog('✅ Encontrado: ' + existingProduct.name, 'success');
+            
             // Producto existe - mostrar tarjeta visual
             const productCard = document.getElementById('productCard');
+            debugLog('🎴 Tarjeta encontrada: ' + (productCard ? 'SI' : 'NO'));
             
             // Actualizar tarjeta
             document.getElementById('cardName').textContent = existingProduct.name;
@@ -754,15 +790,20 @@ async function loadProductData(code) {
             document.getElementById('cardCategory').textContent = existingProduct.category || 'Sin categoría';
             document.getElementById('cardLocation').textContent = existingProduct.location || 'Sin ubicación';
             
+            debugLog('📝 Campos llenados');
+            
             // Foto
             if (existingProduct.photo) {
+                debugLog('📸 Foto: ' + existingProduct.photo.substring(0, 50) + '...');
                 document.getElementById('cardPhoto').src = existingProduct.photo;
                 document.getElementById('cardPhoto').style.display = 'block';
             } else {
+                debugLog('📦 Sin foto, usando placeholder');
                 document.getElementById('cardPhoto').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e5e7eb"/><text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="30" fill="%239ca3af">📦</text></svg>';
             }
             
             productCard.style.display = 'block';
+            debugLog('✅ Tarjeta mostrada', 'success');
             
             // Llenar formulario con datos existentes
             document.getElementById('productName').value = existingProduct.name;
@@ -789,6 +830,7 @@ async function loadProductData(code) {
                 <div class="result-code">✅ Producto encontrado</div>
             `;
         } else {
+            debugLog('🆕 Producto nuevo', 'warning');
             // Producto no existe - ocultar tarjeta
             document.getElementById('productCard').style.display = 'none';
             document.getElementById('scannedCode').textContent = code;
@@ -805,7 +847,7 @@ async function loadProductData(code) {
         document.getElementById('productName').focus();
         
     } catch (error) {
-        console.error('Error cargando producto:', error);
+        debugLog('💥 Error: ' + error.message, 'error');
         document.getElementById('productCard').style.display = 'none';
         document.getElementById('productForm').classList.add('show');
         document.getElementById('productName').focus();
