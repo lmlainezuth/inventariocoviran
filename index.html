@@ -307,19 +307,16 @@
             <div id="scanPage" class="page-section active">
                 <div class="scanner-section">
                     
-                    <!-- Panel de Debug Visible -->
-                    <div id="debugPanel" style="background: #1f2937; color: #10b981; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-family: monospace; font-size: 11px; max-height: 150px; overflow-y: auto;">
-                        <div>🔍 Debug Log:</div>
-                    </div>
-                    
-                    <div id="reader"></div>
+                    <div id="scannerContainer">
+                        <div id="reader"></div>
 
-                    <div id="scanStatus"
-                        style="text-align: center; padding: 10px; margin: 10px 0; background: #f3f4f6; border-radius: 8px; display: none;">
-                        <div
-                            style="font-size: 14px; color: #6b7280;">Escaneando...</div>
-                        <div id="detectionProgress"
-                            style="font-size: 12px; color: #9ca3af; margin-top: 5px;"></div>
+                        <div id="scanStatus"
+                            style="text-align: center; padding: 10px; margin: 10px 0; background: #f3f4f6; border-radius: 8px; display: none;">
+                            <div
+                                style="font-size: 14px; color: #6b7280;">Escaneando...</div>
+                            <div id="detectionProgress"
+                                style="font-size: 12px; color: #9ca3af; margin-top: 5px;"></div>
+                        </div>
                     </div>
 
                     <div id="result" class="result">
@@ -330,9 +327,9 @@
                     <!-- Tarjeta de Producto Existente -->
                     <div id="productCard" style="display: none; background: white; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                            <img id="cardPhoto" src="" alt="Producto" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb;">
+                            <img id="cardPhoto" src="" alt="Producto" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb; display: block;">
                             <div style="flex: 1;">
-                                <h3 id="cardName" style="margin: 0; font-size: 18px; color: #1f2937;"></h3>
+                                <h3 id="cardName" style="margin: 0; font-size: 18px; color: #1f2937; font-weight: bold;"></h3>
                                 <p id="cardCode" style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280; font-family: monospace;"></p>
                             </div>
                         </div>
@@ -562,26 +559,6 @@
         </div>
 
       <script>
-// Función para mostrar logs en pantalla
-function debugLog(message, type = 'info') {
-    const debugPanel = document.getElementById('debugPanel');
-    const timestamp = new Date().toLocaleTimeString();
-    const colors = {
-        info: '#10b981',
-        success: '#22c55e',
-        error: '#ef4444',
-        warning: '#f59e0b'
-    };
-    
-    const logLine = document.createElement('div');
-    logLine.style.color = colors[type];
-    logLine.textContent = `[${timestamp}] ${message}`;
-    debugPanel.appendChild(logLine);
-    debugPanel.scrollTop = debugPanel.scrollHeight;
-    
-    console.log(message);
-}
-
 // Esperar a que se cargue Supabase
 let supabaseClient;
 let isScanning = false;
@@ -759,8 +736,6 @@ function playBeep() {
 }
 
 async function loadProductData(code) {
-    debugLog('🔍 Buscando: ' + code);
-    
     try {
         const { data: existingProduct, error } = await supabaseClient
             .from('products')
@@ -768,19 +743,14 @@ async function loadProductData(code) {
             .eq('code', code)
             .maybeSingle();
         
-        debugLog('📦 Datos: ' + JSON.stringify(existingProduct));
+        if (error) throw error;
         
-        if (error) {
-            debugLog('❌ Error: ' + error.message, 'error');
-            throw error;
-        }
+        // Ocultar el área del escáner cuando se detecta un código
+        document.getElementById('scannerContainer').style.display = 'none';
         
         if (existingProduct) {
-            debugLog('✅ Encontrado: ' + existingProduct.name, 'success');
-            
             // Producto existe - mostrar tarjeta visual
             const productCard = document.getElementById('productCard');
-            debugLog('🎴 Tarjeta encontrada: ' + (productCard ? 'SI' : 'NO'));
             
             // Actualizar tarjeta
             document.getElementById('cardName').textContent = existingProduct.name;
@@ -790,20 +760,28 @@ async function loadProductData(code) {
             document.getElementById('cardCategory').textContent = existingProduct.category || 'Sin categoría';
             document.getElementById('cardLocation').textContent = existingProduct.location || 'Sin ubicación';
             
-            debugLog('📝 Campos llenados');
-            
-            // Foto
-            if (existingProduct.photo) {
-                debugLog('📸 Foto: ' + existingProduct.photo.substring(0, 50) + '...');
-                document.getElementById('cardPhoto').src = existingProduct.photo;
-                document.getElementById('cardPhoto').style.display = 'block';
+            // Foto - IMPORTANTE: Verificar que la URL sea válida
+            const cardPhotoElement = document.getElementById('cardPhoto');
+            if (existingProduct.photo && existingProduct.photo.trim() !== '') {
+                // Asegurarse de que la URL esté completa
+                let photoUrl = existingProduct.photo;
+                
+                // Si es una URL relativa de Supabase, construir la URL completa
+                if (!photoUrl.startsWith('http')) {
+                    photoUrl = `https://ajrdwhxudwyyxmljnchc.supabase.co/storage/v1/object/public/product-images/${photoUrl}`;
+                }
+                
+                cardPhotoElement.src = photoUrl;
+                cardPhotoElement.style.display = 'block';
+                cardPhotoElement.onerror = function() {
+                    // Si la imagen falla al cargar, mostrar placeholder
+                    this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e5e7eb"/><text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="30" fill="%239ca3af">📦</text></svg>';
+                };
             } else {
-                debugLog('📦 Sin foto, usando placeholder');
-                document.getElementById('cardPhoto').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e5e7eb"/><text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="30" fill="%239ca3af">📦</text></svg>';
+                cardPhotoElement.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e5e7eb"/><text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="30" fill="%239ca3af">📦</text></svg>';
             }
             
             productCard.style.display = 'block';
-            debugLog('✅ Tarjeta mostrada', 'success');
             
             // Llenar formulario con datos existentes
             document.getElementById('productName').value = existingProduct.name;
@@ -819,7 +797,11 @@ async function loadProductData(code) {
             
             // Mostrar foto en formulario si existe
             if (existingProduct.photo) {
-                document.getElementById('productPhoto').src = existingProduct.photo;
+                let photoUrl = existingProduct.photo;
+                if (!photoUrl.startsWith('http')) {
+                    photoUrl = `https://ajrdwhxudwyyxmljnchc.supabase.co/storage/v1/object/public/product-images/${photoUrl}`;
+                }
+                document.getElementById('productPhoto').src = photoUrl;
                 document.getElementById('productPhoto').style.display = 'block';
                 currentPhotoBase64 = existingProduct.photo;
             }
@@ -830,7 +812,6 @@ async function loadProductData(code) {
                 <div class="result-code">✅ Producto encontrado</div>
             `;
         } else {
-            debugLog('🆕 Producto nuevo', 'warning');
             // Producto no existe - ocultar tarjeta
             document.getElementById('productCard').style.display = 'none';
             document.getElementById('scannedCode').textContent = code;
@@ -847,7 +828,8 @@ async function loadProductData(code) {
         document.getElementById('productName').focus();
         
     } catch (error) {
-        debugLog('💥 Error: ' + error.message, 'error');
+        console.error('Error cargando producto:', error);
+        document.getElementById('scannerContainer').style.display = 'none';
         document.getElementById('productCard').style.display = 'none';
         document.getElementById('productForm').classList.add('show');
         document.getElementById('productName').focus();
@@ -1008,6 +990,7 @@ function clearProductForm() {
     document.getElementById('result').classList.remove('show');
     document.getElementById('productForm').classList.remove('show');
     document.getElementById('productCard').style.display = 'none';
+    document.getElementById('scannerContainer').style.display = 'block';
 }
 
 async function updateStats() {
