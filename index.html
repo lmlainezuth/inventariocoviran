@@ -668,11 +668,12 @@ function onBarcodeDetected(result) {
         
         document.getElementById('scannedCode').textContent = code;
         document.getElementById('result').classList.add('show');
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
         
         playBeep();
         stopScanner();
+        
+        // Cargar datos del producto si existe
+        loadProductData(code);
         
         if (detectionTimeout) clearTimeout(detectionTimeout);
         detectionTimeout = setTimeout(() => {
@@ -695,6 +696,66 @@ function playBeep() {
     
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.1);
+}
+
+async function loadProductData(code) {
+    try {
+        const { data: existingProduct, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('code', code)
+            .maybeSingle();
+        
+        if (error) throw error;
+        
+        if (existingProduct) {
+            // Producto existe - mostrar sus datos
+            document.getElementById('productName').value = existingProduct.name;
+            document.getElementById('productQuantity').value = existingProduct.quantity;
+            document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
+            document.getElementById('minQuantity').value = existingProduct.min_quantity || 0;
+            document.getElementById('maxQuantity').value = existingProduct.max_quantity || '';
+            document.getElementById('purchasePrice').value = existingProduct.purchase_price || '';
+            document.getElementById('publicPrice').value = existingProduct.public_price || '';
+            document.getElementById('category').value = existingProduct.category || '';
+            document.getElementById('brand').value = existingProduct.brand || '';
+            document.getElementById('location').value = existingProduct.location || '';
+            
+            // Mostrar foto si existe
+            if (existingProduct.photo) {
+                document.getElementById('productPhoto').src = existingProduct.photo;
+                document.getElementById('productPhoto').style.display = 'block';
+                currentPhotoBase64 = existingProduct.photo;
+            }
+            
+            // Mostrar mensaje de producto existente
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="result-code">✅ Producto encontrado: <span id="scannedCode">${code}</span></div>
+                <div style="font-size: 14px; color: #059669; margin-top: 5px;">
+                    Stock actual: <strong>${existingProduct.quantity} ${existingProduct.unit || 'unidad'}</strong>
+                </div>
+            `;
+        } else {
+            // Producto no existe - formulario vacío
+            document.getElementById('scannedCode').textContent = code;
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>
+                <div style="font-size: 14px; color: #0369a1; margin-top: 5px;">
+                    Completa la información del producto
+                </div>
+            `;
+        }
+        
+        document.getElementById('productForm').classList.add('show');
+        document.getElementById('productName').focus();
+        
+    } catch (error) {
+        console.error('Error cargando producto:', error);
+        document.getElementById('productForm').classList.add('show');
+        document.getElementById('productName').focus();
+    }
 }
 
 async function uploadImageToSupabase(file) {
