@@ -595,7 +595,8 @@
 
 // Cerrar el dropdown si se hace clic fuera de él
 window.onclick = function(event) {
-    if (!event.target.matches('.settings-btn')) {
+    // No cerrar si se hace clic en el botón de ajustes o dentro del dropdown
+    if (!event.target.matches('.settings-btn') && !event.target.closest('.dropdown-content')) {
         const dropdowns = document.getElementsByClassName('dropdown-content');
         for (let i = 0; i < dropdowns.length; i++) {
             const openDropdown = dropdowns[i];
