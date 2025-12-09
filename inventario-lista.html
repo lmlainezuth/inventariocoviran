@@ -395,18 +395,24 @@
         </div>
     </div>
     
-    <!-- Filters -->
-    <div class="filters">
-        <button class="filter-btn active" onclick="filterByType('all')">
-            Ordenar ▼
-        </button>
-        <button class="filter-btn" onclick="filterByType('quantity')">
-            Cantidad ▼
-        </button>
-        <button class="filter-btn" onclick="filterByType('reference')">
-            Referencia ▼
-        </button>
-    </div>
+<!-- Filters -->
+<div class="filters">
+    <button class="filter-btn" onclick="openFilterModal('order')">
+        Ordenar <span id="orderIndicator">▼</span>
+    </button>
+    <button class="filter-btn" onclick="openFilterModal('category')">
+        Categoría <span id="categoryIndicator">▼</span>
+    </button>
+    <button class="filter-btn" onclick="openFilterModal('brand')">
+        Marca <span id="brandIndicator">▼</span>
+    </button>
+    <button class="filter-btn" onclick="openFilterModal('location')">
+        Ubicación <span id="locationIndicator">▼</span>
+    </button>
+    <button class="filter-btn" onclick="openFilterModal('stock')">
+        Cantidad <span id="stockIndicator">▼</span>
+    </button>
+</div>
     
     <!-- Product List -->
     <div class="product-list" id="productList">
@@ -437,7 +443,73 @@
         
         let inventory = [];
         let currentFilter = 'all';
-        let currentSort = 'created_at';
+        let currentSort = 'created_desc';
+        let filters = {
+    category: 'all',
+    brand: 'all',
+    location: 'all',
+    stock: 'all'
+};
+
+// Cargar categorías y marcas al iniciar
+loadFilterOptions();
+
+async function loadFilterOptions() {
+    // Cargar categorías
+    try {
+        const { data: categories } = await supabaseClient.from('categories').select('*').order('name');
+        const categoryList = document.getElementById('categoryList');
+        categoryList.innerHTML = `<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('category', 'all')">📂 Todas las categorías</button>`;
+        categories.forEach(cat => {
+            categoryList.innerHTML += `<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('category', '${cat.name}')">📂 ${cat.name}</button>`;
+        });
+    } catch (error) {
+        console.error('Error cargando categorías:', error);
+    }
+
+    // Cargar marcas
+    try {
+        const { data: brands } = await supabaseClient.from('brands').select('*').order('name');
+        const brandList = document.getElementById('brandList');
+        brandList.innerHTML = `<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('brand', 'all')">🏷️ Todas las marcas</button>`;
+        brands.forEach(brand => {
+            brandList.innerHTML += `<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('brand', '${brand.name}')">🏷️ ${brand.name}</button>`;
+        });
+    } catch (error) {
+        console.error('Error cargando marcas:', error);
+    }
+}
+
+function openFilterModal(type) {
+    document.getElementById(type + 'Modal').classList.add('show');
+}
+
+function closeFilterModal(type) {
+    document.getElementById(type + 'Modal').classList.remove('show');
+}
+
+function applyOrder(order) {
+    currentSort = order;
+    closeFilterModal('order');
+    loadProducts();
+}
+
+function applyFilter(type, value) {
+    filters[type] = value;
+    closeFilterModal(type);
+    
+    // Actualizar indicadores
+    const indicator = document.getElementById(type + 'Indicator');
+    if (value !== 'all') {
+        indicator.textContent = '●';
+        indicator.style.color = '#2563eb';
+    } else {
+        indicator.textContent = '▼';
+        indicator.style.color = '';
+    }
+    
+    loadProducts();
+}
         
         // Cargar productos al iniciar
         loadProducts();
@@ -474,16 +546,41 @@
                 
                 // Ordenar productos
                 let sortedInventory = [...inventory];
-                if (currentSort === 'created_at') {
-                    sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                } else if (currentSort === 'name') {
-                    sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
-                } else if (currentSort === 'quantity') {
-                    sortedInventory.sort((a, b) => b.quantity - a.quantity);
-                } else if (currentSort === 'code') {
-                    sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
-                }
-                                
+
+// Aplicar filtros
+sortedInventory = sortedInventory.filter(item => {
+    if (filters.category !== 'all' && item.category !== filters.category) return false;
+    if (filters.brand !== 'all' && item.brand !== filters.brand) return false;
+    if (filters.location !== 'all' && item.location !== filters.location) return false;
+    
+    if (filters.stock === 'out' && item.quantity > 0) return false;
+    if (filters.stock === 'min' && item.quantity > item.min_quantity) return false;
+    if (filters.stock === 'max' && (!item.max_quantity || item.quantity < item.max_quantity)) return false;
+    
+    return true;
+});
+
+// Ordenar
+switch(currentSort) {
+    case 'created_desc':
+        sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        break;
+    case 'created_asc':
+        sortedInventory.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        break;
+    case 'name_asc':
+        sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+    case 'name_desc':
+        sortedInventory.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+    case 'code':
+        sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
+        break;
+    case 'quantity':
+        sortedInventory.sort((a, b) => b.quantity - a.quantity);
+        break;
+}             
                 container.innerHTML = sortedInventory.map((item) => {
                     const badge = getStockBadge(item);
                     
@@ -546,26 +643,7 @@
             });
         }
         
-        function filterByType(type) {
-            // Remover active de todos los botones
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Activar botón clickeado
-            event.target.classList.add('active');
-            
-            if (type === 'all') {
-                currentSort = 'created_at'; // Cambiado de 'name' a 'created_at'
-            } else if (type === 'quantity') {
-                currentSort = 'quantity';
-            } else if (type === 'reference') {
-                currentSort = 'code';
-            }
-            
-            loadProducts();
-        }
-                
+              
         function viewProduct(code) {
             // Redirigir a página de escaneo con el código
             window.location.href = 'index.html?code=' + code;
@@ -713,6 +791,67 @@ document.addEventListener('DOMContentLoaded', function() {
             <button class="modal-btn modal-btn-cancel" onclick="closeManualModal()">Cancelar</button>
             <button class="modal-btn modal-btn-save" onclick="confirmManualProduct()">Continuar</button>
         </div>
+    </div>
+</div>
+<!-- Modal de Ordenar -->
+<div id="orderModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">Ordenar por</div>
+        <div style="max-height: 400px; overflow-y: auto;">
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_desc')">Fecha creación 🧓→👶</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_asc')">Fecha creación 👶→🧓</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_asc')">Alfabético A→Z</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_desc')">Alfabético Z→A</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('code')">Por código</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('quantity')">Por cantidad</button>
+        </div>
+        <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('order')" style="width: 100%; margin-top: 10px;">Cerrar</button>
+    </div>
+</div>
+
+<!-- Modal de Categoría -->
+<div id="categoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">Filtrar por Categoría</div>
+        <div id="categoryList" style="max-height: 400px; overflow-y: auto;"></div>
+        <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('category')" style="width: 100%; margin-top: 10px;">Cerrar</button>
+    </div>
+</div>
+
+<!-- Modal de Marca -->
+<div id="brandModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">Filtrar por Marca</div>
+        <div id="brandList" style="max-height: 400px; overflow-y: auto;"></div>
+        <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('brand')" style="width: 100%; margin-top: 10px;">Cerrar</button>
+    </div>
+</div>
+
+<!-- Modal de Ubicación -->
+<div id="locationModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">Filtrar por Ubicación</div>
+        <div style="max-height: 400px; overflow-y: auto;">
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('location', 'all')">📍 Todas las ubicaciones</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('location', 'Iztieta 9103')">📍 Iztieta 9103</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('location', 'Gabierrota')">📍 Gabierrota</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('location', 'El Antiguo')">📍 El Antiguo</button>
+        </div>
+        <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('location')" style="width: 100%; margin-top: 10px;">Cerrar</button>
+    </div>
+</div>
+
+<!-- Modal de Cantidad -->
+<div id="stockModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">Filtrar por Stock</div>
+        <div style="max-height: 400px; overflow-y: auto;">
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('stock', 'all')">📦 Todas las cantidades</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('stock', 'out')">❌ Agotados (0)</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('stock', 'min')">⚠️ Cantidad mínima</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #dcfce7; color: #166534;" onclick="applyFilter('stock', 'max')">✅ Cantidad máxima</button>
+        </div>
+        <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('stock')" style="width: 100%; margin-top: 10px;">Cerrar</button>
     </div>
 </div>
 </body>
