@@ -926,10 +926,8 @@ async function saveProduct() {
         await loadInventory();
         updateStats();
         
-        setTimeout(() => {
-            if (!isScanning) startScanner();
-        }, 500);
-        
+        // Solo mostrar el contenedor, NO reiniciar escáner
+        document.getElementById('scannerContainer').style.display = 'block';
         currentCode = null;
         currentPhotoBase64 = null;
         
