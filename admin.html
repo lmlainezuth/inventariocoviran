@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Inventario - Escáner de Códigos</title>
-        <script
-            src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Inventario</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <style>
         * {
             margin: 0;
             padding: 0;
@@ -17,6 +16,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f5;
             padding: 20px;
+            padding-bottom: 100px;
         }
         
         .container {
@@ -39,45 +39,28 @@
             font-size: 24px;
         }
         
-        .scanner-section {
+        .admin-section {
             padding: 20px;
         }
         
-        #reader {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            position: relative;
-            min-height: 300px;
-        }
-        
-        #reader canvas,
-        #reader video {
-            width: 100% !important;
-            height: auto !important;
-        }
-        
-        #reader canvas.drawingBuffer {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0 15px 0;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
         }
         
         button {
-            flex: 1;
+            width: 100%;
             padding: 12px;
             border: none;
             border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.3s;
+            margin-bottom: 10px;
         }
         
         .btn-primary {
@@ -89,151 +72,83 @@
             background: #1d4ed8;
         }
         
-        .btn-secondary {
-            background: #64748b;
+        .btn-success {
+            background: #10b981;
             color: white;
         }
         
-        .btn-secondary:hover {
-            background: #475569;
+        .btn-success:hover {
+            background: #059669;
         }
         
-        .result {
-            background: #f0fdf4;
-            border: 1px solid #86efac;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
+        .btn-danger {
+            background: #ef4444;
+            color: white;
         }
         
-        .result.show {
-            display: block;
+        .btn-danger:hover {
+            background: #dc2626;
         }
         
-        .result-code {
-            font-size: 18px;
-            font-weight: bold;
-            color: #166534;
-            margin-bottom: 10px;
-        }
-        
-        .product-form {
-            display: none;
-        }
-        
-        .product-form.show {
-            display: block;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-row {
+        .input-group {
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
         }
         
-        .photo-upload {
-            margin-bottom: 10px;
-        }
-        
-        .photo-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #374151;
-        }
-        
-        input[type="text"],
-        input[type="number"],
-        select {
-            width: 100%;
+        input[type="text"] {
+            flex: 1;
             padding: 10px;
             border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 16px;
         }
         
-        select {
-            background: white;
-            cursor: pointer;
-        }
-        
-        .inventory-list {
-            padding: 20px;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .inventory-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #1f2937;
-        }
-        
-        .inventory-item {
-            background: #f9fafb;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+        .list-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 8px;
         }
         
-        .item-info {
-            flex: 1;
-        }
-        
-        .item-name {
-            font-weight: 600;
+        .list-item span {
+            font-weight: 500;
             color: #1f2937;
         }
         
-        .item-code {
-            font-size: 12px;
-            color: #6b7280;
-            font-family: monospace;
-        }
-        
-        .item-quantity {
-            background: #2563eb;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        
-        .btn-delete {
+        .btn-delete-small {
             background: #ef4444;
             color: white;
-            padding: 8px 12px;
             border: none;
+            padding: 6px 12px;
             border-radius: 6px;
-            margin-left: 10px;
             cursor: pointer;
+            font-size: 14px;
         }
         
-        .btn-delete:hover {
+        .btn-delete-small:hover {
             background: #dc2626;
         }
         
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #9ca3af;
+        .stats-box {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
         
-        /* Bottom Navigation */
+        .stats-box p {
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .stats-box strong {
+            color: #1f2937;
+        }
+        
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -257,18 +172,12 @@
             padding: 8px;
             cursor: pointer;
             transition: all 0.3s;
-            border: none;
-            background: none;
+            text-decoration: none;
             color: #6b7280;
         }
         
         .nav-item.active {
             color: #2563eb;
-        }
-        
-        .nav-item:hover {
-            background: #f3f4f6;
-            border-radius: 8px;
         }
         
         .nav-icon {
@@ -279,767 +188,327 @@
             font-size: 12px;
             font-weight: 500;
         }
-        
-        /* Page sections */
-        .page-section {
-            display: none;
-            padding-bottom: 80px;
-        }
-        
-        .page-section.active {
-            display: block;
-        }
-        
-        body {
-            padding-bottom: 80px;
-        }
     </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👑 Administración</h1>
+        </header>
 
-       <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
-    </head>
-    <body>
-        <div class="container">
-            <header>
-                <h1>📦 Inventario</h1>
-            </header>
-
-            <!-- Página Escanear -->
-            <div id="scanPage" class="page-section active">
-                <div class="scanner-section">
-                    
-                    <div id="scannerContainer">
-                        <div id="reader"></div>
-
-                        <div id="scanStatus"
-                            style="text-align: center; padding: 10px; margin: 10px 0; background: #f3f4f6; border-radius: 8px; display: none;">
-                            <div
-                                style="font-size: 14px; color: #6b7280;">Escaneando...</div>
-                            <div id="detectionProgress"
-                                style="font-size: 12px; color: #9ca3af; margin-top: 5px;"></div>
-                        </div>
-                    </div>
-
-                    <div id="result" class="result">
-                        <div class="result-code">Código escaneado: <span
-                                id="scannedCode"></span></div>
-                    </div>
-
-                    <div id="productForm" class="product-form">
-                        <!-- Foto del Producto -->
-                        <div class="form-group">
-                            <label>Foto del Producto</label>
-                            <div class="photo-upload">
-                                <img id="productPhoto" src alt="Vista previa"
-                                    style="display: none; width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
-                                <div class="photo-buttons">
-                                    <button type="button"
-                                        onclick="document.getElementById('cameraInput').click()"
-                                        class="btn-secondary" style="flex: 1;">
-                                        📷 Cámara
-                                    </button>
-                                    <button type="button"
-                                        onclick="document.getElementById('galleryInput').click()"
-                                        class="btn-secondary" style="flex: 1;">
-                                        🖼️ Galería
-                                    </button>
-                                </div>
-                                <input type="file" id="cameraInput"
-                                    accept="image/*" capture="environment"
-                                    style="display: none;"
-                                    onchange="handlePhotoUpload(event)">
-                                <input type="file" id="galleryInput"
-                                    accept="image/*" style="display: none;"
-                                    onchange="handlePhotoUpload(event)">
-                            </div>
-                        </div>
-
-                        <!-- Nombre del producto -->
-                        <div class="form-group">
-                            <label>Nombre del producto *</label>
-                            <input type="text" id="productName"
-                                placeholder="Ej: Leche Entera" required>
-                        </div>
-
-                        <!-- Cantidad y Unidad -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad *</label>
-                                <input type="number" id="productQuantity"
-                                    value="1" min="0" step="0.01">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Unidad</label>
-                                <select id="productUnit">
-                                    <option value="unidad">Unidad</option>
-                                    <option value="kilogramo">Kilogramo
-                                        (kg)</option>
-                                    <option value="gramo">Gramo (g)</option>
-                                    <option value="litro">Litro (L)</option>
-                                    <option value="mililitro">Mililitro
-                                        (ml)</option>
-                                    <option value="centilitro">Centilitro
-                                        (cl)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Min y Max Cantidad -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad Mínima</label>
-                                <input type="number" id="minQuantity" value="0"
-                                    min="0" step="0.01">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad Máxima</label>
-                                <input type="number" id="maxQuantity" value
-                                    min="0" step="0.01" placeholder="Opcional">
-                            </div>
-                        </div>
-
-                        <!-- Precios -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Precio Compra (€)</label>
-                                <input type="number" id="purchasePrice" value
-                                    min="0" step="0.01" placeholder="0.00">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Precio Público (€)</label>
-                                <input type="number" id="publicPrice" value
-                                    min="0" step="0.01" placeholder="0.00">
-                            </div>
-                        </div>
-
-                        <!-- Categoría y Marca -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Categoría</label>
-                                <select id="category">
-                                    <option value>Cargando...</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Marca</label>
-                                <select id="brand">
-                                    <option value>Cargando...</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Ubicación -->
-                        <div class="form-group">
-                            <label>Ubicación</label>
-                            <select id="location">
-                                <option value>Seleccionar...</option>
-                                <option value="Iztieta 9103">Iztieta
-                                    9103</option>
-                                <option value="Gabierrota">Gabierrota</option>
-                                <option value="El Antiguo">El Antiguo</option>
-                            </select>
-                        </div>
-
-                        <button onclick="saveProduct()" class="btn-primary"
-                            style="width: 100%;">💾 Guardar Producto</button>
-                    </div>
-                </div>
+        <div class="admin-section">
+            <!-- Gestión de Categorías -->
+            <div class="section-title">📁 Categorías</div>
+            
+            <div class="input-group">
+                <input type="text" id="newCategory" placeholder="Nueva categoría...">
+                <button onclick="addCategory()" class="btn-success" style="width: auto; padding: 10px 20px;">
+                    ➕ Añadir
+                </button>
             </div>
+            
+            <div id="categoriesList"></div>
 
-            <!-- Página Admin -->
-            <div id="adminPage" class="page-section">
-                <div class="scanner-section">
-                    <h2 style="margin-bottom: 20px;">Administración</h2>
-
-                    <div class="form-group">
-                        <button onclick="exportInventory()" class="btn-primary"
-                            style="width: 100%; margin-bottom: 10px;">
-                            📥 Exportar Inventario (CSV)
-                        </button>
-                    </div>
-
-                    <div class="form-group">
-                        <button onclick="clearInventory()" class="btn-secondary"
-                            style="width: 100%; background: #ef4444;">
-                            🗑️ Borrar Todo el Inventario
-                        </button>
-                    </div>
-
-                    <div
-                        style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 8px;">
-                        <h3
-                            style="font-size: 16px; margin-bottom: 10px;">Estadísticas</h3>
-                        <p style="color: #6b7280;">Total de productos: <strong
-                                id="totalProducts">0</strong></p>
-                        <p style="color: #6b7280;">Total de unidades: <strong
-                                id="totalUnits">0</strong></p>
-                    </div>
-                </div>
+            <!-- Gestión de Marcas -->
+            <div class="section-title">🏷️ Marcas</div>
+            
+            <div class="input-group">
+                <input type="text" id="newBrand" placeholder="Nueva marca...">
+                <button onclick="addBrand()" class="btn-success" style="width: auto; padding: 10px 20px;">
+                    ➕ Añadir
+                </button>
             </div>
-        </div>
+            
+            <div id="brandsList"></div>
 
-        <!-- Bottom Navigation -->
-        <div class="bottom-nav">
-            <button class="nav-item active" onclick="switchPage('scan')">
-                <div class="nav-icon">📱</div>
-                <div class="nav-label">Escanear</div>
+            <!-- Gestión de Inventario -->
+            <div class="section-title">📊 Gestión de Inventario</div>
+            
+            <button onclick="exportInventory()" class="btn-primary">
+                📥 Exportar Inventario (CSV)
             </button>
-            <a href="inventario-lista.html" class="nav-item">
-                <div class="nav-icon">📦</div>
-                <div class="nav-label">Inventario</div>
-            </a>
-            <a href="admin.html" class="nav-item">
-                <div class="nav-icon">👑</div>
-                <div class="nav-label">Admin</div>
-            </a>
+            
+            <button onclick="clearInventory()" class="btn-danger">
+                🗑️ Borrar Todo el Inventario
+            </button>
+
+            <!-- Estadísticas -->
+            <div class="section-title">📈 Estadísticas</div>
+            <div class="stats-box">
+                <p>Total de productos: <strong id="totalProducts">0</strong></p>
+                <p>Total de unidades: <strong id="totalUnits">0</strong></p>
+                <p>Total de categorías: <strong id="totalCategories">0</strong></p>
+                <p>Total de marcas: <strong id="totalBrands">0</strong></p>
+            </div>
         </div>
+    </div>
 
-      <script>
-// Esperar a que se cargue Supabase
-let supabaseClient;
-let isScanning = false;
-let currentCode = null;
-let inventory = [];
-let lastDetectedCode = null;
-let detectionTimeout = null;
-let detectionCounter = {};
-let currentPhotoBase64 = null;
-const DETECTION_THRESHOLD = 5;
-let scanTimeout = null;
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <div class="nav-icon">📱</div>
+            <div class="nav-label">Escanear</div>
+        </a>
+        <a href="inventario-lista.html" class="nav-item">
+            <div class="nav-icon">📦</div>
+            <div class="nav-label">Inventario</div>
+        </a>
+        <a href="admin.html" class="nav-item active">
+            <div class="nav-icon">👑</div>
+            <div class="nav-label">Admin</div>
+        </a>
+    </div>
 
-// Inicializar cuando la página esté lista
-window.addEventListener('DOMContentLoaded', function() {
-    // Configuración de Supabase
-    const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
-    const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
-    
-    // Crear cliente de Supabase
-    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-    
-    // Cargar categorías y marcas
-    loadCategoriesAndBrands();
-    
-    // Verificar si viene un código en la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get('code');
-    
-    // Inicializar app
-    loadInventory().then(() => {
-        updateStats();
-        
-        if (codeFromUrl) {
-            // Si viene código desde la lista, cargar ese producto directamente SIN ESCÁNER
-            currentCode = codeFromUrl;
-            document.getElementById('scannedCode').textContent = codeFromUrl;
-            document.getElementById('result').classList.add('show');
-            document.getElementById('scannerContainer').style.display = 'none'; // OCULTAR ESCÁNER
-            loadProductData(codeFromUrl);
-        } else {
-            // Si no, iniciar el escáner normalmente
-            startScanner();
-        }
-    });
-});
+    <script>
+        let supabaseClient;
+        let inventory = [];
 
-// Cargar categorías y marcas desde Supabase
-async function loadCategoriesAndBrands() {
-    try {
-        // Cargar categorías
-        const { data: categories, error: catError } = await supabaseClient
-            .from('categories')
-            .select('*')
-            .order('name', { ascending: true });
-        
-        if (catError) throw catError;
-        
-        const categorySelect = document.getElementById('category');
-        categorySelect.innerHTML = '<option value="">Seleccionar...</option>';
-        
-        if (categories && categories.length > 0) {
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.name;
-                option.textContent = cat.name;
-                categorySelect.appendChild(option);
-            });
-        }
-        
-        // Opción para crear nueva categoría
-        const createCatOption = document.createElement('option');
-        createCatOption.value = '__CREATE__';
-        createCatOption.textContent = '➕ Crear nueva categoría...';
-        createCatOption.style.color = '#2563eb';
-        createCatOption.style.fontWeight = 'bold';
-        categorySelect.appendChild(createCatOption);
-        
-        // Cargar marcas
-        const { data: brands, error: brandError } = await supabaseClient
-            .from('brands')
-            .select('*')
-            .order('name', { ascending: true });
-        
-        if (brandError) throw brandError;
-        
-        const brandSelect = document.getElementById('brand');
-        brandSelect.innerHTML = '<option value="">Seleccionar...</option>';
-        
-        if (brands && brands.length > 0) {
-            brands.forEach(brand => {
-                const option = document.createElement('option');
-                option.value = brand.name;
-                option.textContent = brand.name;
-                brandSelect.appendChild(option);
-            });
-        }
-        
-        // Opción para crear nueva marca
-        const createBrandOption = document.createElement('option');
-        createBrandOption.value = '__CREATE__';
-        createBrandOption.textContent = '➕ Crear nueva marca...';
-        createBrandOption.style.color = '#2563eb';
-        createBrandOption.style.fontWeight = 'bold';
-        brandSelect.appendChild(createBrandOption);
-        
-    } catch (error) {
-        console.error('Error cargando categorías y marcas:', error);
-    }
-}
-
-// Detectar cuando se selecciona "Crear nueva..."
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('category').addEventListener('change', function() {
-        if (this.value === '__CREATE__') {
-            if (confirm('¿Ir a la página de administración para crear una nueva categoría?')) {
-                window.location.href = 'admin.html';
-            } else {
-                this.value = '';
-            }
-        }
-    });
-    
-    document.getElementById('brand').addEventListener('change', function() {
-        if (this.value === '__CREATE__') {
-            if (confirm('¿Ir a la página de administración para crear una nueva marca?')) {
-                window.location.href = 'admin.html';
-            } else {
-                this.value = '';
-            }
-        }
-    });
-});
-
-// Resto de funciones (copiar todo lo demás desde aquí)
-function switchPage(page) {
-    document.querySelectorAll('.page-section').forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    
-    if (page === 'scan') {
-        document.getElementById('scanPage').classList.add('active');
-        document.querySelectorAll('.nav-item')[0].classList.add('active');
-        if (!isScanning) {
-            startScanner();
-        }
-    } else if (page === 'admin') {
-        if (isScanning) {
-            stopScanner();
-        }
-        document.getElementById('adminPage').classList.add('active');
-        document.querySelectorAll('.nav-item')[2].classList.add('active');
-        updateStats();
-    }
-}
-
-function startScanner() {
-    isScanning = true;
-    detectionCounter = {};
-    document.getElementById('scanStatus').style.display = 'block';
-    document.getElementById('detectionProgress').textContent = 'Apunta al código de barras...';
-    
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: document.querySelector('#reader'),
-            constraints: {
-                facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-        },
-        decoder: {
-            readers: [
-                "ean_reader",
-                "ean_8_reader",
-                "code_128_reader",
-                "code_39_reader",
-                "upc_reader",
-                "upc_e_reader"
-            ],
-            debug: {
-                drawBoundingBox: true,
-                showFrequency: true,
-                drawScanline: true,
-                showPattern: true
-            }
-        },
-        locate: true,
-        locator: {
-            halfSample: true,
-            patchSize: "medium"
-        },
-        frequency: 10,
-    }, function(err) {
-        if (err) {
-            console.error(err);
-            alert('Error al iniciar cámara: ' + err);
-            return;
-        }
-        Quagga.start();
-    });
-    
-    Quagga.onDetected(onBarcodeDetected);
-}
-
-function stopScanner() {
-    if (isScanning) {
-        Quagga.stop();
-        Quagga.offDetected(onBarcodeDetected);
-        isScanning = false;
-        document.getElementById('scanStatus').style.display = 'none';
-    }
-}
-
-function onBarcodeDetected(result) {
-    if (!isScanning) return;
-    
-    const code = result.codeResult.code;
-    const errors = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0);
-    const errorRate = errors / result.codeResult.decodedCodes.length;
-    
-    if (errorRate > 0.15) return;
-    if (!code || code.length < 8) return;
-    if (!/^[A-Z0-9]+$/i.test(code)) return;
-    
-    if (!detectionCounter[code]) {
-        detectionCounter[code] = 1;
-    } else {
-        detectionCounter[code]++;
-    }
-    
-    document.getElementById('detectionProgress').textContent = `Detectando: ${code} (${detectionCounter[code]}/${DETECTION_THRESHOLD})`;
-    
-    for (let key in detectionCounter) {
-        if (key !== code && detectionCounter[key] < DETECTION_THRESHOLD) {
-            delete detectionCounter[key];
-        }
-    }
-    
-    if (detectionCounter[code] >= DETECTION_THRESHOLD) {
-        lastDetectedCode = code;
-        currentCode = code;
-        detectionCounter = {};
-        
-        document.getElementById('scannedCode').textContent = code;
-        document.getElementById('result').classList.add('show');
-        
-        playBeep();
-        stopScanner();
-        
-        // Cargar datos del producto si existe
-        loadProductData(code);
-        
-        if (detectionTimeout) clearTimeout(detectionTimeout);
-        detectionTimeout = setTimeout(() => {
-            lastDetectedCode = null;
-        }, 3000);
-    }
-}
-
-function playBeep() {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    gainNode.gain.value = 0.3;
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.1);
-}
-
-async function loadProductData(code) {
-    try {
-        const { data: existingProduct, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('code', code)
-            .maybeSingle();
-        
-        if (error) throw error;
-        
-        // Ocultar el área del escáner
-        document.getElementById('scannerContainer').style.display = 'none';
-        
-        if (existingProduct) {
-            // Producto existe - llenar formulario
-            document.getElementById('productName').value = existingProduct.name;
-            document.getElementById('productQuantity').value = existingProduct.quantity;
-            document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
-            document.getElementById('minQuantity').value = existingProduct.min_quantity || 0;
-            document.getElementById('maxQuantity').value = existingProduct.max_quantity || '';
-            document.getElementById('purchasePrice').value = existingProduct.purchase_price || '';
-            document.getElementById('publicPrice').value = existingProduct.public_price || '';
-            document.getElementById('category').value = existingProduct.category || '';
-            document.getElementById('brand').value = existingProduct.brand || '';
-            document.getElementById('location').value = existingProduct.location || '';
+        window.addEventListener('DOMContentLoaded', function() {
+            const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
+            const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
+            supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
             
-            // Mostrar foto si existe
-            if (existingProduct.photo) {
-                document.getElementById('productPhoto').src = existingProduct.photo;
-                document.getElementById('productPhoto').style.display = 'block';
-                currentPhotoBase64 = existingProduct.photo;
-            }
-            
-            // Mensaje de producto encontrado
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
-        } else {
-            // Producto nuevo
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `
-                <div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>
-            `;
+            loadAll();
+        });
+
+        async function loadAll() {
+            await Promise.all([
+                loadCategories(),
+                loadBrands(),
+                loadInventory()
+            ]);
+            updateStats();
         }
-        
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
-        
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('scannerContainer').style.display = 'none';
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
-    }
-}
 
-async function uploadImageToSupabase(file) {
-    try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `products/${fileName}`;
-        
-        const { data, error } = await supabaseClient.storage
-            .from('product-images')
-            .upload(filePath, file);
-        
-        if (error) throw error;
-        
-        const { data: urlData } = supabaseClient.storage
-            .from('product-images')
-            .getPublicUrl(filePath);
-        
-        return urlData.publicUrl;
-    } catch (error) {
-        alert('Error subiendo imagen: ' + error.message);
-        return null;
-    }
-}
-
-async function handlePhotoUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = document.getElementById('productPhoto');
-        img.src = e.target.result;
-        img.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-    
-    const imageUrl = await uploadImageToSupabase(file);
-    if (imageUrl) {
-        currentPhotoBase64 = imageUrl;
-    }
-}
-
-async function saveProduct() {
-    if (!currentCode) {
-        alert('❌ ERROR: No hay código de barras válido.');
-        return;
-    }
-    
-    if (currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
-        alert('❌ ERROR: El código escaneado no es válido.');
-        clearProductForm();
-        setTimeout(() => {
-            if (!isScanning) startScanner();
-        }, 500);
-        return;
-    }
-    
-    const name = document.getElementById('productName').value.trim();
-    if (!name) {
-        alert('Por favor ingresa el nombre del producto');
-        return;
-    }
-    
-    const quantity = parseFloat(document.getElementById('productQuantity').value);
-    const unit = document.getElementById('productUnit').value;
-    const minQuantity = parseFloat(document.getElementById('minQuantity').value) || 0;
-    const maxQuantity = parseFloat(document.getElementById('maxQuantity').value) || null;
-    const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
-    const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
-    const category = document.getElementById('category').value;
-    const brand = document.getElementById('brand').value;
-    const location = document.getElementById('location').value;
-    
-    try {
-        const { data: existingProduct } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('code', currentCode)
-            .maybeSingle();
-        
-        if (existingProduct) {
-            if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
-                await supabaseClient
-                    .from('products')
-                    .update({
-                        name, quantity, unit, min_quantity: minQuantity,
-                        max_quantity: maxQuantity, purchase_price: purchasePrice,
-                        public_price: publicPrice, category, brand, location,
-                        photo: currentPhotoBase64
-                    })
-                    .eq('code', currentCode);
-            } else {
-                await supabaseClient
-                    .from('products')
-                    .update({ quantity: existingProduct.quantity + quantity })
-                    .eq('code', currentCode);
-            }
-        } else {
-            await supabaseClient
-                .from('products')
-                .insert([{
-                    code: currentCode, name, quantity, unit,
-                    min_quantity: minQuantity, max_quantity: maxQuantity,
-                    purchase_price: purchasePrice, public_price: publicPrice,
-                    category, brand, location, photo: currentPhotoBase64
-                }]);
-        }
-        
-        alert('✅ Producto guardado');
-        clearProductForm();
-        await loadInventory();
-        updateStats();
-        
-        setTimeout(() => {
-            if (!isScanning) startScanner();
-        }, 500);
-        
-        currentCode = null;
-        currentPhotoBase64 = null;
-        
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
-}
-
-async function loadInventory() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .order('name', { ascending: true });
-        
-        if (error) throw error;
-        inventory = data || [];
-    } catch (error) {
-        inventory = [];
-    }
-}
-
-function clearProductForm() {
-    document.getElementById('productName').value = '';
-    document.getElementById('productQuantity').value = '1';
-    document.getElementById('productUnit').value = 'unidad';
-    document.getElementById('minQuantity').value = '0';
-    document.getElementById('maxQuantity').value = '';
-    document.getElementById('purchasePrice').value = '';
-    document.getElementById('publicPrice').value = '';
-    document.getElementById('category').value = '';
-    document.getElementById('brand').value = '';
-    document.getElementById('location').value = '';
-    document.getElementById('productPhoto').style.display = 'none';
-    document.getElementById('productPhoto').src = '';
-    document.getElementById('result').classList.remove('show');
-    document.getElementById('productForm').classList.remove('show');
-    document.getElementById('scannerContainer').style.display = 'block';
-}
-
-async function updateStats() {
-    await loadInventory();
-    const totalProducts = inventory.length;
-    const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
-    
-    document.getElementById('totalProducts').textContent = totalProducts;
-    document.getElementById('totalUnits').textContent = totalUnits.toFixed(2);
-}
-
-async function exportInventory() {
-    await loadInventory();
-    
-    if (inventory.length === 0) {
-        alert('No hay productos para exportar');
-        return;
-    }
-    
-    let csv = 'Código,Nombre,Cantidad,Unidad,Min,Max,Precio Compra,Precio Venta,Margen %,Categoría,Marca,Ubicación,Fecha\n';
-    inventory.forEach(item => {
-        const date = new Date(item.created_at).toLocaleDateString('es-ES');
-        const margin = item.public_price > 0 && item.purchase_price > 0 
-            ? ((item.public_price - item.purchase_price) / item.purchase_price * 100).toFixed(2)
-            : '';
-            
-        csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.min_quantity || 0},${item.max_quantity || ''},${item.purchase_price || 0},${item.public_price || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
-    });
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-
-async function clearInventory() {
-    if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario?')) {
-        if (confirm('Confirmación final: ¿Realmente quieres borrar todos los productos?')) {
+        async function loadCategories() {
             try {
-                await supabaseClient
-                    .from('products')
-                    .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000');
+                const { data, error } = await supabaseClient
+                    .from('categories')
+                    .select('*')
+                    .order('name', { ascending: true });
                 
-                inventory = [];
-                updateStats();
-                alert('Inventario borrado');
+                if (error) throw error;
+                
+                const list = document.getElementById('categoriesList');
+                list.innerHTML = '';
+                
+                if (data && data.length > 0) {
+                    data.forEach(cat => {
+                        const item = document.createElement('div');
+                        item.className = 'list-item';
+                        item.innerHTML = `
+                            <span>${cat.name}</span>
+                            <button class="btn-delete-small" onclick="deleteCategory('${cat.id}', '${cat.name}')">
+                                🗑️ Eliminar
+                            </button>
+                        `;
+                        list.appendChild(item);
+                    });
+                } else {
+                    list.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 20px;">No hay categorías</p>';
+                }
+                
+                document.getElementById('totalCategories').textContent = data ? data.length : 0;
+            } catch (error) {
+                console.error('Error cargando categorías:', error);
+            }
+        }
+
+        async function loadBrands() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('brands')
+                    .select('*')
+                    .order('name', { ascending: true });
+                
+                if (error) throw error;
+                
+                const list = document.getElementById('brandsList');
+                list.innerHTML = '';
+                
+                if (data && data.length > 0) {
+                    data.forEach(brand => {
+                        const item = document.createElement('div');
+                        item.className = 'list-item';
+                        item.innerHTML = `
+                            <span>${brand.name}</span>
+                            <button class="btn-delete-small" onclick="deleteBrand('${brand.id}', '${brand.name}')">
+                                🗑️ Eliminar
+                            </button>
+                        `;
+                        list.appendChild(item);
+                    });
+                } else {
+                    list.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 20px;">No hay marcas</p>';
+                }
+                
+                document.getElementById('totalBrands').textContent = data ? data.length : 0;
+            } catch (error) {
+                console.error('Error cargando marcas:', error);
+            }
+        }
+
+        async function addCategory() {
+            const name = document.getElementById('newCategory').value.trim();
+            if (!name) {
+                alert('Por favor ingresa un nombre para la categoría');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('categories')
+                    .insert([{ name }]);
+                
+                if (error) {
+                    if (error.code === '23505') {
+                        alert('Esta categoría ya existe');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+                
+                document.getElementById('newCategory').value = '';
+                alert('✅ Categoría añadida');
+                loadCategories();
             } catch (error) {
                 alert('Error: ' + error.message);
             }
         }
-    }
-}
-</script>
-    </body>
+
+        async function addBrand() {
+            const name = document.getElementById('newBrand').value.trim();
+            if (!name) {
+                alert('Por favor ingresa un nombre para la marca');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('brands')
+                    .insert([{ name }]);
+                
+                if (error) {
+                    if (error.code === '23505') {
+                        alert('Esta marca ya existe');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+                
+                document.getElementById('newBrand').value = '';
+                alert('✅ Marca añadida');
+                loadBrands();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function deleteCategory(id, name) {
+            if (!confirm(`¿Eliminar la categoría "${name}"?`)) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('categories')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                alert('✅ Categoría eliminada');
+                loadCategories();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function deleteBrand(id, name) {
+            if (!confirm(`¿Eliminar la marca "${name}"?`)) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('brands')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                alert('✅ Marca eliminada');
+                loadBrands();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function loadInventory() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .order('name', { ascending: true });
+                
+                if (error) throw error;
+                inventory = data || [];
+            } catch (error) {
+                inventory = [];
+            }
+        }
+
+        function updateStats() {
+            const totalProducts = inventory.length;
+            const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
+            
+            document.getElementById('totalProducts').textContent = totalProducts;
+            document.getElementById('totalUnits').textContent = totalUnits.toFixed(2);
+        }
+
+        async function exportInventory() {
+            await loadInventory();
+            
+            if (inventory.length === 0) {
+                alert('No hay productos para exportar');
+                return;
+            }
+            
+            let csv = 'Código,Nombre,Cantidad,Unidad,Min,Max,Precio Compra,Precio Venta,Margen %,Categoría,Marca,Ubicación,Fecha\n';
+            inventory.forEach(item => {
+                const date = new Date(item.created_at).toLocaleDateString('es-ES');
+                const margin = item.public_price > 0 && item.purchase_price > 0 
+                    ? ((item.public_price - item.purchase_price) / item.purchase_price * 100).toFixed(2)
+                    : '';
+                    
+                csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.min_quantity || 0},${item.max_quantity || ''},${item.purchase_price || 0},${item.public_price || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        async function clearInventory() {
+            if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario?')) {
+                if (confirm('Confirmación final: ¿Realmente quieres borrar todos los productos?')) {
+                    try {
+                        await supabaseClient
+                            .from('products')
+                            .delete()
+                            .neq('id', '00000000-0000-0000-0000-000000000000');
+                        
+                        inventory = [];
+                        updateStats();
+                        alert('✅ Inventario borrado');
+                    } catch (error) {
+                        alert('Error: ' + error.message);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
 </html>
