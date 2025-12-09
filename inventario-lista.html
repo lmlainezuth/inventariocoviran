@@ -570,26 +570,56 @@
         }
         
         async function deleteProduct(code, name) {
-            if (confirm(`⚠️ ¿Estás seguro de eliminar "${name}"?`)) {
+    if (confirm(`⚠️ ¿Estás seguro de eliminar "${name}"?`)) {
+        try {
+            // 1. Obtener la URL de la foto antes de eliminar
+            const { data: product, error: fetchError } = await supabaseClient
+                .from('products')
+                .select('photo')
+                .eq('code', code)
+                .single();
+            
+            if (fetchError) throw fetchError;
+            
+            // 2. Si tiene foto, extraer el path y eliminarla del storage
+            if (product.photo && product.photo.includes('product-images/products/')) {
                 try {
-                    const { error } = await supabaseClient
-                        .from('products')
-                        .delete()
-                        .eq('code', code);
+                    // Extraer el path desde la URL pública
+                    const urlParts = product.photo.split('product-images/');
+                    const filePath = urlParts[1]; // Obtiene "products/timestamp-random.ext"
                     
-                    if (error) throw error;
+                    const { error: storageError } = await supabaseClient.storage
+                        .from('product-images')
+                        .remove([filePath]);
                     
-                    alert('✅ Producto eliminado correctamente');
-                    
-                    // Recargar la lista
-                    loadProducts();
-                    
-                } catch (error) {
-                    alert('Error al eliminar: ' + error.message);
+                    if (storageError) {
+                        console.error('Error eliminando imagen:', storageError);
+                    } else {
+                        console.log('✅ Imagen eliminada del storage');
+                    }
+                } catch (storageErr) {
+                    console.error('Error procesando eliminación de imagen:', storageErr);
                 }
             }
+            
+            // 3. Eliminar el producto de la base de datos
+            const { error } = await supabaseClient
+                .from('products')
+                .delete()
+                .eq('code', code);
+            
+            if (error) throw error;
+            
+            alert('✅ Producto e imagen eliminados correctamente');
+            loadProducts();
+            
+        } catch (error) {
+            alert('Error al eliminar: ' + error.message);
         }
-    function toggleDropdown() {
+    }
+}
+    
+        function toggleDropdown() {
     document.getElementById('dropdownMenu').classList.toggle('show');
 }
 
