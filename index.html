@@ -623,44 +623,27 @@ window.addEventListener('DOMContentLoaded', function() {
 function setupModalListeners() {
     const categorySelect = document.getElementById('category');
     if (categorySelect) {
-        // Usar mousedown en las opciones para interceptar ANTES del cambio
-        categorySelect.addEventListener('focus', function() {
-            setTimeout(() => {
-                const options = this.querySelectorAll('option');
-                options.forEach(opt => {
-                    if (opt.value === '__CREATE__') {
-                        opt.addEventListener('mousedown', function(e) {
-                            e.preventDefault();
-                            categorySelect.blur();
-                            setTimeout(() => {
-                                openModal('category');
-                                categorySelect.value = '';
-                            }, 50);
-                        });
-                    }
-                });
-            }, 100);
+        categorySelect.addEventListener('change', function() {
+            if (this.value === '__CREATE__') {
+                this.blur();
+                setTimeout(() => {
+                    openModal('category');
+                    this.value = '';
+                }, 50);
+            }
         });
     }
     
     const brandSelect = document.getElementById('brand');
     if (brandSelect) {
-        brandSelect.addEventListener('focus', function() {
-            setTimeout(() => {
-                const options = this.querySelectorAll('option');
-                options.forEach(opt => {
-                    if (opt.value === '__CREATE__') {
-                        opt.addEventListener('mousedown', function(e) {
-                            e.preventDefault();
-                            brandSelect.blur();
-                            setTimeout(() => {
-                                openModal('brand');
-                                brandSelect.value = '';
-                            }, 50);
-                        });
-                    }
-                });
-            }, 100);
+        brandSelect.addEventListener('change', function() {
+            if (this.value === '__CREATE__') {
+                this.blur();
+                setTimeout(() => {
+                    openModal('brand');
+                    this.value = '';
+                }, 50);
+            }
         });
     }
 }
