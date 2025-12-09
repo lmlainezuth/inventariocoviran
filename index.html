@@ -19,6 +19,21 @@
     background-color: rgba(0,0,0,0.5);
 }
 
+.nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    background: none;
+    color: #6b7280;
+    text-decoration: none;  /* Añade esta línea */
+}
+
 .modal.show {
     display: flex;
     justify-content: center;
@@ -513,7 +528,7 @@
             </div>
 
             <!-- Página Admin -->
-            <div id="adminPage" class="page-section">
+            <!--<div id="adminPage" class="page-section">
                 <div class="scanner-section">
                     <h2 style="margin-bottom: 20px;">Administración</h2>
 
@@ -541,7 +556,7 @@
                                 id="totalUnits">0</strong></p>
                     </div>
                 </div>
-            </div>
+            </div>-->
         </div>
 
         <!-- Bottom Navigation -->
@@ -554,9 +569,9 @@
                 <div class="nav-icon">📦</div>
                 <div class="nav-label">Inventario</div>
             </a>
-            <a href="admin.html" class="nav-item">
-                <div class="nav-icon">👑</div>
-                <div class="nav-label">Admin</div>
+           <a href="monedas.html" class="nav-item">
+                <div class="nav-icon">💰</div>
+                <div class="nav-label">Monedas</div>
             </a>
         </div>
 
@@ -573,10 +588,7 @@ let currentPhotoBase64 = null;
 const DETECTION_THRESHOLD = 5;
 let scanTimeout = null;
 
-// Forzar HTTPS
-if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
-    window.location.href = window.location.href.replace('http:', 'https:');
-}
+
 
 // Inicializar cuando la página esté lista
 window.addEventListener('DOMContentLoaded', function() {
@@ -790,12 +802,12 @@ function switchPage(page) {
         document.getElementById('scanPage').classList.add('active');
         document.querySelectorAll('.nav-item')[0].classList.add('active');
         if (!isScanning) startScanner();
-    } else if (page === 'admin') {
-        if (isScanning) stopScanner();
-        document.getElementById('adminPage').classList.add('active');
-        document.querySelectorAll('.nav-item')[2].classList.add('active');
-        updateStats();
-    }
+    } else if (page === 'monedas') {
+    if (isScanning) stopScanner();
+    document.getElementById('monedasPage').classList.add('active');
+    document.querySelectorAll('.nav-item')[2].classList.add('active');
+    updateStats();
+}
 }
 
 function startScanner() {
