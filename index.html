@@ -7,6 +7,73 @@
         <script
             src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
         <style>
+        /* Modal para crear categoría/marca */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal.show {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #1f2937;
+}
+
+.modal-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.modal-btn-cancel {
+    background: #6b7280;
+    color: white;
+}
+
+.modal-btn-save {
+    background: #2563eb;
+    color: white;
+}
+        
         * {
             margin: 0;
             padding: 0;
@@ -600,35 +667,118 @@ async function loadBrands() {
 
 // Detectar cuando se selecciona "Crear nueva..."
 document.addEventListener('DOMContentLoaded', function() {
-    // Event listener para categoría
+    // Detectar cuando se selecciona "Crear nueva..."
+setTimeout(() => {
+    const categorySelect = document.getElementById('category');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            if (this.value === '__CREATE__') {
+                openModal('category');
+                this.value = ''; // Reset del select
+            }
+        });
+    }
+    
+    const brandSelect = document.getElementById('brand');
+    if (brandSelect) {
+        brandSelect.addEventListener('change', function() {
+            if (this.value === '__CREATE__') {
+                openModal('brand');
+                this.value = ''; // Reset del select
+            }
+        });
+    }
+}, 500);
+
+// Funciones para el modal
+function openModal(type) {
+    const modal = document.getElementById(type + 'Modal');
+    modal.classList.add('show');
+    
+    // Focus en el input
     setTimeout(() => {
-        const categorySelect = document.getElementById('category');
-        if (categorySelect) {
-            categorySelect.addEventListener('change', function() {
-                if (this.value === '__CREATE__') {
-                    if (confirm('¿Ir a la página de administración para crear una nueva categoría?')) {
-                        window.location.href = 'admin.html';
-                    } else {
-                        this.value = '';
-                    }
-                }
-            });
+        document.getElementById('new' + (type === 'category' ? 'Category' : 'Brand') + 'Input').focus();
+    }, 100);
+}
+
+function closeModal(type) {
+    const modal = document.getElementById(type + 'Modal');
+    modal.classList.remove('show');
+    
+    // Limpiar input
+    document.getElementById('new' + (type === 'category' ? 'Category' : 'Brand') + 'Input').value = '';
+}
+
+// Guardar nueva categoría
+async function saveNewCategory() {
+    const name = document.getElementById('newCategoryInput').value.trim();
+    
+    if (!name) {
+        alert('Por favor ingresa un nombre para la categoría');
+        return;
+    }
+    
+    try {
+        const { error } = await supabaseClient
+            .from('categories')
+            .insert([{ name }]);
+        
+        if (error) {
+            if (error.code === '23505') {
+                alert('Esta categoría ya existe');
+            } else {
+                throw error;
+            }
+            return;
         }
         
-        // Event listener para marca
-        const brandSelect = document.getElementById('brand');
-        if (brandSelect) {
-            brandSelect.addEventListener('change', function() {
-                if (this.value === '__CREATE__') {
-                    if (confirm('¿Ir a la página de administración para crear una nueva marca?')) {
-                        window.location.href = 'admin.html';
-                    } else {
-                        this.value = '';
-                    }
-                }
-            });
+        alert('✅ Categoría creada');
+        closeModal('category');
+        
+        // Recargar categorías y seleccionar la nueva
+        await loadCategories();
+        document.getElementById('category').value = name;
+        
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+// Guardar nueva marca
+async function saveNewBrand() {
+    const name = document.getElementById('newBrandInput').value.trim();
+    
+    if (!name) {
+        alert('Por favor ingresa un nombre para la marca');
+        return;
+    }
+    
+    try {
+        const { error } = await supabaseClient
+            .from('brands')
+            .insert([{ name }]);
+        
+        if (error) {
+            if (error.code === '23505') {
+                alert('Esta marca ya existe');
+            } else {
+                throw error;
+            }
+            return;
         }
-    }, 500);
+        
+        alert('✅ Marca creada');
+        closeModal('brand');
+        
+        // Recargar marcas y seleccionar la nueva
+        await loadBrands();
+        document.getElementById('brand').value = name;
+        
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
 });
     
     // Verificar si viene un código en la URL
@@ -1109,5 +1259,29 @@ async function clearInventory() {
     }
 }
 </script>
+
+<!-- Modal para crear categoría -->
+<div id="categoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">Nueva Categoría</div>
+        <input type="text" id="newCategoryInput" class="modal-input" placeholder="Nombre de la categoría">
+        <div class="modal-buttons">
+            <button class="modal-btn modal-btn-cancel" onclick="closeModal('category')">Cancelar</button>
+            <button class="modal-btn modal-btn-save" onclick="saveNewCategory()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear marca -->
+<div id="brandModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">Nueva Marca</div>
+        <input type="text" id="newBrandInput" class="modal-input" placeholder="Nombre de la marca">
+        <div class="modal-buttons">
+            <button class="modal-btn modal-btn-cancel" onclick="closeModal('brand')">Cancelar</button>
+            <button class="modal-btn modal-btn-save" onclick="saveNewBrand()">Guardar</button>
+        </div>
+    </div>
+</div>
     </body>
 </html>
