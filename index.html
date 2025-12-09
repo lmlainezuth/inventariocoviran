@@ -986,8 +986,8 @@ function compressImage(file, maxWidth, quality) {
 }
 
 async function saveProduct() {
-    if (!currentCode || currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
-        alert('❌ ERROR: Código de barras inválido');
+    if (!currentCode || currentCode.length < 3) { // Cambié de 8 a 3 para permitir códigos manuales
+        alert('❌ ERROR: Código inválido');
         clearProductForm();
         document.getElementById('scannerContainer').style.display = 'block';
         return;
@@ -1012,6 +1012,10 @@ async function saveProduct() {
     try {
         const { data: existingProduct } = await supabaseClient.from('products').select('*').eq('code', currentCode).maybeSingle();
         
+        // Verificar si venimos desde la lista (URL tiene parámetro 'code')
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromList = urlParams.has('code');
+        
         if (existingProduct) {
             if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
                 await supabaseClient.from('products').update({
@@ -1029,18 +1033,25 @@ async function saveProduct() {
         }
         
         alert('✅ Producto guardado');
-        clearProductForm();
-        startScanner();
-        await loadInventory();
-        updateStats();
-        document.getElementById('scannerContainer').style.display = 'block';
-        currentCode = null;
-        currentPhotoBase64 = null;
+        
+        // Si venimos desde la lista, regresar a la lista
+        if (fromList) {
+            window.location.href = 'inventario-lista.html';
+        } else {
+            // Si no, continuar escaneando
+            clearProductForm();
+            startScanner();
+            await loadInventory();
+            updateStats();
+            document.getElementById('scannerContainer').style.display = 'block';
+            currentCode = null;
+            currentPhotoBase64 = null;
+        }
+        
     } catch (error) {
         alert('Error: ' + error.message);
     }
 }
-
 async function loadInventory() {
     try {
         const { data, error } = await supabaseClient.from('products').select('*').order('name', { ascending: true });
