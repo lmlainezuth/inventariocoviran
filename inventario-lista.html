@@ -569,7 +569,7 @@
             window.location.href = 'index.html?code=' + code;
         }
         
-        async function deleteProduct(code, name) {
+   async function deleteProduct(code, name) {
     if (confirm(`⚠️ ¿Estás seguro de eliminar "${name}"?`)) {
         try {
             // 1. Obtener la URL de la foto antes de eliminar
@@ -581,12 +581,15 @@
             
             if (fetchError) throw fetchError;
             
-            // 2. Si tiene foto, extraer el path y eliminarla del storage
-            if (product.photo && product.photo.includes('product-images/products/')) {
+            // 2. Si tiene foto, eliminarla del storage
+            if (product.photo && product.photo.includes('product-images')) {
                 try {
-                    // Extraer el path desde la URL pública
-                    const urlParts = product.photo.split('product-images/');
-                    const filePath = urlParts[1]; // Obtiene "products/timestamp-random.ext"
+                    // Extraer solo el nombre del archivo desde la URL
+                    // Ejemplo: https://...supabase.co/storage/v1/object/public/product-images/products/1765316881967-7mys2gi.jpg
+                    const fileName = product.photo.split('/').pop(); // Obtiene "1765316881967-7mys2gi.jpg"
+                    const filePath = `products/${fileName}`; // Reconstruye "products/1765316881967-7mys2gi.jpg"
+                    
+                    console.log('Intentando eliminar:', filePath);
                     
                     const { error: storageError } = await supabaseClient.storage
                         .from('product-images')
@@ -618,7 +621,6 @@
         }
     }
 }
-    
         function toggleDropdown() {
     document.getElementById('dropdownMenu').classList.toggle('show');
 }
