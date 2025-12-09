@@ -489,18 +489,7 @@
                             <div class="form-group" style="flex: 1;">
                                 <label>Marca</label>
                                 <select id="brand">
-                                    <option value="Covirán">Covirán</option>
-                                    <option value="Marca Blanca">Marca
-                                        Blanca</option>
-                                    <option value="Coca-Cola">Coca-Cola</option>
-                                    <option value="Pepsi">Pepsi</option>
-                                    <option value="Nestlé">Nestlé</option>
-                                    <option value="Danone">Danone</option>
-                                    <option value="Pascual">Pascual</option>
-                                    <option
-                                        value="Central Lechera Asturiana">Central
-                                        Lechera Asturiana</option>
-                                    <option value="Otro">Otro</option>
+                                    <option value>Cargando...</option>
                                 </select>
                             </div>
                         </div>
@@ -571,8 +560,8 @@
             </a>
         </div>
 
-      <script>
-// Esperar a que se cargue Supabase
+<script>
+// Variables globales
 let supabaseClient;
 let isScanning = false;
 let currentCode = null;
@@ -588,16 +577,60 @@ let scanTimeout = null;
 if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
     window.location.href = window.location.href.replace('http:', 'https:');
 }
+
 // Inicializar cuando la página esté lista
 window.addEventListener('DOMContentLoaded', function() {
     // Configuración de Supabase
     const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
     const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
     
-    // Crear cliente de Supabase
     supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    
+    // Verificar si viene un código en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    
+    // Inicializar app
+    Promise.all([loadInventory(), loadCategories(), loadBrands()]).then(() => {
+        updateStats();
+        setupModalListeners();
+        
+        if (codeFromUrl) {
+            currentCode = codeFromUrl;
+            document.getElementById('scannedCode').textContent = codeFromUrl;
+            document.getElementById('result').classList.add('show');
+            document.getElementById('scannerContainer').style.display = 'none';
+            loadProductData(codeFromUrl);
+        } else {
+            startScanner();
+        }
+    });
+});
 
-// Cargar categorías desde Supabase
+// Setup de listeners para modales
+function setupModalListeners() {
+    const categorySelect = document.getElementById('category');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            if (this.value === '__CREATE__') {
+                openModal('category');
+                this.value = '';
+            }
+        });
+    }
+    
+    const brandSelect = document.getElementById('brand');
+    if (brandSelect) {
+        brandSelect.addEventListener('change', function() {
+            if (this.value === '__CREATE__') {
+                openModal('brand');
+                this.value = '';
+            }
+        });
+    }
+}
+
+// Cargar categorías
 async function loadCategories() {
     try {
         const { data, error } = await supabaseClient
@@ -617,21 +650,18 @@ async function loadCategories() {
             select.appendChild(option);
         });
         
-        // Añadir opción para crear nueva categoría
         const createOption = document.createElement('option');
         createOption.value = '__CREATE__';
         createOption.textContent = '➕ Crear nueva categoría...';
         createOption.style.color = '#2563eb';
         createOption.style.fontWeight = 'bold';
         select.appendChild(createOption);
-        
     } catch (error) {
         console.error('Error cargando categorías:', error);
-        document.getElementById('category').innerHTML = '<option value="">Error al cargar</option>';
     }
 }
 
-// Cargar marcas desde Supabase
+// Cargar marcas
 async function loadBrands() {
     try {
         const { data, error } = await supabaseClient
@@ -651,51 +681,21 @@ async function loadBrands() {
             select.appendChild(option);
         });
         
-        // Añadir opción para crear nueva marca
         const createOption = document.createElement('option');
         createOption.value = '__CREATE__';
         createOption.textContent = '➕ Crear nueva marca...';
         createOption.style.color = '#2563eb';
         createOption.style.fontWeight = 'bold';
         select.appendChild(createOption);
-        
     } catch (error) {
         console.error('Error cargando marcas:', error);
-        document.getElementById('brand').innerHTML = '<option value="">Error al cargar</option>';
     }
 }
 
-// Detectar cuando se selecciona "Crear nueva..."
-document.addEventListener('DOMContentLoaded', function() {
-    // Detectar cuando se selecciona "Crear nueva..."
-setTimeout(() => {
-    const categorySelect = document.getElementById('category');
-    if (categorySelect) {
-        categorySelect.addEventListener('change', function() {
-            if (this.value === '__CREATE__') {
-                openModal('category');
-                this.value = ''; // Reset del select
-            }
-        });
-    }
-    
-    const brandSelect = document.getElementById('brand');
-    if (brandSelect) {
-        brandSelect.addEventListener('change', function() {
-            if (this.value === '__CREATE__') {
-                openModal('brand');
-                this.value = ''; // Reset del select
-            }
-        });
-    }
-}, 500);
-
-// Funciones para el modal
+// Funciones del modal
 function openModal(type) {
     const modal = document.getElementById(type + 'Modal');
     modal.classList.add('show');
-    
-    // Focus en el input
     setTimeout(() => {
         document.getElementById('new' + (type === 'category' ? 'Category' : 'Brand') + 'Input').focus();
     }, 100);
@@ -704,125 +704,67 @@ function openModal(type) {
 function closeModal(type) {
     const modal = document.getElementById(type + 'Modal');
     modal.classList.remove('show');
-    
-    // Limpiar input
     document.getElementById('new' + (type === 'category' ? 'Category' : 'Brand') + 'Input').value = '';
 }
 
-// Guardar nueva categoría
 async function saveNewCategory() {
     const name = document.getElementById('newCategoryInput').value.trim();
-    
     if (!name) {
         alert('Por favor ingresa un nombre para la categoría');
         return;
     }
     
     try {
-        const { error } = await supabaseClient
-            .from('categories')
-            .insert([{ name }]);
-        
+        const { error } = await supabaseClient.from('categories').insert([{ name }]);
         if (error) {
-            if (error.code === '23505') {
-                alert('Esta categoría ya existe');
-            } else {
-                throw error;
-            }
+            if (error.code === '23505') alert('Esta categoría ya existe');
+            else throw error;
             return;
         }
         
         alert('✅ Categoría creada');
         closeModal('category');
-        
-        // Recargar categorías y seleccionar la nueva
         await loadCategories();
         document.getElementById('category').value = name;
-        
     } catch (error) {
         alert('Error: ' + error.message);
     }
 }
 
-// Guardar nueva marca
 async function saveNewBrand() {
     const name = document.getElementById('newBrandInput').value.trim();
-    
     if (!name) {
         alert('Por favor ingresa un nombre para la marca');
         return;
     }
     
     try {
-        const { error } = await supabaseClient
-            .from('brands')
-            .insert([{ name }]);
-        
+        const { error } = await supabaseClient.from('brands').insert([{ name }]);
         if (error) {
-            if (error.code === '23505') {
-                alert('Esta marca ya existe');
-            } else {
-                throw error;
-            }
+            if (error.code === '23505') alert('Esta marca ya existe');
+            else throw error;
             return;
         }
         
         alert('✅ Marca creada');
         closeModal('brand');
-        
-        // Recargar marcas y seleccionar la nueva
         await loadBrands();
         document.getElementById('brand').value = name;
-        
     } catch (error) {
         alert('Error: ' + error.message);
     }
 }
 
-});
-    
-    // Verificar si viene un código en la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get('code');
-    
-    // Inicializar app
-    Promise.all([loadInventory(), loadCategories(), loadBrands()]).then(() => {
-    updateStats();
-        
-        if (codeFromUrl) {
-            // Si viene código desde la lista, cargar ese producto directamente SIN ESCÁNER
-            currentCode = codeFromUrl;
-            document.getElementById('scannedCode').textContent = codeFromUrl;
-            document.getElementById('result').classList.add('show');
-            document.getElementById('scannerContainer').style.display = 'none'; // OCULTAR ESCÁNER
-            loadProductData(codeFromUrl);
-        } else {
-            // Si no, iniciar el escáner normalmente
-            startScanner();
-        }
-    });
-});
-
-// Resto de funciones (copiar todo lo demás desde aquí)
 function switchPage(page) {
-    document.querySelectorAll('.page-section').forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
+    document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     
     if (page === 'scan') {
         document.getElementById('scanPage').classList.add('active');
         document.querySelectorAll('.nav-item')[0].classList.add('active');
-        if (!isScanning) {
-            startScanner();
-        }
+        if (!isScanning) startScanner();
     } else if (page === 'admin') {
-        if (isScanning) {
-            stopScanner();
-        }
+        if (isScanning) stopScanner();
         document.getElementById('adminPage').classList.add('active');
         document.querySelectorAll('.nav-item')[2].classList.add('active');
         updateStats();
@@ -847,26 +789,11 @@ function startScanner() {
             },
         },
         decoder: {
-            readers: [
-                "ean_reader",
-                "ean_8_reader",
-                "code_128_reader",
-                "code_39_reader",
-                "upc_reader",
-                "upc_e_reader"
-            ],
-            debug: {
-                drawBoundingBox: true,
-                showFrequency: true,
-                drawScanline: true,
-                showPattern: true
-            }
+            readers: ["ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader", "upc_reader", "upc_e_reader"],
+            debug: { drawBoundingBox: true, showFrequency: true, drawScanline: true, showPattern: true }
         },
         locate: true,
-        locator: {
-            halfSample: true,
-            patchSize: "medium"
-        },
+        locator: { halfSample: true, patchSize: "medium" },
         frequency: 10,
     }, function(err) {
         if (err) {
@@ -896,42 +823,27 @@ function onBarcodeDetected(result) {
     const errors = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0);
     const errorRate = errors / result.codeResult.decodedCodes.length;
     
-    if (errorRate > 0.15) return;
-    if (!code || code.length < 8) return;
-    if (!/^[A-Z0-9]+$/i.test(code)) return;
+    if (errorRate > 0.15 || !code || code.length < 8 || !/^[A-Z0-9]+$/i.test(code)) return;
     
-    if (!detectionCounter[code]) {
-        detectionCounter[code] = 1;
-    } else {
-        detectionCounter[code]++;
-    }
-    
+    detectionCounter[code] = (detectionCounter[code] || 0) + 1;
     document.getElementById('detectionProgress').textContent = `Detectando: ${code} (${detectionCounter[code]}/${DETECTION_THRESHOLD})`;
     
     for (let key in detectionCounter) {
-        if (key !== code && detectionCounter[key] < DETECTION_THRESHOLD) {
-            delete detectionCounter[key];
-        }
+        if (key !== code && detectionCounter[key] < DETECTION_THRESHOLD) delete detectionCounter[key];
     }
     
     if (detectionCounter[code] >= DETECTION_THRESHOLD) {
         lastDetectedCode = code;
         currentCode = code;
         detectionCounter = {};
-        
         document.getElementById('scannedCode').textContent = code;
         document.getElementById('result').classList.add('show');
-        
         playBeep();
         stopScanner();
-        
-        // Cargar datos del producto si existe
         loadProductData(code);
         
         if (detectionTimeout) clearTimeout(detectionTimeout);
-        detectionTimeout = setTimeout(() => {
-            lastDetectedCode = null;
-        }, 3000);
+        detectionTimeout = setTimeout(() => { lastDetectedCode = null; }, 3000);
     }
 }
 
@@ -939,33 +851,23 @@ function playBeep() {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
     oscillator.frequency.value = 800;
     oscillator.type = 'sine';
     gainNode.gain.value = 0.3;
-    
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.1);
 }
 
 async function loadProductData(code) {
     try {
-        const { data: existingProduct, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('code', code)
-            .maybeSingle();
-        
+        const { data: existingProduct, error } = await supabaseClient.from('products').select('*').eq('code', code).maybeSingle();
         if (error) throw error;
         
-        // Ocultar el área del escáner
         document.getElementById('scannerContainer').style.display = 'none';
         
         if (existingProduct) {
-            // Producto existe - llenar formulario
             document.getElementById('productName').value = existingProduct.name;
             document.getElementById('productQuantity').value = existingProduct.quantity;
             document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
@@ -977,27 +879,19 @@ async function loadProductData(code) {
             document.getElementById('brand').value = existingProduct.brand || '';
             document.getElementById('location').value = existingProduct.location || '';
             
-            // Mostrar foto si existe
             if (existingProduct.photo) {
                 document.getElementById('productPhoto').src = existingProduct.photo;
                 document.getElementById('productPhoto').style.display = 'block';
                 currentPhotoBase64 = existingProduct.photo;
             }
             
-            // Mensaje de producto encontrado
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
+            document.getElementById('result').innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
         } else {
-            // Producto nuevo
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `
-                <div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>
-            `;
+            document.getElementById('result').innerHTML = `<div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>`;
         }
         
         document.getElementById('productForm').classList.add('show');
         document.getElementById('productName').focus();
-        
     } catch (error) {
         console.error('Error:', error);
         document.getElementById('scannerContainer').style.display = 'none';
@@ -1012,16 +906,10 @@ async function uploadImageToSupabase(file) {
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `products/${fileName}`;
         
-        const { data, error } = await supabaseClient.storage
-            .from('product-images')
-            .upload(filePath, file);
-        
+        const { data, error } = await supabaseClient.storage.from('product-images').upload(filePath, file);
         if (error) throw error;
         
-        const { data: urlData } = supabaseClient.storage
-            .from('product-images')
-            .getPublicUrl(filePath);
-        
+        const { data: urlData } = supabaseClient.storage.from('product-images').getPublicUrl(filePath);
         return urlData.publicUrl;
     } catch (error) {
         alert('Error subiendo imagen: ' + error.message);
@@ -1033,24 +921,19 @@ async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Comprimir al máximo: 400px y 50% calidad
     const compressedFile = await compressImage(file, 400, 0.5);
     
     const reader = new FileReader();
     reader.onload = function(e) {
-        const img = document.getElementById('productPhoto');
-        img.src = e.target.result;
-        img.style.display = 'block';
+        document.getElementById('productPhoto').src = e.target.result;
+        document.getElementById('productPhoto').style.display = 'block';
     };
     reader.readAsDataURL(compressedFile);
     
     const imageUrl = await uploadImageToSupabase(compressedFile);
-    if (imageUrl) {
-        currentPhotoBase64 = imageUrl;
-    }
+    if (imageUrl) currentPhotoBase64 = imageUrl;
 }
 
-// Nueva función para comprimir imágenes
 function compressImage(file, maxWidth, quality) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -1061,7 +944,6 @@ function compressImage(file, maxWidth, quality) {
                 let width = img.width;
                 let height = img.height;
                 
-                // Redimensionar si es muy grande
                 if (width > maxWidth) {
                     height = (height * maxWidth) / width;
                     width = maxWidth;
@@ -1069,22 +951,11 @@ function compressImage(file, maxWidth, quality) {
                 
                 canvas.width = width;
                 canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
                 
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Convertir a blob comprimido
-                canvas.toBlob(
-                    (blob) => {
-                        const compressedFile = new File([blob], file.name, {
-                            type: 'image/jpeg',
-                            lastModified: Date.now()
-                        });
-                        resolve(compressedFile);
-                    },
-                    'image/jpeg',
-                    quality
-                );
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+                }, 'image/jpeg', quality);
             };
             img.src = e.target.result;
         };
@@ -1093,15 +964,9 @@ function compressImage(file, maxWidth, quality) {
 }
 
 async function saveProduct() {
-    if (!currentCode) {
-        alert('❌ ERROR: No hay código de barras válido.');
-        return;
-    }
-    
-    if (currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
-        alert('❌ ERROR: El código escaneado no es válido.');
+    if (!currentCode || currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
+        alert('❌ ERROR: Código de barras inválido');
         clearProductForm();
-        // Mostrar escáner de nuevo pero SIN reiniciarlo
         document.getElementById('scannerContainer').style.display = 'block';
         return;
     }
@@ -1123,50 +988,31 @@ async function saveProduct() {
     const location = document.getElementById('location').value;
     
     try {
-        const { data: existingProduct } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('code', currentCode)
-            .maybeSingle();
+        const { data: existingProduct } = await supabaseClient.from('products').select('*').eq('code', currentCode).maybeSingle();
         
         if (existingProduct) {
             if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
-                await supabaseClient
-                    .from('products')
-                    .update({
-                        name, quantity, unit, min_quantity: minQuantity,
-                        max_quantity: maxQuantity, purchase_price: purchasePrice,
-                        public_price: publicPrice, category, brand, location,
-                        photo: currentPhotoBase64
-                    })
-                    .eq('code', currentCode);
+                await supabaseClient.from('products').update({
+                    name, quantity, unit, min_quantity: minQuantity, max_quantity: maxQuantity,
+                    purchase_price: purchasePrice, public_price: publicPrice, category, brand, location, photo: currentPhotoBase64
+                }).eq('code', currentCode);
             } else {
-                await supabaseClient
-                    .from('products')
-                    .update({ quantity: existingProduct.quantity + quantity })
-                    .eq('code', currentCode);
+                await supabaseClient.from('products').update({ quantity: existingProduct.quantity + quantity }).eq('code', currentCode);
             }
         } else {
-            await supabaseClient
-                .from('products')
-                .insert([{
-                    code: currentCode, name, quantity, unit,
-                    min_quantity: minQuantity, max_quantity: maxQuantity,
-                    purchase_price: purchasePrice, public_price: publicPrice,
-                    category, brand, location, photo: currentPhotoBase64
-                }]);
+            await supabaseClient.from('products').insert([{
+                code: currentCode, name, quantity, unit, min_quantity: minQuantity, max_quantity: maxQuantity,
+                purchase_price: purchasePrice, public_price: publicPrice, category, brand, location, photo: currentPhotoBase64
+            }]);
         }
         
         alert('✅ Producto guardado');
         clearProductForm();
         await loadInventory();
         updateStats();
-        
-        // Solo mostrar el contenedor, NO reiniciar escáner
         document.getElementById('scannerContainer').style.display = 'block';
         currentCode = null;
         currentPhotoBase64 = null;
-        
     } catch (error) {
         alert('Error: ' + error.message);
     }
@@ -1174,11 +1020,7 @@ async function saveProduct() {
 
 async function loadInventory() {
     try {
-        const { data, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .order('name', { ascending: true });
-        
+        const { data, error } = await supabaseClient.from('products').select('*').order('name', { ascending: true });
         if (error) throw error;
         inventory = data || [];
     } catch (error) {
@@ -1208,14 +1050,12 @@ async function updateStats() {
     await loadInventory();
     const totalProducts = inventory.length;
     const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
-    
     document.getElementById('totalProducts').textContent = totalProducts;
     document.getElementById('totalUnits').textContent = totalUnits.toFixed(2);
 }
 
 async function exportInventory() {
     await loadInventory();
-    
     if (inventory.length === 0) {
         alert('No hay productos para exportar');
         return;
@@ -1225,9 +1065,7 @@ async function exportInventory() {
     inventory.forEach(item => {
         const date = new Date(item.created_at).toLocaleDateString('es-ES');
         const margin = item.public_price > 0 && item.purchase_price > 0 
-            ? ((item.public_price - item.purchase_price) / item.purchase_price * 100).toFixed(2)
-            : '';
-            
+            ? ((item.public_price - item.purchase_price) / item.purchase_price * 100).toFixed(2) : '';
         csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.min_quantity || 0},${item.max_quantity || ''},${item.purchase_price || 0},${item.public_price || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
     });
     
@@ -1244,11 +1082,7 @@ async function clearInventory() {
     if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario?')) {
         if (confirm('Confirmación final: ¿Realmente quieres borrar todos los productos?')) {
             try {
-                await supabaseClient
-                    .from('products')
-                    .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000');
-                
+                await supabaseClient.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
                 inventory = [];
                 updateStats();
                 alert('Inventario borrado');
