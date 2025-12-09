@@ -433,119 +433,210 @@ body {
     </div>
 
     
-    <script>
-        // Mostrar fecha actual
-        const fechaElement = document.getElementById('fecha');
-        const hoy = new Date();
-        const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
-        fechaElement.textContent = hoy.toLocaleDateString('es-ES', opciones);
+   <script>
+// Verificar y limpiar datos si es después de las 22:30
+function verificarYLimpiarDatos() {
+    const ahora = new Date();
+    const ultimaLimpieza = localStorage.getItem('ultimaLimpiezaCaja');
+    const hoy = ahora.toDateString();
+    
+    // Obtener hora actual en formato 24h
+    const horaActual = ahora.getHours();
+    const minutoActual = ahora.getMinutes();
+    const horaEnMinutos = horaActual * 60 + minutoActual;
+    const horaLimpieza = 22 * 60 + 30; // 22:30 en minutos
+    
+    // Si ya pasó la hora de limpieza y no se ha limpiado hoy
+    if (horaEnMinutos >= horaLimpieza && ultimaLimpieza !== hoy) {
+        localStorage.removeItem('cierreCajaData');
+        localStorage.setItem('ultimaLimpiezaCaja', hoy);
+        console.log('Datos limpiados automáticamente después de las 22:30');
+    }
+}
 
-        // Función para formatear números a euros
-        function formatEuros(numero) {
-            return numero.toFixed(2) + ' €';
-        }
+// Guardar datos en localStorage
+function guardarDatos() {
+    const datos = {
+        monedas: {},
+        billetes: {},
+        datafono: document.getElementById('importe-datafono').value,
+        factura: document.getElementById('importe-factura').value,
+        fecha: new Date().toISOString()
+    };
+    
+    // Guardar monedas
+    monedasInputs.forEach((input, index) => {
+        datos.monedas[input.dataset.value] = input.value;
+    });
+    
+    // Guardar billetes
+    billetesInputs.forEach((input, index) => {
+        datos.billetes[input.dataset.value] = input.value;
+    });
+    
+    localStorage.setItem('cierreCajaData', JSON.stringify(datos));
+}
 
-        // Calcular monedas
-        const monedasInputs = document.querySelectorAll('.moneda-input');
-        const monedasTotales = document.querySelectorAll('.moneda-total');
-        const totalMonedasElement = document.getElementById('total-monedas');
-
-        function calcularMonedas() {
-            let totalMonedas = 0;
-            
-            monedasInputs.forEach((input, index) => {
-                const cantidad = parseFloat(input.value) || 0;
-                const valor = parseFloat(input.dataset.value);
-                const total = cantidad * valor;
-                
-                monedasTotales[index].textContent = formatEuros(total);
-                totalMonedas += total;
-            });
-            
-            // Total real de monedas
-            totalMonedasElement.textContent = formatEuros(totalMonedas);
-            document.getElementById('monedas-real').textContent = formatEuros(totalMonedas);
-            
-            // Redondear a decenas (hacia abajo)
-            const totalRedondeado = Math.floor(totalMonedas / 5) * 5;
-            document.getElementById('monedas-redondeado').textContent = formatEuros(totalRedondeado);
-            
-            // Calcular sobrante
-            const sobrante = totalMonedas - totalRedondeado;
-            document.getElementById('sobrante').textContent = formatEuros(sobrante);
-            
-            // Calcular completar fondo (400 - redondeado)
-            const completarFondo = 400 - totalRedondeado;
-            document.getElementById('completar-fondo').textContent = formatEuros(completarFondo);
-            
-            calcularRecogida();
-        }
-
-        // Calcular billetes
-        const billetesInputs = document.querySelectorAll('.billete-input');
-        const billetesTotales = document.querySelectorAll('.billete-total');
-        const totalBilletesElement = document.getElementById('total-billetes');
-
-        function calcularBilletes() {
-            let totalBilletes = 0;
-            
-            billetesInputs.forEach((input, index) => {
-                const cantidad = parseFloat(input.value) || 0;
-                const valor = parseFloat(input.dataset.value);
-                const total = cantidad * valor;
-                
-                billetesTotales[index].textContent = formatEuros(total);
-                totalBilletes += total;
-            });
-            
-            totalBilletesElement.textContent = formatEuros(totalBilletes);
-            calcularRecogida();
-        }
-
-        // Calcular recogida total (billetes + sobrante)
-        function calcularRecogida() {
-            const totalBilletes = parseFloat(totalBilletesElement.textContent) || 0;
-            const sobrante = parseFloat(document.getElementById('sobrante').textContent) || 0;
-            const totalRecogida = totalBilletes + sobrante;
-            
-            document.getElementById('recogida').textContent = formatEuros(totalRecogida);
-            calcularVentaDia();
-        }
-
-        // Calcular venta del día (recogida + datáfono - factura)
-        function calcularVentaDia() {
-            const recogida = parseFloat(document.getElementById('recogida').textContent) || 0;
-            const datafono = parseFloat(document.getElementById('importe-datafono').value) || 0;
-            const factura = parseFloat(document.getElementById('importe-factura').value) || 0;
-            
-            // Cierre en aplicación (lo que realmente tienes)
-            const cierreAplicacion = recogida + datafono + factura;
-            document.getElementById('cierre-aplicacion').value = cierreAplicacion.toFixed(2);
-            
-            // Cierre de ventas (lo que aparece en el sistema)
-            const cierreVentas = recogida + datafono;
-            document.getElementById('cierre-ventas').value = cierreVentas.toFixed(2);
-            
-       }
-
-        // Event listeners
-        monedasInputs.forEach(input => {
-            input.addEventListener('input', calcularMonedas);
+// Cargar datos desde localStorage
+function cargarDatos() {
+    const datosGuardados = localStorage.getItem('cierreCajaData');
+    
+    if (datosGuardados) {
+        const datos = JSON.parse(datosGuardados);
+        
+        // Cargar monedas
+        monedasInputs.forEach((input) => {
+            const valor = input.dataset.value;
+            if (datos.monedas[valor]) {
+                input.value = datos.monedas[valor];
+            }
         });
-
-        billetesInputs.forEach(input => {
-            input.addEventListener('input', calcularBilletes);
+        
+        // Cargar billetes
+        billetesInputs.forEach((input) => {
+            const valor = input.dataset.value;
+            if (datos.billetes[valor]) {
+                input.value = datos.billetes[valor];
+            }
         });
-
-        // Event listener para el datáfono
-        document.getElementById('importe-datafono').addEventListener('input', calcularVentaDia);
-
-        // Event listener para facturas
-        document.getElementById('importe-factura').addEventListener('input', calcularVentaDia);
-//
-        // Inicializar cálculos
+        
+        // Cargar datáfono y factura
+        if (datos.datafono) {
+            document.getElementById('importe-datafono').value = datos.datafono;
+        }
+        if (datos.factura) {
+            document.getElementById('importe-factura').value = datos.factura;
+        }
+        
+        // Recalcular todos los totales
         calcularMonedas();
         calcularBilletes();
-    </script>
+    }
+}
+
+// Mostrar fecha actual
+const fechaElement = document.getElementById('fecha');
+const hoy = new Date();
+const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+fechaElement.textContent = hoy.toLocaleDateString('es-ES', opciones);
+
+// Función para formatear números a euros
+function formatEuros(numero) {
+    return numero.toFixed(2) + ' €';
+}
+
+// Calcular monedas
+const monedasInputs = document.querySelectorAll('.moneda-input');
+const monedasTotales = document.querySelectorAll('.moneda-total');
+const totalMonedasElement = document.getElementById('total-monedas');
+
+function calcularMonedas() {
+    let totalMonedas = 0;
+    
+    monedasInputs.forEach((input, index) => {
+        const cantidad = parseFloat(input.value) || 0;
+        const valor = parseFloat(input.dataset.value);
+        const total = cantidad * valor;
+        
+        monedasTotales[index].textContent = formatEuros(total);
+        totalMonedas += total;
+    });
+    
+    // Total real de monedas
+    totalMonedasElement.textContent = formatEuros(totalMonedas);
+    document.getElementById('monedas-real').textContent = formatEuros(totalMonedas);
+    
+    // Redondear a múltiplos de 5 (hacia abajo)
+    const totalRedondeado = Math.floor(totalMonedas / 5) * 5;
+    document.getElementById('monedas-redondeado').textContent = formatEuros(totalRedondeado);
+    
+    // Calcular sobrante
+    const sobrante = totalMonedas - totalRedondeado;
+    document.getElementById('sobrante').textContent = formatEuros(sobrante);
+    
+    // Calcular completar fondo (400 - redondeado)
+    const completarFondo = 400 - totalRedondeado;
+    document.getElementById('completar-fondo').textContent = formatEuros(completarFondo);
+    
+    calcularRecogida();
+    guardarDatos();
+}
+
+// Calcular billetes
+const billetesInputs = document.querySelectorAll('.billete-input');
+const billetesTotales = document.querySelectorAll('.billete-total');
+const totalBilletesElement = document.getElementById('total-billetes');
+
+function calcularBilletes() {
+    let totalBilletes = 0;
+    
+    billetesInputs.forEach((input, index) => {
+        const cantidad = parseFloat(input.value) || 0;
+        const valor = parseFloat(input.dataset.value);
+        const total = cantidad * valor;
+        
+        billetesTotales[index].textContent = formatEuros(total);
+        totalBilletes += total;
+    });
+    
+    totalBilletesElement.textContent = formatEuros(totalBilletes);
+    calcularRecogida();
+    guardarDatos();
+}
+
+// Calcular recogida total (billetes + sobrante)
+function calcularRecogida() {
+    const totalBilletes = parseFloat(totalBilletesElement.textContent) || 0;
+    const sobrante = parseFloat(document.getElementById('sobrante').textContent) || 0;
+    const totalRecogida = totalBilletes + sobrante;
+    
+    document.getElementById('recogida').textContent = formatEuros(totalRecogida);
+    calcularVentaDia();
+}
+
+// Calcular venta del día (recogida + datáfono + factura)
+function calcularVentaDia() {
+    const recogida = parseFloat(document.getElementById('recogida').textContent) || 0;
+    const datafono = parseFloat(document.getElementById('importe-datafono').value) || 0;
+    const factura = parseFloat(document.getElementById('importe-factura').value) || 0;
+    
+    // Cierre en aplicación (lo que realmente tienes)
+    const cierreAplicacion = recogida + datafono + factura;
+    document.getElementById('cierre-aplicacion').value = cierreAplicacion.toFixed(2);
+    
+    // Cierre de ventas (lo que aparece en el sistema)
+    const cierreVentas = recogida + datafono;
+    document.getElementById('cierre-ventas').value = cierreVentas.toFixed(2);
+}
+
+// Event listeners
+monedasInputs.forEach(input => {
+    input.addEventListener('input', calcularMonedas);
+});
+
+billetesInputs.forEach(input => {
+    input.addEventListener('input', calcularBilletes);
+});
+
+// Event listener para el datáfono
+document.getElementById('importe-datafono').addEventListener('input', () => {
+    calcularVentaDia();
+    guardarDatos();
+});
+
+// Event listener para facturas
+document.getElementById('importe-factura').addEventListener('input', () => {
+    calcularVentaDia();
+    guardarDatos();
+});
+
+// Al cargar la página
+window.addEventListener('DOMContentLoaded', () => {
+    verificarYLimpiarDatos();
+    cargarDatos();
+    calcularMonedas();
+    calcularBilletes();
+});
+</script>
 </body>
 </html>
