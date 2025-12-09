@@ -530,7 +530,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // Crear cliente de Supabase
     supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Cargar categorías desde Supabase
+// Cargar categorías desde Supabase
 async function loadCategories() {
     try {
         const { data, error } = await supabaseClient
@@ -549,6 +549,15 @@ async function loadCategories() {
             option.textContent = cat.name;
             select.appendChild(option);
         });
+        
+        // Añadir opción para crear nueva categoría
+        const createOption = document.createElement('option');
+        createOption.value = '__CREATE__';
+        createOption.textContent = '➕ Crear nueva categoría...';
+        createOption.style.color = '#2563eb';
+        createOption.style.fontWeight = 'bold';
+        select.appendChild(createOption);
+        
     } catch (error) {
         console.error('Error cargando categorías:', error);
         document.getElementById('category').innerHTML = '<option value="">Error al cargar</option>';
@@ -574,11 +583,53 @@ async function loadBrands() {
             option.textContent = brand.name;
             select.appendChild(option);
         });
+        
+        // Añadir opción para crear nueva marca
+        const createOption = document.createElement('option');
+        createOption.value = '__CREATE__';
+        createOption.textContent = '➕ Crear nueva marca...';
+        createOption.style.color = '#2563eb';
+        createOption.style.fontWeight = 'bold';
+        select.appendChild(createOption);
+        
     } catch (error) {
         console.error('Error cargando marcas:', error);
         document.getElementById('brand').innerHTML = '<option value="">Error al cargar</option>';
     }
 }
+
+// Detectar cuando se selecciona "Crear nueva..."
+document.addEventListener('DOMContentLoaded', function() {
+    // Event listener para categoría
+    setTimeout(() => {
+        const categorySelect = document.getElementById('category');
+        if (categorySelect) {
+            categorySelect.addEventListener('change', function() {
+                if (this.value === '__CREATE__') {
+                    if (confirm('¿Ir a la página de administración para crear una nueva categoría?')) {
+                        window.location.href = 'admin.html';
+                    } else {
+                        this.value = '';
+                    }
+                }
+            });
+        }
+        
+        // Event listener para marca
+        const brandSelect = document.getElementById('brand');
+        if (brandSelect) {
+            brandSelect.addEventListener('change', function() {
+                if (this.value === '__CREATE__') {
+                    if (confirm('¿Ir a la página de administración para crear una nueva marca?')) {
+                        window.location.href = 'admin.html';
+                    } else {
+                        this.value = '';
+                    }
+                }
+            });
+        }
+    }, 500);
+});
     
     // Verificar si viene un código en la URL
     const urlParams = new URLSearchParams(window.location.search);
