@@ -607,12 +607,13 @@ window.onclick = function(event) {
 }
 
 function createManualProduct() {
-    // Generar código temporal único
-    const timestamp = Date.now();
-    const randomCode = 'MAN-' + timestamp;
-    
-    // Redirigir a index.html con código manual y flag
-    window.location.href = `index.html?code=${randomCode}&manual=true`;
+    // Cerrar el dropdown
+    document.getElementById('dropdownMenu').classList.remove('show');
+    // Abrir modal para ingresar código manual
+    document.getElementById('manualProductModal').classList.add('show');
+    setTimeout(() => {
+        document.getElementById('manualCodeInput').focus();
+    }, 100);
 }
 function closeManualModal() {
     document.getElementById('manualProductModal').classList.remove('show');
