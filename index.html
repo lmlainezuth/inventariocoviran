@@ -585,8 +585,8 @@ async function loadBrands() {
     const codeFromUrl = urlParams.get('code');
     
     // Inicializar app
-    loadInventory().then(() => {
-        updateStats();
+    Promise.all([loadInventory(), loadCategories(), loadBrands()]).then(() => {
+    updateStats();
         
         if (codeFromUrl) {
             // Si viene código desde la lista, cargar ese producto directamente SIN ESCÁNER
