@@ -1047,6 +1047,7 @@ async function saveProduct() {
         
         alert('✅ Producto guardado');
         clearProductForm();
+        startScanner();
         await loadInventory();
         updateStats();
         document.getElementById('scannerContainer').style.display = 'block';
@@ -1083,7 +1084,7 @@ function clearProductForm() {
     document.getElementById('result').classList.remove('show');
     document.getElementById('productForm').classList.remove('show');
     document.getElementById('scannerContainer').style.display = 'block';
-}
+    }
 
 async function updateStats() {
     await loadInventory();
