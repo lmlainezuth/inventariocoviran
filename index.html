@@ -536,6 +536,10 @@ let currentPhotoBase64 = null;
 const DETECTION_THRESHOLD = 5;
 let scanTimeout = null;
 
+// Forzar HTTPS
+if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
+    window.location.href = window.location.href.replace('http:', 'https:');
+}
 // Inicializar cuando la página esté lista
 window.addEventListener('DOMContentLoaded', function() {
     // Configuración de Supabase
