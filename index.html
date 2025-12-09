@@ -416,26 +416,7 @@
                             <div class="form-group" style="flex: 1;">
                                 <label>Categoría</label>
                                 <select id="category">
-                                    <option value>Seleccionar...</option>
-                                    <option value="Bebidas">Bebidas</option>
-                                    <option value="Licores">Licores</option>
-                                    <option value="Vinos">Vinos</option>
-                                    <option
-                                        value="Iluminación">Iluminación</option>
-                                    <option value="Lácteos">Lácteos</option>
-                                    <option value="Panadería">Panadería</option>
-                                    <option value="Carnes">Carnes</option>
-                                    <option value="Pescados">Pescados</option>
-                                    <option value="Frutas y Verduras">Frutas y
-                                        Verduras</option>
-                                    <option
-                                        value="Congelados">Congelados</option>
-                                    <option value="Conservas">Conservas</option>
-                                    <option value="Limpieza">Limpieza</option>
-                                    <option value="Higiene">Higiene</option>
-                                    <option
-                                        value="Charcutería">Charcutería</option>
-                                    <option value="Otros">Otros</option>
+                                    <option value>Cargando...</option>
                                 </select>
                             </div>
                             <div class="form-group" style="flex: 1;">
@@ -548,6 +529,56 @@ window.addEventListener('DOMContentLoaded', function() {
     
     // Crear cliente de Supabase
     supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Cargar categorías desde Supabase
+async function loadCategories() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('categories')
+            .select('*')
+            .order('name', { ascending: true });
+        
+        if (error) throw error;
+        
+        const select = document.getElementById('category');
+        select.innerHTML = '<option value="">Seleccionar...</option>';
+        
+        data.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.name;
+            option.textContent = cat.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error cargando categorías:', error);
+        document.getElementById('category').innerHTML = '<option value="">Error al cargar</option>';
+    }
+}
+
+// Cargar marcas desde Supabase
+async function loadBrands() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('brands')
+            .select('*')
+            .order('name', { ascending: true });
+        
+        if (error) throw error;
+        
+        const select = document.getElementById('brand');
+        select.innerHTML = '<option value="">Seleccionar...</option>';
+        
+        data.forEach(brand => {
+            const option = document.createElement('option');
+            option.value = brand.name;
+            option.textContent = brand.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error cargando marcas:', error);
+        document.getElementById('brand').innerHTML = '<option value="">Error al cargar</option>';
+    }
+}
     
     // Verificar si viene un código en la URL
     const urlParams = new URLSearchParams(window.location.search);
