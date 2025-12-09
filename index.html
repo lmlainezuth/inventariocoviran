@@ -797,18 +797,63 @@ async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
+    // Comprimir al máximo: 400px y 50% calidad
+    const compressedFile = await compressImage(file, 400, 0.5);
+    
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = document.getElementById('productPhoto');
         img.src = e.target.result;
         img.style.display = 'block';
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(compressedFile);
     
-    const imageUrl = await uploadImageToSupabase(file);
+    const imageUrl = await uploadImageToSupabase(compressedFile);
     if (imageUrl) {
         currentPhotoBase64 = imageUrl;
     }
+}
+
+// Nueva función para comprimir imágenes
+function compressImage(file, maxWidth, quality) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Redimensionar si es muy grande
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convertir a blob comprimido
+                canvas.toBlob(
+                    (blob) => {
+                        const compressedFile = new File([blob], file.name, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(compressedFile);
+                    },
+                    'image/jpeg',
+                    quality
+                );
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 async function saveProduct() {
