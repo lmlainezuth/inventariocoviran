@@ -865,9 +865,8 @@ async function saveProduct() {
     if (currentCode.length < 8 || !/^[A-Z0-9]+$/i.test(currentCode)) {
         alert('❌ ERROR: El código escaneado no es válido.');
         clearProductForm();
-        setTimeout(() => {
-            if (!isScanning) startScanner();
-        }, 500);
+        // Mostrar escáner de nuevo pero SIN reiniciarlo
+        document.getElementById('scannerContainer').style.display = 'block';
         return;
     }
     
