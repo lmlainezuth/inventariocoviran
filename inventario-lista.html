@@ -383,6 +383,10 @@
             <span>👑</span>
             <span>Administración</span>
         </button>
+        <button class="dropdown-item" onclick="logout()">
+    <span>🚪</span>
+    <span>Cerrar sesión</span>
+</button>
     </div>
 </div>
     </div>
@@ -436,6 +440,20 @@
     </div>
 
     <script>
+        // Verificar autenticación
+(function() {
+    const isAuthenticated = localStorage.getItem('inventoryAuth');
+    if (isAuthenticated !== 'true') {
+        window.location.href = 'login.html';
+    }
+})();
+
+function logout() {
+    if (confirm('¿Seguro que quieres cerrar sesión?')) {
+        localStorage.removeItem('inventoryAuth');
+        window.location.href = 'login.html';
+    }
+}
         // Configurar Supabase
         const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
         const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';

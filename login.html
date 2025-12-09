@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - Inventario</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .logo {
+            text-align: center;
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        p {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+        }
+        
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            background: #1d4ed8;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🔐</div>
+        <h1>Acceso al Inventario</h1>
+        <p>Ingresa el código de acceso para continuar</p>
+        
+        <div id="errorMessage" class="error-message">
+            Código incorrecto. Intenta de nuevo.
+        </div>
+        
+        <form onsubmit="validateAccess(event)">
+            <div class="input-group">
+                <label for="accessCode">Código de Acceso</label>
+                <input type="password" id="accessCode" placeholder="Ingresa el código" autofocus required>
+            </div>
+            
+            <button type="submit" class="btn-login">
+                Acceder
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const CORRECT_CODE = '9103';
+        
+        // Verificar si ya está autenticado al cargar la página
+        window.addEventListener('DOMContentLoaded', function() {
+            const isAuthenticated = localStorage.getItem('inventoryAuth');
+            if (isAuthenticated === 'true') {
+                window.location.href = 'index.html';
+            }
+        });
+        
+        function validateAccess(event) {
+            event.preventDefault();
+            
+            const code = document.getElementById('accessCode').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+            
+            if (code === CORRECT_CODE) {
+                // Guardar autenticación en localStorage
+                localStorage.setItem('inventoryAuth', 'true');
+                
+                // Redirigir a la página principal
+                window.location.href = 'index.html';
+            } else {
+                // Mostrar error
+                errorMessage.classList.add('show');
+                document.getElementById('accessCode').value = '';
+                document.getElementById('accessCode').focus();
+                
+                // Ocultar el error después de 3 segundos
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>

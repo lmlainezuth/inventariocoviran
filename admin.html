@@ -270,6 +270,13 @@
     </div>
 
     <script>
+        // Verificar autenticación
+(function() {
+    const isAuthenticated = localStorage.getItem('inventoryAuth');
+    if (isAuthenticated !== 'true') {
+        window.location.href = 'login.html';
+    }
+})();
         let supabaseClient;
         let inventory = [];
 
