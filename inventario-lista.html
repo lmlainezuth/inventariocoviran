@@ -451,9 +451,9 @@
                 
                 // Obtener productos de Supabase
                 const { data, error } = await supabaseClient
-                    .from('products')
-                    .select('*')
-                    .order('name', { ascending: true });
+                .from('products')
+                .select('*')
+                .order('created_at', { ascending: false });
                 
                 if (error) throw error;
                 
@@ -480,6 +480,8 @@
                     sortedInventory.sort((a, b) => b.quantity - a.quantity);
                 } else if (currentSort === 'code') {
                     sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
+                } else if (currentSort === 'created_at') {
+                    sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 }
                 
                 container.innerHTML = sortedInventory.map((item) => {
@@ -554,7 +556,7 @@
             event.target.classList.add('active');
             
             if (type === 'all') {
-                currentSort = 'name';
+                currentSort = 'created_at'; // Cambiado de 'name' a 'created_at'
             } else if (type === 'quantity') {
                 currentSort = 'quantity';
             } else if (type === 'reference') {
@@ -563,7 +565,7 @@
             
             loadProducts();
         }
-        
+                
         function viewProduct(code) {
             // Redirigir a página de escaneo con el código
             window.location.href = 'index.html?code=' + code;
