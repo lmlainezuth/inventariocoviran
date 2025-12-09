@@ -437,7 +437,7 @@
         
         let inventory = [];
         let currentFilter = 'all';
-        let currentSort = 'name';
+        let currentSort = 'created_at';
         
         // Cargar productos al iniciar
         loadProducts();
@@ -474,16 +474,16 @@
                 
                 // Ordenar productos
                 let sortedInventory = [...inventory];
-                if (currentSort === 'name') {
+                if (currentSort === 'created_at') {
+                    sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                } else if (currentSort === 'name') {
                     sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
                 } else if (currentSort === 'quantity') {
                     sortedInventory.sort((a, b) => b.quantity - a.quantity);
                 } else if (currentSort === 'code') {
                     sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
-                } else if (currentSort === 'created_at') {
-                    sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 }
-                
+                                
                 container.innerHTML = sortedInventory.map((item) => {
                     const badge = getStockBadge(item);
                     
