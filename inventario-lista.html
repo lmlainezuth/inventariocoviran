@@ -239,7 +239,11 @@
             color: #3730a3;
         }
         
-        .arrow-icon {
+        .badge-out {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+                .arrow-icon {
             color: #d1d5db;
             font-size: 18px;
             flex-shrink: 0;
@@ -638,14 +642,23 @@ switch(currentSort) {
         }
         
         function getStockBadge(item) {
-            if (item.quantity <= item.min_quantity) {
-                return { type: 'min', text: 'MIN' };
-            } else if (item.max_quantity && item.quantity >= item.max_quantity) {
-                return { type: 'max', text: 'MAX' };
-            } else {
-                return { type: 'normal', text: 'OK' };
-            }
-        }
+    // Primero verificar si está agotado (cantidad = 0)
+    if (item.quantity === 0) {
+        return { type: 'out', text: 'AGOTADO' };
+    }
+    // Luego verificar cantidad mínima
+    else if (item.quantity <= item.min_quantity) {
+        return { type: 'min', text: 'MIN' };
+    }
+    // Luego verificar cantidad máxima
+    else if (item.max_quantity && item.quantity >= item.max_quantity) {
+        return { type: 'max', text: 'MAX' };
+    }
+    // Si no cumple ninguna condición, está OK
+    else {
+        return { type: 'normal', text: 'OK' };
+    }
+}
         
         function filterProducts() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
