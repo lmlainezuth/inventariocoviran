@@ -123,16 +123,17 @@
             background: #ef4444;
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 8px 10px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
+            min-width: 40px;
         }
-        
+
         .btn-delete-small:hover {
             background: #dc2626;
         }
-        
+                
         .stats-box {
             background: #f9fafb;
             padding: 20px;
@@ -280,74 +281,73 @@
             updateStats();
         }
 
-        async function loadCategories() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('categories')
-                    .select('*')
-                    .order('name', { ascending: true });
-                
-                if (error) throw error;
-                
-                const list = document.getElementById('categoriesList');
-                list.innerHTML = '';
-                
-                if (data && data.length > 0) {
-                    data.forEach(cat => {
-                        const item = document.createElement('div');
-                        item.className = 'list-item';
-                        item.innerHTML = `
-                            <span>${cat.name}</span>
-                            <button class="btn-delete-small" onclick="deleteCategory('${cat.id}', '${cat.name}')">
-                                🗑️ Eliminar
-                            </button>
-                        `;
-                        list.appendChild(item);
-                    });
-                } else {
-                    list.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 20px;">No hay categorías</p>';
-                }
-                
-                document.getElementById('totalCategories').textContent = data ? data.length : 0;
-            } catch (error) {
-                console.error('Error cargando categorías:', error);
-            }
+     async function loadCategories() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('categories')
+            .select('*')
+            .order('name', { ascending: true });
+        
+        if (error) throw error;
+        
+        const list = document.getElementById('categoriesList');
+        list.innerHTML = '';
+        
+        if (data && data.length > 0) {
+            data.forEach(cat => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <span>${cat.name}</span>
+                    <button class="btn-delete-small" onclick="deleteCategory('${cat.id}', '${cat.name}')">
+                        🗑️
+                    </button>
+                `;
+                list.appendChild(item);
+            });
+        } else {
+            list.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 20px;">No hay categorías</p>';
         }
+        
+        document.getElementById('totalCategories').textContent = data ? data.length : 0;
+    } catch (error) {
+        console.error('Error cargando categorías:', error);
+    }
+}
 
-        async function loadBrands() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('brands')
-                    .select('*')
-                    .order('name', { ascending: true });
-                
-                if (error) throw error;
-                
-                const list = document.getElementById('brandsList');
-                list.innerHTML = '';
-                
-                if (data && data.length > 0) {
-                    data.forEach(brand => {
-                        const item = document.createElement('div');
-                        item.className = 'list-item';
-                        item.innerHTML = `
-                            <span>${brand.name}</span>
-                            <button class="btn-delete-small" onclick="deleteBrand('${brand.id}', '${brand.name}')">
-                                🗑️ Eliminar
-                            </button>
-                        `;
-                        list.appendChild(item);
-                    });
-                } else {
-                    list.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 20px;">No hay marcas</p>';
-                }
-                
-                document.getElementById('totalBrands').textContent = data ? data.length : 0;
-            } catch (error) {
-                console.error('Error cargando marcas:', error);
-            }
+async function loadBrands() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('brands')
+            .select('*')
+            .order('name', { ascending: true });
+        
+        if (error) throw error;
+        
+        const list = document.getElementById('brandsList');
+        list.innerHTML = '';
+        
+        if (data && data.length > 0) {
+            data.forEach(brand => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <span>${brand.name}</span>
+                    <button class="btn-delete-small" onclick="deleteBrand('${brand.id}', '${brand.name}')">
+                        🗑️
+                    </button>
+                `;
+                list.appendChild(item);
+            });
+        } else {
+            list.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 20px;">No hay marcas</p>';
         }
-
+        
+        document.getElementById('totalBrands').textContent = data ? data.length : 0;
+    } catch (error) {
+        console.error('Error cargando marcas:', error);
+    }
+}
         async function addCategory() {
             const name = document.getElementById('newCategory').value.trim();
             if (!name) {
