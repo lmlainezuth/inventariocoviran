@@ -1,22 +1,209 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Inventario - Escáner de Códigos</title>
-        <script
-            src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-        <style>
-        /* Modal para crear categoría/marca */
-.modal {
-    display: none;
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cierre de Caja</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .date-display {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .section {
+            padding: 20px;
+        }
+
+        .section-title {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #ecf0f1;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #bdc3c7;
+        }
+
+        td {
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            text-align: center;
+        }
+
+        .denomination {
+            font-weight: 600;
+            background: #f8f9fa;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #2ecc71;
+            box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
+        }
+
+        .total-row {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .recogida {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 22px;
+        }
+
+        .datafono-section {
+            background: #ecf0f1;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .datafono-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .venta-dia {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        .bill-marker {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            background: #27ae60;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .section-title {
+                font-size: 16px;
+            }
+
+            input[type="number"] {
+                font-size: 14px;
+                padding: 6px;
+            }
+
+            th, td {
+                padding: 8px 4px;
+                font-size: 14px;
+            }
+
+            .total-row {
+                font-size: 16px;
+            }
+
+            .recogida {
+                font-size: 18px;
+            }
+        }
+        /* Bottom Navigation */
+.bottom-nav {
     position: fixed;
-    z-index: 9999;
+    bottom: 0;
     left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    right: 0;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
 }
 
 .nav-item {
@@ -31,1132 +218,425 @@
     border: none;
     background: none;
     color: #6b7280;
-    text-decoration: none;  /* Añade esta línea */
+    text-decoration: none;
 }
 
-.modal.show {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.nav-item.active {
+    color: #2563eb;
 }
 
-.modal-content {
-    background-color: white;
-    padding: 30px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
-.modal-header {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #1f2937;
-}
-
-.modal-input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #d1d5db;
+.nav-item:hover {
+    background: #f3f4f6;
     border-radius: 8px;
-    font-size: 16px;
-    margin-bottom: 20px;
 }
 
-.modal-buttons {
-    display: flex;
-    gap: 10px;
+.nav-icon {
+    font-size: 24px;
 }
 
-.modal-btn {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
+.nav-label {
+    font-size: 12px;
+    font-weight: 500;
 }
 
-.modal-btn-cancel {
-    background: #6b7280;
-    color: white;
+body {
+    padding-bottom: 80px;
 }
-
-.modal-btn-save {
-    background: #2563eb;
-    color: white;
-}
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        header {
-            background: #2563eb;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        h1 {
-            font-size: 24px;
-        }
-        
-        .scanner-section {
-            padding: 20px;
-        }
-        
-        #reader {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            position: relative;
-            min-height: 300px;
-        }
-        
-        #reader canvas,
-        #reader video {
-            width: 100% !important;
-            height: auto !important;
-        }
-        
-        #reader canvas.drawingBuffer {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: #2563eb;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #1d4ed8;
-        }
-        
-        .btn-secondary {
-            background: #64748b;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #475569;
-        }
-        
-        .result {
-            background: #f0fdf4;
-            border: 1px solid #86efac;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .result.show {
-            display: block;
-        }
-        
-        .result-code {
-            font-size: 18px;
-            font-weight: bold;
-            color: #166534;
-            margin-bottom: 10px;
-        }
-        
-        .product-form {
-            display: none;
-        }
-        
-        .product-form.show {
-            display: block;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .photo-upload {
-            margin-bottom: 10px;
-        }
-        
-        .photo-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #374151;
-        }
-        
-        input[type="text"],
-        input[type="number"],
-        select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        
-        select {
-            background: white;
-            cursor: pointer;
-        }
-        
-        .inventory-list {
-            padding: 20px;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .inventory-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #1f2937;
-        }
-        
-        .inventory-item {
-            background: #f9fafb;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .item-info {
-            flex: 1;
-        }
-        
-        .item-name {
-            font-weight: 600;
-            color: #1f2937;
-        }
-        
-        .item-code {
-            font-size: 12px;
-            color: #6b7280;
-            font-family: monospace;
-        }
-        
-        .item-quantity {
-            background: #2563eb;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        
-        .btn-delete {
-            background: #ef4444;
-            color: white;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 6px;
-            margin-left: 10px;
-            cursor: pointer;
-        }
-        
-        .btn-delete:hover {
-            background: #dc2626;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #9ca3af;
-        }
-        
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-        
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
-            background: none;
-            color: #6b7280;
-        }
-        
-        .nav-item.active {
-            color: #2563eb;
-        }
-        
-        .nav-item:hover {
-            background: #f3f4f6;
-            border-radius: 8px;
-        }
-        
-        .nav-icon {
-            font-size: 24px;
-        }
-        
-        .nav-label {
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        /* Page sections */
-        .page-section {
-            display: none;
-            padding-bottom: 80px;
-        }
-        
-        .page-section.active {
-            display: block;
-        }
-        
-        body {
-            padding-bottom: 80px;
-        }
     </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CIERRE DE CAJA</h1>
+            <div class="date-display">Fecha: <span id="fecha"></span></div>
+        </div>
 
-       <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
-    </head>
-    <body>
-        <div class="container">
-            <header>
-                <h1>📦 Inventario</h1>
-            </header>
-
-            <!-- Página Escanear -->
-            <div id="scanPage" class="page-section active">
-                <div class="scanner-section">
-                    
-                    <div id="scannerContainer">
-                        <div id="reader"></div>
-
-                        <div id="scanStatus"
-                            style="text-align: center; padding: 10px; margin: 10px 0; background: #f3f4f6; border-radius: 8px; display: none;">
-                            <div
-                                style="font-size: 14px; color: #6b7280;">Escaneando...</div>
-                            <div id="detectionProgress"
-                                style="font-size: 12px; color: #9ca3af; margin-top: 5px;"></div>
-                        </div>
-                    </div>
-
-                    <div id="result" class="result">
-                        <div class="result-code">Código escaneado: <span
-                                id="scannedCode"></span></div>
-                    </div>
-
-                    <div id="productForm" class="product-form">
-                        <!-- Foto del Producto -->
-                        <div class="form-group">
-                            <label>Foto del Producto</label>
-                            <div class="photo-upload">
-                                <img id="productPhoto" src alt="Vista previa"
-                                    style="display: none; width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
-                                <div class="photo-buttons">
-                                    <button type="button"
-                                        onclick="document.getElementById('cameraInput').click()"
-                                        class="btn-secondary" style="flex: 1;">
-                                        📷 Cámara
-                                    </button>
-                                    <button type="button"
-                                        onclick="document.getElementById('galleryInput').click()"
-                                        class="btn-secondary" style="flex: 1;">
-                                        🖼️ Galería
-                                    </button>
-                                </div>
-                                <input type="file" id="cameraInput"
-                                    accept="image/*" capture="environment"
-                                    style="display: none;"
-                                    onchange="handlePhotoUpload(event)">
-                                <input type="file" id="galleryInput"
-                                    accept="image/*" style="display: none;"
-                                    onchange="handlePhotoUpload(event)">
-                            </div>
-                        </div>
-
-                        <!-- Nombre del producto -->
-                        <div class="form-group">
-                            <label>Nombre del producto *</label>
-                            <input type="text" id="productName"
-                                placeholder="Ej: Leche Entera" required>
-                        </div>
-
-                        <!-- Cantidad y Unidad -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad *</label>
-                                <input type="number" id="productQuantity"
-                                    value="1" min="0" step="0.01">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Unidad</label>
-                                <select id="productUnit">
-                                    <option value="unidad">Unidad</option>
-                                    <option value="kilogramo">Kilogramo
-                                        (kg)</option>
-                                    <option value="gramo">Gramo (g)</option>
-                                    <option value="litro">Litro (L)</option>
-                                    <option value="mililitro">Mililitro
-                                        (ml)</option>
-                                    <option value="centilitro">Centilitro
-                                        (cl)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Min y Max Cantidad -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad Mínima</label>
-                                <input type="number" id="minQuantity" value="0"
-                                    min="0" step="0.01">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Cantidad Máxima</label>
-                                <input type="number" id="maxQuantity" value
-                                    min="0" step="0.01" placeholder="Opcional">
-                            </div>
-                        </div>
-
-                        <!-- Precios -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Precio Compra (€)</label>
-                                <input type="number" id="purchasePrice" value
-                                    min="0" step="0.01" placeholder="0.00">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Precio Público (€)</label>
-                                <input type="number" id="publicPrice" value
-                                    min="0" step="0.01" placeholder="0.00">
-                            </div>
-                        </div>
-
-                        <!-- Categoría y Marca -->
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label>Categoría</label>
-                                <select id="category">
-                                    <option value>Cargando...</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>Marca</label>
-                                <select id="brand">
-                                    <option value>Cargando...</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Ubicación -->
-                        <div class="form-group">
-                            <label>Ubicación</label>
-                            <select id="location">
-                        
-                                <option value="Iztieta 9103">Iztieta
-                                    9103</option>
-                                <option value="Gabierrota">Gabierrota</option>
-                                <option value="El Antiguo">El Antiguo</option>
-                            </select>
-                        </div>
-
-                        <button onclick="saveProduct()" class="btn-primary"
-                            style="width: 100%;">💾 Guardar Producto</button>
-                    </div>
-                </div>
+        <!-- MONEDAS -->
+        <div class="section">
+            <div class="section-title">MONEDAS</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Denominación</th>
+                            <th>Cantidad</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monedas-body">
+                        <tr>
+                            <td class="denomination">2.00 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="2.00" class="moneda-input"></td>
+                            <td class="moneda-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination">1.00 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="1.00" class="moneda-input"></td>
+                            <td class="moneda-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination">0.50 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="0.50" class="moneda-input"></td>
+                            <td class="moneda-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination">0.20 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="0.20" class="moneda-input"></td>
+                            <td class="moneda-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination">0.10 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="0.10" class="moneda-input"></td>
+                            <td class="moneda-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination">0.05 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="0.05" class="moneda-input"></td>
+                            <td class="moneda-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination">0.02 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="0.02" class="moneda-input"></td>
+                            <td class="moneda-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination">0.01 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="0.01" class="moneda-input"></td>
+                            <td class="moneda-total">0.00 €</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="2">TOTAL MONEDAS</td>
+                            <td id="total-monedas">0.00 €</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
-            <!-- Página Admin -->
-            <!--<div id="adminPage" class="page-section">
-                <div class="scanner-section">
-                    <h2 style="margin-bottom: 20px;">Administración</h2>
-
-                    <div class="form-group">
-                        <button onclick="exportInventory()" class="btn-primary"
-                            style="width: 100%; margin-bottom: 10px;">
-                            📥 Exportar Inventario (CSV)
-                        </button>
-                    </div>
-
-                    <div class="form-group">
-                        <button onclick="clearInventory()" class="btn-secondary"
-                            style="width: 100%; background: #ef4444;">
-                            🗑️ Borrar Todo el Inventario
-                        </button>
-                    </div>
-
-                    <div
-                        style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 8px;">
-                        <h3
-                            style="font-size: 16px; margin-bottom: 10px;">Estadísticas</h3>
-                        <p style="color: #6b7280;">Total de productos: <strong
-                                id="totalProducts">0</strong></p>
-                        <p style="color: #6b7280;">Total de unidades: <strong
-                                id="totalUnits">0</strong></p>
-                    </div>
-                </div>
-            </div>-->
         </div>
 
-        <!-- Bottom Navigation -->
-        <div class="bottom-nav">
-            <button class="nav-item active" onclick="switchPage('scan')">
-                <div class="nav-icon">📱</div>
-                <div class="nav-label">Escanear</div>
-            </button>
-            <a href="inventario-lista.html" class="nav-item">
-                <div class="nav-icon">📦</div>
-                <div class="nav-label">Inventario</div>
-            </a>
-           <a href="monedas.html" class="nav-item">
-                <div class="nav-icon">💰</div>
-                <div class="nav-label">Monedas</div>
-            </a>
+        <!-- SOBRANTE Y COMPLETAR FONDO -->
+        <div class="section">
+            <div class="section-title">AJUSTE DE MONEDAS</div>
+            <div class="table-container">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td class="denomination">Total Monedas Real</td>
+                            <td id="monedas-real">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination">Total Redondeado (múltiplos de 5)</td>
+                            <td id="monedas-redondeado">0.00 €</td>
+                        </tr>
+                        <tr style="background: #e74c3c; color: white; font-weight: bold;">
+                            <td>SOBRANTE</td>
+                            <td id="sobrante">0.00 €</td>
+                        </tr>
+                        <tr style="background: #9b59b6; color: white; font-weight: bold;">
+                            <td>COMPLETAR FONDO (400€ - Redondeado)</td>
+                            <td id="completar-fondo">400.00 €</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-<script>
-    // Verificar autenticación
-(function() {
-    const isAuthenticated = localStorage.getItem('inventoryAuth');
-    if (isAuthenticated !== 'true') {
-        window.location.href = 'login.html';
+        <!-- BILLETES -->
+        <div class="section">
+            <div class="section-title">BILLETES</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Denominación</th>
+                            <th>Cantidad</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billetes-body">
+                        <tr>
+                            <td class="denomination"><span class="bill-marker"></span>50 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="50" class="billete-input"></td>
+                            <td class="billete-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination"><span class="bill-marker"></span>20 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="20" class="billete-input"></td>
+                            <td class="billete-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination"><span class="bill-marker"></span>10 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="10" class="billete-input"></td>
+                            <td class="billete-total">0.00 €</td>
+                        </tr>
+                        <tr>
+                            <td class="denomination"><span class="bill-marker"></span>5 €</td>
+                            <td><input type="number" min="0" placeholder="0" data-value="5" class="billete-input"></td>
+                            <td class="billete-total">0.00 €</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="2">TOTAL BILLETES</td>
+                            <td id="total-billetes">0.00 €</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RECOGIDA -->
+        <div class="summary">RECOGIDA</div>
+        <div class="recogida" id="recogida">0.00 €</div>
+
+        <!-- DATÁFONO -->
+        <div class="section">
+            <div class="section-title">CIERRE DATÁFONO</div>
+            <div class="datafono-section">
+                <label for="importe-datafono">Importe Datáfono</label>
+                <input type="number" id="importe-datafono" min="0" step="0.01" placeholder="0.00">
+            </div>
+        </div>
+
+        <!-- PAGO DE FACTURAS -->
+        <div class="section">
+            <div class="section-title">PAGO DE FACTURAS</div>
+            <div class="datafono-section">
+                <label for="importe-factura">Importe Factura Pagada</label>
+                <input type="number" id="importe-factura" min="0" step="0.01" placeholder="0.00">
+            </div>
+        </div>
+
+        <!-- VENTA DÍA -->
+        <div class="section">
+            <div class="venta-dia">VENTA DÍA</div>
+            <div class="datafono-section">
+               <label for="cierre-aplicacion">CIERRE APLICACIÓN (Recogida + Datáfono + Factura)</label><input type="number" id="cierre-aplicacion" min="0" step="0.01" value="0" placeholder="0.00" readonly style="background-color: #d5f4e6; font-weight: bold; font-size: 18px;">
+                
+                <label for="cierre-ventas" style="margin-top: 15px;">CIERRE VENTAS (Recogida + Datáfono)</label>
+                <input type="number" id="cierre-ventas" min="0" step="0.01" value="0" placeholder="0.00" readonly style="background-color: #ffe8cc; font-weight: bold; font-size: 18px;">
+                
+            </div>
+        </div>
+    </div>
+<!-- Bottom Navigation -->
+     <div class="bottom-nav">
+        <a href="index.html" class="nav-item active">
+            <div class="nav-icon">💰</div>
+            <div class="nav-label">Monedas</div>
+        </a>
+        <a href="inventario-lista.html" class="nav-item">
+            <div class="nav-icon">📦</div>
+            <div class="nav-label">Inventario</div>
+        </a>
+        <a href="moneda.html" class="nav-item">
+            <div class="nav-icon">📱</div>
+            <div class="nav-label">Escanear</div>
+        </a>
+    </div>
+
+    
+   <script>
+// Verificar y limpiar datos si es después de las 22:30
+function verificarYLimpiarDatos() {
+    const ahora = new Date();
+    const ultimaLimpieza = localStorage.getItem('ultimaLimpiezaCaja');
+    const hoy = ahora.toDateString();
+    
+    // Obtener hora actual en formato 24h
+    const horaActual = ahora.getHours();
+    const minutoActual = ahora.getMinutes();
+    const horaEnMinutos = horaActual * 60 + minutoActual;
+    const horaLimpieza = 22 * 60 + 30; // 22:30 en minutos
+    
+    // Si ya pasó la hora de limpieza y no se ha limpiado hoy
+    if (horaEnMinutos >= horaLimpieza && ultimaLimpieza !== hoy) {
+        localStorage.removeItem('cierreCajaData');
+        localStorage.setItem('ultimaLimpiezaCaja', hoy);
+        console.log('Datos limpiados automáticamente después de las 22:30');
     }
-})();
-// Variables globales
-let supabaseClient;
-let isScanning = false;
-let currentCode = null;
-let inventory = [];
-let lastDetectedCode = null;
-let detectionTimeout = null;
-let detectionCounter = {};
-let currentPhotoBase64 = null;
-const DETECTION_THRESHOLD = 5;
-let scanTimeout = null;
+}
 
-
-
-// Inicializar cuando la página esté lista
-window.addEventListener('DOMContentLoaded', function() {
-    // Configuración de Supabase
-    const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
-    const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
+// Guardar datos en localStorage
+function guardarDatos() {
+    const datos = {
+        monedas: {},
+        billetes: {},
+        datafono: document.getElementById('importe-datafono').value,
+        factura: document.getElementById('importe-factura').value,
+        fecha: new Date().toISOString()
+    };
     
-    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-    
-    // Verificar si viene un código en la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get('code');
-    
-    // Inicializar app
-    Promise.all([loadInventory(), loadCategories(), loadBrands()]).then(() => {
-        updateStats();
-        setupModalListeners();
-        
-        if (codeFromUrl) {
-            currentCode = codeFromUrl;
-            document.getElementById('scannedCode').textContent = codeFromUrl;
-            document.getElementById('result').classList.add('show');
-            document.getElementById('scannerContainer').style.display = 'none';
-            loadProductData(codeFromUrl);
-        } else {
-            startScanner();
-        }
+    // Guardar monedas
+    monedasInputs.forEach((input, index) => {
+        datos.monedas[input.dataset.value] = input.value;
     });
+    
+    // Guardar billetes
+    billetesInputs.forEach((input, index) => {
+        datos.billetes[input.dataset.value] = input.value;
+    });
+    
+    localStorage.setItem('cierreCajaData', JSON.stringify(datos));
+}
+
+// Cargar datos desde localStorage
+function cargarDatos() {
+    const datosGuardados = localStorage.getItem('cierreCajaData');
+    
+    if (datosGuardados) {
+        const datos = JSON.parse(datosGuardados);
+        
+        // Cargar monedas
+        monedasInputs.forEach((input) => {
+            const valor = input.dataset.value;
+            if (datos.monedas[valor]) {
+                input.value = datos.monedas[valor];
+            }
+        });
+        
+        // Cargar billetes
+        billetesInputs.forEach((input) => {
+            const valor = input.dataset.value;
+            if (datos.billetes[valor]) {
+                input.value = datos.billetes[valor];
+            }
+        });
+        
+        // Cargar datáfono y factura
+        if (datos.datafono) {
+            document.getElementById('importe-datafono').value = datos.datafono;
+        }
+        if (datos.factura) {
+            document.getElementById('importe-factura').value = datos.factura;
+        }
+        
+        // Recalcular todos los totales
+        calcularMonedas();
+        calcularBilletes();
+    }
+}
+
+// Mostrar fecha actual
+const fechaElement = document.getElementById('fecha');
+const hoy = new Date();
+const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+fechaElement.textContent = hoy.toLocaleDateString('es-ES', opciones);
+
+// Función para formatear números a euros
+function formatEuros(numero) {
+    return numero.toFixed(2) + ' €';
+}
+
+// Calcular monedas
+const monedasInputs = document.querySelectorAll('.moneda-input');
+const monedasTotales = document.querySelectorAll('.moneda-total');
+const totalMonedasElement = document.getElementById('total-monedas');
+
+function calcularMonedas() {
+    let totalMonedas = 0;
+    
+    monedasInputs.forEach((input, index) => {
+        const cantidad = parseFloat(input.value) || 0;
+        const valor = parseFloat(input.dataset.value);
+        const total = cantidad * valor;
+        
+        monedasTotales[index].textContent = formatEuros(total);
+        totalMonedas += total;
+    });
+    
+    // Total real de monedas
+    totalMonedasElement.textContent = formatEuros(totalMonedas);
+    document.getElementById('monedas-real').textContent = formatEuros(totalMonedas);
+    
+    // Redondear a múltiplos de 5 (hacia abajo)
+    const totalRedondeado = Math.floor(totalMonedas / 5) * 5;
+    document.getElementById('monedas-redondeado').textContent = formatEuros(totalRedondeado);
+    
+    // Calcular sobrante
+    const sobrante = totalMonedas - totalRedondeado;
+    document.getElementById('sobrante').textContent = formatEuros(sobrante);
+    
+    // Calcular completar fondo (400 - redondeado)
+    const completarFondo = 400 - totalRedondeado;
+    document.getElementById('completar-fondo').textContent = formatEuros(completarFondo);
+    
+    calcularRecogida();
+    guardarDatos();
+}
+
+// Calcular billetes
+const billetesInputs = document.querySelectorAll('.billete-input');
+const billetesTotales = document.querySelectorAll('.billete-total');
+const totalBilletesElement = document.getElementById('total-billetes');
+
+function calcularBilletes() {
+    let totalBilletes = 0;
+    
+    billetesInputs.forEach((input, index) => {
+        const cantidad = parseFloat(input.value) || 0;
+        const valor = parseFloat(input.dataset.value);
+        const total = cantidad * valor;
+        
+        billetesTotales[index].textContent = formatEuros(total);
+        totalBilletes += total;
+    });
+    
+    totalBilletesElement.textContent = formatEuros(totalBilletes);
+    calcularRecogida();
+    guardarDatos();
+}
+
+// Calcular recogida total (billetes + sobrante)
+function calcularRecogida() {
+    const totalBilletes = parseFloat(totalBilletesElement.textContent) || 0;
+    const sobrante = parseFloat(document.getElementById('sobrante').textContent) || 0;
+    const totalRecogida = totalBilletes + sobrante;
+    
+    document.getElementById('recogida').textContent = formatEuros(totalRecogida);
+    calcularVentaDia();
+}
+
+// Calcular venta del día (recogida + datáfono + factura)
+function calcularVentaDia() {
+    const recogida = parseFloat(document.getElementById('recogida').textContent) || 0;
+    const datafono = parseFloat(document.getElementById('importe-datafono').value) || 0;
+    const factura = parseFloat(document.getElementById('importe-factura').value) || 0;
+    
+    // Cierre en aplicación (lo que realmente tienes)
+    const cierreAplicacion = recogida + datafono + factura;
+    document.getElementById('cierre-aplicacion').value = cierreAplicacion.toFixed(2);
+    
+    // Cierre de ventas (lo que aparece en el sistema)
+    const cierreVentas = recogida + datafono;
+    document.getElementById('cierre-ventas').value = cierreVentas.toFixed(2);
+}
+
+// Event listeners
+monedasInputs.forEach(input => {
+    input.addEventListener('input', calcularMonedas);
 });
 
-// Setup de listeners para modales
-function setupModalListeners() {
-    const categorySelect = document.getElementById('category');
-    if (categorySelect) {
-        categorySelect.addEventListener('change', function() {
-            if (this.value === '__CREATE__') {
-                this.blur();
-                setTimeout(() => {
-                    openModal('category');
-                    this.value = '';
-                }, 50);
-            }
-        });
-    }
-    
-    const brandSelect = document.getElementById('brand');
-    if (brandSelect) {
-        brandSelect.addEventListener('change', function() {
-            if (this.value === '__CREATE__') {
-                this.blur();
-                setTimeout(() => {
-                    openModal('brand');
-                    this.value = '';
-                }, 50);
-            }
-        });
-    }
-}
-// Cargar categorías
-async function loadCategories() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('categories')
-            .select('*')
-            .order('name', { ascending: true });
-        
-        if (error) throw error;
-        
-        const select = document.getElementById('category');
-        select.innerHTML = '<option value="">Seleccionar...</option>';
-        
-        data.forEach(cat => {
-            const option = document.createElement('option');
-            option.value = cat.name;
-            option.textContent = cat.name;
-            select.appendChild(option);
-        });
-        
-        const createOption = document.createElement('option');
-        createOption.value = '__CREATE__';
-        createOption.textContent = '➕ Crear nueva categoría...';
-        createOption.style.color = '#2563eb';
-        createOption.style.fontWeight = 'bold';
-        select.appendChild(createOption);
-    } catch (error) {
-        console.error('Error cargando categorías:', error);
-    }
-}
+billetesInputs.forEach(input => {
+    input.addEventListener('input', calcularBilletes);
+});
 
-// Cargar marcas
-async function loadBrands() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('brands')
-            .select('*')
-            .order('name', { ascending: true });
-        
-        if (error) throw error;
-        
-        const select = document.getElementById('brand');
-        select.innerHTML = '<option value="">Seleccionar...</option>';
-        
-        data.forEach(brand => {
-            const option = document.createElement('option');
-            option.value = brand.name;
-            option.textContent = brand.name;
-            select.appendChild(option);
-        });
-        
-        const createOption = document.createElement('option');
-        createOption.value = '__CREATE__';
-        createOption.textContent = '➕ Crear nueva marca...';
-        createOption.style.color = '#2563eb';
-        createOption.style.fontWeight = 'bold';
-        select.appendChild(createOption);
-    } catch (error) {
-        console.error('Error cargando marcas:', error);
-    }
-}
+// Event listener para el datáfono
+document.getElementById('importe-datafono').addEventListener('input', () => {
+    calcularVentaDia();
+    guardarDatos();
+});
 
-// Funciones del modal
-function openModal(type) {
-    const modal = document.getElementById(type + 'Modal');
-    modal.classList.add('show');
-    setTimeout(() => {
-        document.getElementById('new' + (type === 'category' ? 'Category' : 'Brand') + 'Input').focus();
-    }, 100);
-}
+// Event listener para facturas
+document.getElementById('importe-factura').addEventListener('input', () => {
+    calcularVentaDia();
+    guardarDatos();
+});
 
-function closeModal(type) {
-    const modal = document.getElementById(type + 'Modal');
-    modal.classList.remove('show');
-    document.getElementById('new' + (type === 'category' ? 'Category' : 'Brand') + 'Input').value = '';
-}
-
-async function saveNewCategory() {
-    const name = document.getElementById('newCategoryInput').value.trim();
-    if (!name) {
-        alert('Por favor ingresa un nombre para la categoría');
-        return;
-    }
-    
-    try {
-        const { error } = await supabaseClient.from('categories').insert([{ name }]);
-        if (error) {
-            if (error.code === '23505') alert('Esta categoría ya existe');
-            else throw error;
-            return;
-        }
-        
-        alert('✅ Categoría creada');
-        closeModal('category');
-        await loadCategories();
-        // Esperar un poco para que cargue
-        setTimeout(() => {
-            document.getElementById('category').value = name;
-        }, 200);
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
-}
-
-async function saveNewBrand() {
-    const name = document.getElementById('newBrandInput').value.trim();
-    if (!name) {
-        alert('Por favor ingresa un nombre para la marca');
-        return;
-    }
-    
-    try {
-        const { error } = await supabaseClient.from('brands').insert([{ name }]);
-        if (error) {
-            if (error.code === '23505') alert('Esta marca ya existe');
-            else throw error;
-            return;
-        }
-        
-        alert('✅ Marca creada');
-        closeModal('brand');
-        await loadBrands();
-        // Esperar un poco para que cargue
-        setTimeout(() => {
-            document.getElementById('brand').value = name;
-        }, 200);
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
-}
-function switchPage(page) {
-    document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    
-    if (page === 'scan') {
-        document.getElementById('scanPage').classList.add('active');
-        document.querySelectorAll('.nav-item')[0].classList.add('active');
-        if (!isScanning) startScanner();
-    } else if (page === 'monedas') {
-    if (isScanning) stopScanner();
-    document.getElementById('monedasPage').classList.add('active');
-    document.querySelectorAll('.nav-item')[2].classList.add('active');
-    updateStats();
-}
-}
-
-function startScanner() {
-    isScanning = true;
-    detectionCounter = {};
-    document.getElementById('scanStatus').style.display = 'block';
-    document.getElementById('detectionProgress').textContent = 'Apunta al código de barras...';
-    
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: document.querySelector('#reader'),
-            constraints: {
-                facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-        },
-        decoder: {
-            readers: ["ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader", "upc_reader", "upc_e_reader"],
-            debug: { drawBoundingBox: true, showFrequency: true, drawScanline: true, showPattern: true }
-        },
-        locate: true,
-        locator: { halfSample: true, patchSize: "medium" },
-        frequency: 10,
-    }, function(err) {
-        if (err) {
-            console.error(err);
-            alert('Error al iniciar cámara: ' + err);
-            return;
-        }
-        Quagga.start();
-    });
-    
-    Quagga.onDetected(onBarcodeDetected);
-}
-
-function stopScanner() {
-    if (isScanning) {
-        Quagga.stop();
-        Quagga.offDetected(onBarcodeDetected);
-        isScanning = false;
-        document.getElementById('scanStatus').style.display = 'none';
-    }
-}
-
-function onBarcodeDetected(result) {
-    if (!isScanning) return;
-    
-    const code = result.codeResult.code;
-    const errors = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0);
-    const errorRate = errors / result.codeResult.decodedCodes.length;
-    
-    if (errorRate > 0.15 || !code || code.length < 8 || !/^[A-Z0-9]+$/i.test(code)) return;
-    
-    detectionCounter[code] = (detectionCounter[code] || 0) + 1;
-    document.getElementById('detectionProgress').textContent = `Detectando: ${code} (${detectionCounter[code]}/${DETECTION_THRESHOLD})`;
-    
-    for (let key in detectionCounter) {
-        if (key !== code && detectionCounter[key] < DETECTION_THRESHOLD) delete detectionCounter[key];
-    }
-    
-    if (detectionCounter[code] >= DETECTION_THRESHOLD) {
-        lastDetectedCode = code;
-        currentCode = code;
-        detectionCounter = {};
-        document.getElementById('scannedCode').textContent = code;
-        document.getElementById('result').classList.add('show');
-        playBeep();
-        stopScanner();
-        loadProductData(code);
-        
-        if (detectionTimeout) clearTimeout(detectionTimeout);
-        detectionTimeout = setTimeout(() => { lastDetectedCode = null; }, 3000);
-    }
-}
-
-function playBeep() {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    gainNode.gain.value = 0.3;
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.1);
-}
-
-async function loadProductData(code) {
-    try {
-        const { data: existingProduct, error } = await supabaseClient.from('products').select('*').eq('code', code).maybeSingle();
-        if (error) throw error;
-        
-        document.getElementById('scannerContainer').style.display = 'none';
-        
-        if (existingProduct) {
-            document.getElementById('productName').value = existingProduct.name;
-            document.getElementById('productQuantity').value = existingProduct.quantity;
-            document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
-            document.getElementById('minQuantity').value = existingProduct.min_quantity || 0;
-            document.getElementById('maxQuantity').value = existingProduct.max_quantity || '';
-            document.getElementById('purchasePrice').value = existingProduct.purchase_price || '';
-            document.getElementById('publicPrice').value = existingProduct.public_price || '';
-            document.getElementById('category').value = existingProduct.category || '';
-            document.getElementById('brand').value = existingProduct.brand || '';
-            document.getElementById('location').value = existingProduct.location || '';
-            
-            if (existingProduct.photo) {
-                document.getElementById('productPhoto').src = existingProduct.photo;
-                document.getElementById('productPhoto').style.display = 'block';
-                currentPhotoBase64 = existingProduct.photo;
-            }
-            
-            document.getElementById('result').innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
-        } else {
-            document.getElementById('result').innerHTML = `<div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>`;
-        }
-        
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('scannerContainer').style.display = 'none';
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
-    }
-}
-
-async function uploadImageToSupabase(file) {
-    try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `products/${fileName}`;
-        
-        const { data, error } = await supabaseClient.storage.from('product-images').upload(filePath, file);
-        if (error) throw error;
-        
-        const { data: urlData } = supabaseClient.storage.from('product-images').getPublicUrl(filePath);
-        return urlData.publicUrl;
-    } catch (error) {
-        alert('Error subiendo imagen: ' + error.message);
-        return null;
-    }
-}
-
-async function handlePhotoUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const compressedFile = await compressImage(file, 400, 0.5);
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        document.getElementById('productPhoto').src = e.target.result;
-        document.getElementById('productPhoto').style.display = 'block';
-    };
-    reader.readAsDataURL(compressedFile);
-    
-    const imageUrl = await uploadImageToSupabase(compressedFile);
-    if (imageUrl) currentPhotoBase64 = imageUrl;
-}
-
-function compressImage(file, maxWidth, quality) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                
-                if (width > maxWidth) {
-                    height = (height * maxWidth) / width;
-                    width = maxWidth;
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                
-                canvas.toBlob((blob) => {
-                    resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
-                }, 'image/jpeg', quality);
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-async function saveProduct() {
-    if (!currentCode || currentCode.length < 3) { // Cambié de 8 a 3 para permitir códigos manuales
-        alert('❌ ERROR: Código inválido');
-        clearProductForm();
-        document.getElementById('scannerContainer').style.display = 'block';
-        return;
-    }
-    
-    const name = document.getElementById('productName').value.trim();
-    if (!name) {
-        alert('Por favor ingresa el nombre del producto');
-        return;
-    }
-    
-    const quantity = parseFloat(document.getElementById('productQuantity').value);
-    const unit = document.getElementById('productUnit').value;
-    const minQuantity = parseFloat(document.getElementById('minQuantity').value) || 0;
-    const maxQuantity = parseFloat(document.getElementById('maxQuantity').value) || null;
-    const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
-    const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
-    const category = document.getElementById('category').value;
-    const brand = document.getElementById('brand').value;
-    const location = document.getElementById('location').value;
-    
-    try {
-        const { data: existingProduct } = await supabaseClient.from('products').select('*').eq('code', currentCode).maybeSingle();
-        
-        // Verificar si venimos desde la lista (URL tiene parámetro 'code')
-        const urlParams = new URLSearchParams(window.location.search);
-        const fromList = urlParams.has('code');
-        
-        if (existingProduct) {
-            if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
-                await supabaseClient.from('products').update({
-                    name, quantity, unit, min_quantity: minQuantity, max_quantity: maxQuantity,
-                    purchase_price: purchasePrice, public_price: publicPrice, category, brand, location, photo: currentPhotoBase64
-                }).eq('code', currentCode);
-            } else {
-                await supabaseClient.from('products').update({ quantity: existingProduct.quantity + quantity }).eq('code', currentCode);
-            }
-        } else {
-            await supabaseClient.from('products').insert([{
-                code: currentCode, name, quantity, unit, min_quantity: minQuantity, max_quantity: maxQuantity,
-                purchase_price: purchasePrice, public_price: publicPrice, category, brand, location, photo: currentPhotoBase64
-            }]);
-        }
-        
-        alert('✅ Producto guardado');
-        
-        // Si venimos desde la lista, regresar a la lista
-        if (fromList) {
-            window.location.href = 'inventario-lista.html';
-        } else {
-            // Si no, continuar escaneando
-            clearProductForm();
-            startScanner();
-            await loadInventory();
-            updateStats();
-            document.getElementById('scannerContainer').style.display = 'block';
-            currentCode = null;
-            currentPhotoBase64 = null;
-        }
-        
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
-}
-async function loadInventory() {
-    try {
-        const { data, error } = await supabaseClient.from('products').select('*').order('name', { ascending: true });
-        if (error) throw error;
-        inventory = data || [];
-    } catch (error) {
-        inventory = [];
-    }
-}
-
-function clearProductForm() {
-    document.getElementById('productName').value = '';
-    document.getElementById('productQuantity').value = '1';
-    document.getElementById('productUnit').value = 'unidad';
-    document.getElementById('minQuantity').value = '0';
-    document.getElementById('maxQuantity').value = '';
-    document.getElementById('purchasePrice').value = '';
-    document.getElementById('publicPrice').value = '';
-    document.getElementById('category').value = '';
-    document.getElementById('brand').value = '';
-    document.getElementById('location').value = '';
-    document.getElementById('productPhoto').style.display = 'none';
-    document.getElementById('productPhoto').src = '';
-    document.getElementById('result').classList.remove('show');
-    document.getElementById('productForm').classList.remove('show');
-    document.getElementById('scannerContainer').style.display = 'block';
-    }
-
-async function updateStats() {
-    await loadInventory();
-    const totalProducts = inventory.length;
-    const totalUnits = inventory.reduce((sum, item) => sum + item.quantity, 0);
-    document.getElementById('totalProducts').textContent = totalProducts;
-    document.getElementById('totalUnits').textContent = totalUnits.toFixed(2);
-}
-
-async function exportInventory() {
-    await loadInventory();
-    if (inventory.length === 0) {
-        alert('No hay productos para exportar');
-        return;
-    }
-    
-    let csv = 'Código,Nombre,Cantidad,Unidad,Min,Max,Precio Compra,Precio Venta,Margen %,Categoría,Marca,Ubicación,Fecha\n';
-    inventory.forEach(item => {
-        const date = new Date(item.created_at).toLocaleDateString('es-ES');
-        const margin = item.public_price > 0 && item.purchase_price > 0 
-            ? ((item.public_price - item.purchase_price) / item.purchase_price * 100).toFixed(2) : '';
-        csv += `${item.code},"${item.name}",${item.quantity},${item.unit || 'unidad'},${item.min_quantity || 0},${item.max_quantity || ''},${item.purchase_price || 0},${item.public_price || 0},${margin},"${item.category || ''}","${item.brand || ''}","${item.location || ''}",${date}\n`;
-    });
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-
-async function clearInventory() {
-    if (confirm('⚠️ ¿Estás seguro de borrar TODO el inventario?')) {
-        if (confirm('Confirmación final: ¿Realmente quieres borrar todos los productos?')) {
-            try {
-                await supabaseClient.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-                inventory = [];
-                updateStats();
-                alert('Inventario borrado');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-    }
-}
+// Al cargar la página
+window.addEventListener('DOMContentLoaded', () => {
+    verificarYLimpiarDatos();
+    cargarDatos();
+    calcularMonedas();
+    calcularBilletes();
+});
 </script>
-
-<!-- Modal para crear categoría -->
-<div id="categoryModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">Nueva Categoría</div>
-        <input type="text" id="newCategoryInput" class="modal-input" placeholder="Nombre de la categoría">
-        <div class="modal-buttons">
-            <button class="modal-btn modal-btn-cancel" onclick="closeModal('category')">Cancelar</button>
-            <button class="modal-btn modal-btn-save" onclick="saveNewCategory()">Guardar</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para crear marca -->
-<div id="brandModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">Nueva Marca</div>
-        <input type="text" id="newBrandInput" class="modal-input" placeholder="Nombre de la marca">
-        <div class="modal-buttons">
-            <button class="modal-btn modal-btn-cancel" onclick="closeModal('brand')">Cancelar</button>
-            <button class="modal-btn modal-btn-save" onclick="saveNewBrand()">Guardar</button>
-        </div>
-    </div>
-</div>
-    </body>
+</body>
 </html>
