@@ -676,9 +676,9 @@ switch(currentSort) {
         
               
         function viewProduct(code) {
-            // Redirigir a página de escaneo con el código
-            window.location.href = 'index.html?code=' + code;
-        }
+    // Redirigir a página de escaneo con el código
+    window.location.href = 'monedas.html?code=' + code;
+}
         
    async function deleteProduct(code, name) {
     if (confirm(`⚠️ ¿Estás seguro de eliminar "${name}"?`)) {
@@ -787,16 +787,17 @@ async function confirmManualProduct() {
         
         if (data) {
             if (confirm(`⚠️ El código "${code}" ya existe.\n\n¿Quieres editarlo?`)) {
-                window.location.href = `index.html?code=${encodeURIComponent(code)}&manual=true`;
-            }
+    window.location.href = `monedas.html?code=${encodeURIComponent(code)}&manual=true`;
+}
+return;
             return;
         }
     } catch (error) {
         console.error('Error verificando código:', error);
     }
     
-    // Redirigir a index.html con el código manual
-    window.location.href = `index.html?code=${encodeURIComponent(code)}&manual=true`;
+    // Redirigir a monedas.html con el código manual
+window.location.href = `monedas.html?code=${encodeURIComponent(code)}&manual=true`;
 }
 // Permitir enviar con Enter en el modal
 document.addEventListener('DOMContentLoaded', function() {

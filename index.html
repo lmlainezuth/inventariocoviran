@@ -242,14 +242,93 @@
 body {
     padding-bottom: 80px;
 }
+.dropdown {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.settings-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.settings-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 50px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    min-width: 200px;
+    z-index: 1000;
+}
+
+.dropdown-content.show {
+    display: block;
+}
+
+.dropdown-item {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #2c3e50;
+    transition: background 0.2s;
+}
+
+.dropdown-item:first-child {
+    border-radius: 8px 8px 0 0;
+}
+
+.dropdown-item:last-child {
+    border-radius: 0 0 8px 8px;
+}
+
+.dropdown-item:hover {
+    background: #f3f4f6;
+}
+
+.dropdown-item span:first-child {
+    font-size: 18px;
+}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>CIERRE DE CAJA</h1>
-            <div class="date-display">Fecha: <span id="fecha"></span></div>
+    <h1>CIERRE DE CAJA</h1>
+    <div class="date-display">Fecha: <span id="fecha"></span></div>
+    <div class="dropdown">
+        <button class="settings-btn" onclick="toggleDropdown()">⚙️</button>
+        <div id="dropdownMenu" class="dropdown-content">
+            <button class="dropdown-item" onclick="window.location.href='admin.html'">
+                <span>👑</span>
+                <span>Administración</span>
+            </button>
+            <button class="dropdown-item" onclick="logout()">
+                <span>🚪</span>
+                <span>Cerrar sesión</span>
+            </button>
         </div>
+    </div>
+</div>
 
         <!-- MONEDAS -->
         <div class="section">
@@ -637,6 +716,30 @@ window.addEventListener('DOMContentLoaded', () => {
     calcularMonedas();
     calcularBilletes();
 });
+
+// Toggle dropdown menu
+function toggleDropdown() {
+    document.getElementById('dropdownMenu').classList.toggle('show');
+}
+
+// Cerrar dropdown si se hace clic fuera
+window.onclick = function(event) {
+    if (!event.target.matches('.settings-btn')) {
+        const dropdowns = document.getElementsByClassName('dropdown-content');
+        for (let i = 0; i < dropdowns.length; i++) {
+            const openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
+
+// Función de logout
+function logout() {
+    localStorage.removeItem('authenticated');
+    window.location.href = 'login.html';
+}
 </script>
 </body>
 </html>
