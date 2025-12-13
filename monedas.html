@@ -1000,7 +1000,7 @@ async function loadProductData(code) {
             document.getElementById('publicPrice').value = existingProduct.public_price || '';
             document.getElementById('category').value = existingProduct.category || '';
             document.getElementById('brand').value = existingProduct.brand || '';
-            document.getElementById('location').value = existingProduct.location || '';
+         
             
             if (existingProduct.photo) {
                 document.getElementById('productPhoto').src = existingProduct.photo;
@@ -1108,7 +1108,7 @@ async function saveProduct() {
     const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
     const category = document.getElementById('category').value;
     const brand = document.getElementById('brand').value;
-    const location = document.getElementById('location').value;
+  
     
     try {
         const { data: existingProduct } = await supabaseClient.from('products').select('*').eq('code', currentCode).maybeSingle();
@@ -1120,9 +1120,9 @@ async function saveProduct() {
         if (existingProduct) {
             if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
                 await supabaseClient.from('products').update({
-                    name, quantity, unit, min_quantity: minQuantity, max_quantity: maxQuantity,
-                    purchase_price: purchasePrice, public_price: publicPrice, category, brand, location, photo: currentPhotoBase64
-                }).eq('code', currentCode);
+    name, quantity, unit, min_quantity: minQuantity, max_quantity: maxQuantity,
+    purchase_price: purchasePrice, public_price: publicPrice, category, brand, photo: currentPhotoBase64
+}).eq('code', currentCode);
             } else {
                 await supabaseClient.from('products').update({ quantity: existingProduct.quantity + quantity }).eq('code', currentCode);
             }
