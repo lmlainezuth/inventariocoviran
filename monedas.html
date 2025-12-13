@@ -1118,20 +1118,67 @@ async function saveProduct() {
         const fromList = urlParams.has('code');
         
         if (existingProduct) {
-            if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
-                await supabaseClient.from('products').update({
-    name, quantity, unit, min_quantity: minQuantity, max_quantity: maxQuantity,
-    purchase_price: purchasePrice, public_price: publicPrice, category, brand, photo: currentPhotoBase64
-}).eq('code', currentCode);
-            } else {
-                await supabaseClient.from('products').update({ quantity: existingProduct.quantity + quantity }).eq('code', currentCode);
-            }
-        } else {
-            await supabaseClient.from('products').insert([{
-                code: currentCode, name, quantity, unit, min_quantity: minQuantity, max_quantity: maxQuantity,
-                purchase_price: purchasePrice, public_price: publicPrice, category, brand, location, photo: currentPhotoBase64
-            }]);
-        }
+    const selectedStore = document.getElementById('storeSelector').value;
+    
+    if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
+        // Actualizar info general del producto
+        await supabaseClient.from('products').update({
+            name, unit, category, brand, photo: currentPhotoBase64
+        }).eq('code', currentCode);
+        
+        // Actualizar stock de la tienda
+        await supabaseClient.from('product_stock').upsert({
+            product_code: currentCode,
+            store_code: selectedStore,
+            quantity,
+            min_quantity: minQuantity,
+            max_quantity: maxQuantity,
+            purchase_price: purchasePrice,
+            public_price: publicPrice
+        }, { onConflict: 'product_code,store_code' });
+    } else {
+        // Solo sumar cantidad
+        const { data: currentStock } = await supabaseClient
+            .from('product_stock')
+            .select('quantity')
+            .eq('product_code', currentCode)
+            .eq('store_code', selectedStore)
+            .single();
+        
+        await supabaseClient.from('product_stock').upsert({
+            product_code: currentCode,
+            store_code: selectedStore,
+            quantity: (currentStock?.quantity || 0) + quantity,
+            min_quantity: minQuantity,
+            max_quantity: maxQuantity,
+            purchase_price: purchasePrice,
+            public_price: publicPrice
+        }, { onConflict: 'product_code,store_code' });
+    }
+} else {
+    const selectedStore = document.getElementById('storeSelector').value;
+    
+    // Crear producto
+    await supabaseClient.from('products').insert([{
+        code: currentCode,
+        name,
+        unit,
+        category,
+        brand,
+        photo: currentPhotoBase64
+    }]);
+    
+    // Crear stock para la tienda
+    await supabaseClient.from('product_stock').insert([{
+        product_code: currentCode,
+        store_code: selectedStore,
+        quantity,
+        min_quantity: minQuantity,
+        max_quantity: maxQuantity,
+        purchase_price: purchasePrice,
+        public_price: publicPrice
+    }]);
+}
         
         alert('✅ Producto guardado');
         
