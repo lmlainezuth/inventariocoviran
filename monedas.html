@@ -591,12 +591,8 @@
                         <!-- Ubicación -->
                         <div class="form-group">
                             <label>Ubicación</label>
-                            <select id="location">
-                        
-                                <option value="Iztieta 9103">Iztieta
-                                    9103</option>
-                                <option value="Gabierrota">Gabierrota</option>
-                                <option value="El Antiguo">El Antiguo</option>
+                            <select id="storeSelector" onchange="changeStore()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; margin-left: 10px;">
+                                <option value="">Cargando tiendas...</option>
                             </select>
                         </div>
 
@@ -687,6 +683,30 @@ window.addEventListener('DOMContentLoaded', function() {
     // Verificar si viene un código en la URL
     const urlParams = new URLSearchParams(window.location.search);
     const codeFromUrl = urlParams.get('code');
+
+    // Cargar tiendas al inicio
+let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
+
+async function loadStores() {
+    try {
+        const { data: stores } = await supabaseClient.from('stores').select('*').order('name');
+        const selector = document.getElementById('storeSelector');
+        selector.innerHTML = stores.map(store => 
+            `<option value="${store.code}" ${store.code === currentStore ? 'selected' : ''}>${store.name}</option>`
+        ).join('');
+    } catch (error) {
+        console.error('Error cargando tiendas:', error);
+    }
+}
+
+function changeStore() {
+    currentStore = document.getElementById('storeSelector').value;
+    localStorage.setItem('currentStore', currentStore);
+    loadProducts();
+}
+
+// Llamar al inicio
+loadStores();
     
     // Inicializar app
     Promise.all([loadInventory(), loadCategories(), loadBrands()]).then(() => {
