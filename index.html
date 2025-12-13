@@ -322,6 +322,10 @@ body {
                 <span>👑</span>
                 <span>Administración</span>
             </button>
+            <button class="dropdown-item" onclick="limpiarDatosCaja()">
+    <span>🗑️</span>
+    <span>Limpiar datos</span>
+</button>
             <button class="dropdown-item" onclick="logout()">
                 <span>🚪</span>
                 <span>Cerrar sesión</span>
@@ -739,6 +743,25 @@ window.onclick = function(event) {
 function logout() {
     localStorage.removeItem('authenticated');
     window.location.href = 'login.html';
+}
+// Función para limpiar datos manualmente
+function limpiarDatosCaja() {
+    if (confirm('¿Estás seguro de que quieres borrar todos los datos del cierre de caja?')) {
+        localStorage.removeItem('cierreCajaData');
+        localStorage.setItem('ultimaLimpiezaCaja', new Date().toDateString());
+        
+        // Limpiar todos los inputs
+        monedasInputs.forEach(input => input.value = '');
+        billetesInputs.forEach(input => input.value = '');
+        document.getElementById('importe-datafono').value = '';
+        document.getElementById('importe-factura').value = '';
+        
+        // Recalcular
+        calcularMonedas();
+        calcularBilletes();
+        
+        alert('Datos limpiados correctamente');
+    }
 }
 </script>
 </body>
