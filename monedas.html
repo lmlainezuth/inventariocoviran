@@ -678,17 +678,33 @@ window.addEventListener('DOMContentLoaded', function() {
     const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
     const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
     
-    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-    
-    // Verificar si viene un código en la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get('code');
+   supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// Gestión de tiendas
+let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
+
+async function loadStores() {
+    try {
+        const { data: stores, error } = await supabaseClient.from('stores').select('*').order('name');
+        if (error) throw error;
+        
+        const selector = document.getElementById('storeSelector');
+        selector.innerHTML = stores.map(store => 
+            `<option value="${store.code}" ${store.code === currentStore ? 'selected' : ''}>${store.name}</option>`
+        ).join('');
+    } catch (error) {
+        console.error('Error cargando tiendas:', error);
+    }
+}
+
+// Verificar si viene un código en la URL
+const urlParams = new URLSearchParams(window.location.search);
+const codeFromUrl = urlParams.get('code');
 
 
 
     
-    // Inicializar app
-    Promise.all([loadInventory(), loadCategories(), loadBrands()]).then(() => {
+   Promise.all([loadInventory(), loadCategories(), loadBrands(), loadStores()]).then(() => {
       
         setupModalListeners();
         
