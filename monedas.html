@@ -684,12 +684,14 @@ window.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const codeFromUrl = urlParams.get('code');
 
-    // Cargar tiendas al inicio
+// Gestión de tiendas
 let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
 
 async function loadStores() {
     try {
-        const { data: stores } = await supabaseClient.from('stores').select('*').order('name');
+        const { data: stores, error } = await supabaseClient.from('stores').select('*').order('name');
+        if (error) throw error;
+        
         const selector = document.getElementById('storeSelector');
         selector.innerHTML = stores.map(store => 
             `<option value="${store.code}" ${store.code === currentStore ? 'selected' : ''}>${store.name}</option>`
@@ -705,8 +707,9 @@ function changeStore() {
     loadProducts();
 }
 
-// Llamar al inicio
+// Inicializar
 loadStores();
+
     
     // Inicializar app
     Promise.all([loadInventory(), loadCategories(), loadBrands()]).then(() => {

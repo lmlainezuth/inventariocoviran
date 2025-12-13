@@ -375,7 +375,12 @@
 <body>
     <!-- Header -->
     <div class="header">
-        <h1>📦 Inventario</h1>
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+    <h1>📦 Inventario</h1>
+    <select id="storeSelector" onchange="changeStore()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer;">
+        <option value="">Cargando...</option>
+    </select>
+</div>
         <div class="dropdown">
     <button class="settings-btn" onclick="toggleDropdown()">⚙️</button>
     <div id="dropdownMenu" class="dropdown-content">
@@ -536,130 +541,143 @@ function applyFilter(type, value) {
         // Cargar productos al iniciar
         loadProducts();
         
-        async function loadProducts() {
-            const container = document.getElementById('productList');
-            
-            try {
-                // Mostrar loading
-                container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
-                
-                // Obtener productos de Supabase
-                const { data, error } = await supabaseClient
-                .from('products')
-                .select('*')
-                .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                inventory = data || [];
-                
-                if (inventory.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📦</div>
-                            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
-                                No hay productos
-                            </div>
-                            <div>Comienza escaneando códigos de barras</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Ordenar productos
-                let sortedInventory = [...inventory];
-
-// Aplicar filtros
-sortedInventory = sortedInventory.filter(item => {
-    if (filters.category !== 'all' && item.category !== filters.category) return false;
-    if (filters.brand !== 'all' && item.brand !== filters.brand) return false;
-    if (filters.location !== 'all' && item.location !== filters.location) return false;
+ async function loadProducts() {
+    const container = document.getElementById('productList');
     
-    if (filters.stock === 'out' && item.quantity > 0) return false;
-    if (filters.stock === 'min' && item.quantity > item.min_quantity) return false;
-    if (filters.stock === 'max' && (!item.max_quantity || item.quantity < item.max_quantity)) return false;
-    
-    return true;
-});
-
-// Ordenar
-switch(currentSort) {
-    case 'created_desc':
-        sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        break;
-    case 'created_asc':
-        sortedInventory.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        break;
-    case 'name_asc':
-        sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-    case 'name_desc':
-        sortedInventory.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-    case 'code':
-        sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
-        break;
-    case 'quantity':
-        sortedInventory.sort((a, b) => b.quantity - a.quantity);
-        break;
-}             
-                container.innerHTML = sortedInventory.map((item) => {
-                    const badge = getStockBadge(item);
-                    
-                    // Debug: ver qué URL tiene la foto
-                    console.log('Producto:', item.name, 'Foto URL:', item.photo);
-                    
-                    const imageUrl = item.photo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect width="60" height="60" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em"%3E📦%3C/text%3E%3C/svg%3E';
-                    const priceDisplay = item.public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600; margin-top: 2px;">${item.public_price.toFixed(2)}€</div>` : '';
-                    
-                    return `
-                        <div class="product-item">
-                            <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E'; console.error('Error cargando imagen:', '${imageUrl}');" onclick="viewProduct('${item.code}')">
-                            <div class="product-info" onclick="viewProduct('${item.code}')">
-                                <div class="product-name">${item.name}</div>
-                                <div class="product-quantity">Cantidad: ${item.quantity} ${item.unit || 'unidad'}</div>
-                                <div class="product-code">${item.code}</div>
-                                ${priceDisplay}
-                            </div>
-                            <div class="product-badge badge-${badge.type}" onclick="viewProduct('${item.code}')">${badge.text}</div>
-                            <button onclick="event.stopPropagation(); deleteProduct('${item.code}', '${item.name.replace(/'/g, "\\'")}');" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; margin-left: 8px;">🗑️</button>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (error) {
-                console.error('Error cargando productos:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">❌</div>
-                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef4444;">
-                            Error al cargar productos
-                        </div>
-                        <div>${error.message}</div>
+    try {
+        container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
+        
+        // Obtener productos CON su stock de la tienda actual
+        const { data, error } = await supabaseClient
+            .from('products')
+            .select(`
+                *,
+                stock:product_stock!product_stock_product_code_fkey(
+                    quantity,
+                    min_quantity,
+                    max_quantity,
+                    purchase_price,
+                    public_price
+                )
+            `)
+            .eq('product_stock.store_code', currentStore)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        inventory = data || [];
+        
+        if (inventory.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                        No hay productos en esta tienda
                     </div>
-                `;
-            }
+                    <div>Comienza escaneando códigos de barras</div>
+                </div>
+            `;
+            return;
         }
         
-        function getStockBadge(item) {
-    // Primero verificar si está agotado (cantidad = 0)
-    if (item.quantity === 0) {
+        let sortedInventory = [...inventory];
+
+        // Aplicar filtros
+        sortedInventory = sortedInventory.filter(item => {
+            const stock = item.stock && item.stock[0] ? item.stock[0] : { quantity: 0, min_quantity: 0, max_quantity: null };
+            
+            if (filters.category !== 'all' && item.category !== filters.category) return false;
+            if (filters.brand !== 'all' && item.brand !== filters.brand) return false;
+            if (filters.location !== 'all' && item.location !== filters.location) return false;
+            
+            if (filters.stock === 'out' && stock.quantity > 0) return false;
+            if (filters.stock === 'min' && stock.quantity > stock.min_quantity) return false;
+            if (filters.stock === 'max' && (!stock.max_quantity || stock.quantity < stock.max_quantity)) return false;
+            
+            return true;
+        });
+
+        // Ordenar
+        switch(currentSort) {
+            case 'created_desc':
+                sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                break;
+            case 'created_asc':
+                sortedInventory.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                break;
+            case 'name_asc':
+                sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
+                break;
+            case 'name_desc':
+                sortedInventory.sort((a, b) => b.name.localeCompare(a.name));
+                break;
+            case 'code':
+                sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
+                break;
+            case 'quantity':
+                sortedInventory.sort((a, b) => {
+                    const stockA = a.stock && a.stock[0] ? a.stock[0].quantity : 0;
+                    const stockB = b.stock && b.stock[0] ? b.stock[0].quantity : 0;
+                    return stockB - stockA;
+                });
+                break;
+        }
+        
+        container.innerHTML = sortedInventory.map((item) => {
+            const stock = item.stock && item.stock[0] ? item.stock[0] : {
+                quantity: 0,
+                min_quantity: 0,
+                max_quantity: null,
+                purchase_price: 0,
+                public_price: 0
+            };
+            
+            const badge = getStockBadge(stock);
+            const imageUrl = item.photo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect width="60" height="60" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em"%3E📦%3C/text%3E%3C/svg%3E';
+            const priceDisplay = stock.public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600; margin-top: 2px;">${stock.public_price.toFixed(2)}€</div>` : '';
+            
+            return `
+                <div class="product-item">
+                    <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E';" onclick="viewProduct('${item.code}')">
+                    <div class="product-info" onclick="viewProduct('${item.code}')">
+                        <div class="product-name">${item.name}</div>
+                        <div class="product-quantity">Cantidad: ${stock.quantity} ${item.unit || 'unidad'}</div>
+                        <div class="product-code">${item.code}</div>
+                        ${priceDisplay}
+                    </div>
+                    <div class="product-badge badge-${badge.type}" onclick="viewProduct('${item.code}')">${badge.text}</div>
+                    <button onclick="event.stopPropagation(); deleteProduct('${item.code}', '${item.name.replace(/'/g, "\\'")}');" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; margin-left: 8px;">🗑️</button>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error cargando productos:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">❌</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef4444;">
+                    Error al cargar productos
+                </div>
+                <div>${error.message}</div>
+            </div>
+        `;
+    }
+}  
+        function getStockBadge(stock) {
+    if (stock.quantity === 0) {
         return { type: 'out', text: 'AGOTADO' };
     }
-    // Luego verificar cantidad mínima
-    else if (item.quantity <= item.min_quantity) {
+    else if (stock.quantity <= stock.min_quantity) {
         return { type: 'min', text: 'MIN' };
     }
-    // Luego verificar cantidad máxima
-    else if (item.max_quantity && item.quantity >= item.max_quantity) {
+    else if (stock.max_quantity && stock.quantity >= stock.max_quantity) {
         return { type: 'max', text: 'MAX' };
     }
-    // Si no cumple ninguna condición, está OK
     else {
         return { type: 'normal', text: 'OK' };
     }
 }
-        
         function filterProducts() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const allItems = document.querySelectorAll('.product-item');
