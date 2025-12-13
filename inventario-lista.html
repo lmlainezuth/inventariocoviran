@@ -567,71 +567,146 @@ function applyFilter(type, value) {
         // Cargar productos al iniciar
         loadProducts();
         
-async function loadProductData(code) {
+async function loadProducts() {
+    const container = document.getElementById('productList');
+    
     try {
-        // Obtener datos del producto
-        const { data: existingProduct, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('code', code)
-            .maybeSingle();
+        container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
         
-        if (error) throw error;
+        // PRIMERO: Obtener los product_code de la tienda actual
+        const { data: stockData, error: stockError } = await supabaseClient
+            .from('product_stock')
+            .select('product_code, quantity, min_quantity, max_quantity, purchase_price, public_price')
+            .eq('store_code', currentStore);
         
-        document.getElementById('scannerContainer').style.display = 'none';
+        if (stockError) throw stockError;
         
-        if (existingProduct) {
-            // Obtener el stock de la tienda actual
-            const selectedStore = document.getElementById('storeSelector').value;
-            const { data: stockData } = await supabaseClient
-                .from('product_stock')
-                .select('*')
-                .eq('product_code', code)
-                .eq('store_code', selectedStore)
-                .maybeSingle();
-            
-            // Cargar datos del producto
-            document.getElementById('productName').value = existingProduct.name;
-            document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
-            document.getElementById('category').value = existingProduct.category || '';
-            document.getElementById('brand').value = existingProduct.brand || '';
-            
-            // Cargar datos del stock de la tienda
-            if (stockData) {
-                document.getElementById('productQuantity').value = stockData.quantity;
-                document.getElementById('minQuantity').value = stockData.min_quantity || 0;
-                document.getElementById('maxQuantity').value = stockData.max_quantity || '';
-                document.getElementById('purchasePrice').value = stockData.purchase_price || '';
-                document.getElementById('publicPrice').value = stockData.public_price || '';
-            } else {
-                // Si no hay stock en esta tienda, valores por defecto
-                document.getElementById('productQuantity').value = 0;
-                document.getElementById('minQuantity').value = 0;
-                document.getElementById('maxQuantity').value = '';
-                document.getElementById('purchasePrice').value = '';
-                document.getElementById('publicPrice').value = '';
-            }
-            
-            if (existingProduct.photo) {
-                document.getElementById('productPhoto').src = existingProduct.photo;
-                document.getElementById('productPhoto').style.display = 'block';
-                currentPhotoBase64 = existingProduct.photo;
-            }
-            
-            document.getElementById('result').innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
-        } else {
-            document.getElementById('result').innerHTML = `<div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>`;
+        if (!stockData || stockData.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                        No hay productos en esta tienda
+                    </div>
+                    <div>Comienza escaneando códigos de barras</div>
+                </div>
+            `;
+            return;
         }
         
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
+        // Crear un mapa de stock por product_code
+        const stockMap = {};
+        stockData.forEach(s => {
+            stockMap[s.product_code] = {
+                quantity: s.quantity,
+                min_quantity: s.min_quantity,
+                max_quantity: s.max_quantity,
+                purchase_price: s.purchase_price,
+                public_price: s.public_price
+            };
+        });
+        
+        // SEGUNDO: Obtener los productos
+        const productCodes = stockData.map(s => s.product_code);
+        const { data: products, error: productsError } = await supabaseClient
+            .from('products')
+            .select('*')
+            .in('code', productCodes)
+            .order('created_at', { ascending: false });
+        
+        if (productsError) throw productsError;
+        
+        // Combinar productos con su stock
+        inventory = products.map(p => ({
+            ...p,
+            stock: [stockMap[p.code]]
+        }));
+        
+        let sortedInventory = [...inventory];
+
+        // Aplicar filtros
+        sortedInventory = sortedInventory.filter(item => {
+            const stock = item.stock && item.stock[0] ? item.stock[0] : { quantity: 0, min_quantity: 0, max_quantity: null };
+            
+            if (filters.category !== 'all' && item.category !== filters.category) return false;
+            if (filters.brand !== 'all' && item.brand !== filters.brand) return false;
+            if (filters.location !== 'all' && item.location !== filters.location) return false;
+            
+            if (filters.stock === 'out' && stock.quantity > 0) return false;
+            if (filters.stock === 'min' && stock.quantity > stock.min_quantity) return false;
+            if (filters.stock === 'max' && (!stock.max_quantity || stock.quantity < stock.max_quantity)) return false;
+            
+            return true;
+        });
+
+        // Ordenar
+        switch(currentSort) {
+            case 'created_desc':
+                sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                break;
+            case 'created_asc':
+                sortedInventory.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                break;
+            case 'name_asc':
+                sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
+                break;
+            case 'name_desc':
+                sortedInventory.sort((a, b) => b.name.localeCompare(a.name));
+                break;
+            case 'code':
+                sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
+                break;
+            case 'quantity':
+                sortedInventory.sort((a, b) => {
+                    const stockA = a.stock && a.stock[0] ? a.stock[0].quantity : 0;
+                    const stockB = b.stock && b.stock[0] ? b.stock[0].quantity : 0;
+                    return stockB - stockA;
+                });
+                break;
+        }
+        
+        container.innerHTML = sortedInventory.map((item) => {
+            const stock = item.stock && item.stock[0] ? item.stock[0] : {
+                quantity: 0,
+                min_quantity: 0,
+                max_quantity: null,
+                purchase_price: 0,
+                public_price: 0
+            };
+            
+            const badge = getStockBadge(stock);
+            const imageUrl = item.photo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect width="60" height="60" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em"%3E📦%3C/text%3E%3C/svg%3E';
+            const priceDisplay = stock.public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600; margin-top: 2px;">${stock.public_price.toFixed(2)}€</div>` : '';
+            
+            return `
+                <div class="product-item">
+                    <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E';" onclick="viewProduct('${item.code}')">
+                    <div class="product-info" onclick="viewProduct('${item.code}')">
+                        <div class="product-name">${item.name}</div>
+                        <div class="product-quantity">Cantidad: ${stock.quantity} ${item.unit || 'unidad'}</div>
+                        <div class="product-code">${item.code}</div>
+                        ${priceDisplay}
+                    </div>
+                    <div class="product-badge badge-${badge.type}" onclick="viewProduct('${item.code}')">${badge.text}</div>
+                    <button onclick="event.stopPropagation(); deleteProduct('${item.code}', '${item.name.replace(/'/g, "\\'")}');" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; margin-left: 8px;">🗑️</button>
+                </div>
+            `;
+        }).join('');
+        
     } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('scannerContainer').style.display = 'none';
-        document.getElementById('productForm').classList.add('show');
-        document.getElementById('productName').focus();
+        console.error('Error cargando productos:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">❌</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef4444;">
+                    Error al cargar productos
+                </div>
+                <div>${error.message}</div>
+            </div>
+        `;
     }
-}
+}      
+
 function getStockBadge(stock) {
     if (stock.quantity === 0) {
         return { type: 'out', text: 'AGOTADO' };

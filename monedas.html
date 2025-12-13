@@ -985,22 +985,48 @@ function playBeep() {
 
 async function loadProductData(code) {
     try {
-        const { data: existingProduct, error } = await supabaseClient.from('products').select('*').eq('code', code).maybeSingle();
+        // Obtener datos del producto
+        const { data: existingProduct, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('code', code)
+            .maybeSingle();
+        
         if (error) throw error;
         
         document.getElementById('scannerContainer').style.display = 'none';
         
         if (existingProduct) {
+            // Obtener el stock de la tienda actual
+            const selectedStore = document.getElementById('storeSelector').value;
+            const { data: stockData } = await supabaseClient
+                .from('product_stock')
+                .select('*')
+                .eq('product_code', code)
+                .eq('store_code', selectedStore)
+                .maybeSingle();
+            
+            // Cargar datos del producto
             document.getElementById('productName').value = existingProduct.name;
-            document.getElementById('productQuantity').value = existingProduct.quantity;
             document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
-            document.getElementById('minQuantity').value = existingProduct.min_quantity || 0;
-            document.getElementById('maxQuantity').value = existingProduct.max_quantity || '';
-            document.getElementById('purchasePrice').value = existingProduct.purchase_price || '';
-            document.getElementById('publicPrice').value = existingProduct.public_price || '';
             document.getElementById('category').value = existingProduct.category || '';
             document.getElementById('brand').value = existingProduct.brand || '';
-         
+            
+            // Cargar datos del stock de la tienda
+            if (stockData) {
+                document.getElementById('productQuantity').value = stockData.quantity;
+                document.getElementById('minQuantity').value = stockData.min_quantity || 0;
+                document.getElementById('maxQuantity').value = stockData.max_quantity || '';
+                document.getElementById('purchasePrice').value = stockData.purchase_price || '';
+                document.getElementById('publicPrice').value = stockData.public_price || '';
+            } else {
+                // Si no hay stock en esta tienda, valores por defecto
+                document.getElementById('productQuantity').value = 0;
+                document.getElementById('minQuantity').value = 0;
+                document.getElementById('maxQuantity').value = '';
+                document.getElementById('purchasePrice').value = '';
+                document.getElementById('publicPrice').value = '';
+            }
             
             if (existingProduct.photo) {
                 document.getElementById('productPhoto').src = existingProduct.photo;
@@ -1022,7 +1048,6 @@ async function loadProductData(code) {
         document.getElementById('productName').focus();
     }
 }
-
 async function uploadImageToSupabase(file) {
     try {
         const fileExt = file.name.split('.').pop();
