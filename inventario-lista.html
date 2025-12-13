@@ -567,33 +567,21 @@ function applyFilter(type, value) {
         // Cargar productos al iniciar
         loadProducts();
         
- async function loadProducts() {
+async function loadProducts() {
     const container = document.getElementById('productList');
     
     try {
         container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
         
-        // Obtener productos CON su stock de la tienda actual
-        const { data, error } = await supabaseClient
-            .from('products')
-            .select(`
-                *,
-                stock:product_stock!product_stock_product_code_fkey(
-                    quantity,
-                    min_quantity,
-                    max_quantity,
-                    purchase_price,
-                    public_price
-                )
-            `)
-            .eq('product_stock.store_code', currentStore)
-            .order('created_at', { ascending: false });
+        // PRIMERO: Obtener los product_code de la tienda actual
+        const { data: stockData, error: stockError } = await supabaseClient
+            .from('product_stock')
+            .select('product_code, quantity, min_quantity, max_quantity, purchase_price, public_price')
+            .eq('store_code', currentStore);
         
-        if (error) throw error;
+        if (stockError) throw stockError;
         
-        inventory = data || [];
-        
-        if (inventory.length === 0) {
+        if (!stockData || stockData.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">📦</div>
@@ -605,6 +593,34 @@ function applyFilter(type, value) {
             `;
             return;
         }
+        
+        // Crear un mapa de stock por product_code
+        const stockMap = {};
+        stockData.forEach(s => {
+            stockMap[s.product_code] = {
+                quantity: s.quantity,
+                min_quantity: s.min_quantity,
+                max_quantity: s.max_quantity,
+                purchase_price: s.purchase_price,
+                public_price: s.public_price
+            };
+        });
+        
+        // SEGUNDO: Obtener los productos
+        const productCodes = stockData.map(s => s.product_code);
+        const { data: products, error: productsError } = await supabaseClient
+            .from('products')
+            .select('*')
+            .in('code', productCodes)
+            .order('created_at', { ascending: false });
+        
+        if (productsError) throw productsError;
+        
+        // Combinar productos con su stock
+        inventory = products.map(p => ({
+            ...p,
+            stock: [stockMap[p.code]]
+        }));
         
         let sortedInventory = [...inventory];
 
@@ -689,8 +705,9 @@ function applyFilter(type, value) {
             </div>
         `;
     }
-}  
-        function getStockBadge(stock) {
+}      
+
+function getStockBadge(stock) {
     if (stock.quantity === 0) {
         return { type: 'out', text: 'AGOTADO' };
     }
