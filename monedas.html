@@ -689,7 +689,7 @@ window.addEventListener('DOMContentLoaded', function() {
     
     // Inicializar app
     Promise.all([loadInventory(), loadCategories(), loadBrands()]).then(() => {
-        updateStats();
+      
         setupModalListeners();
         
         if (codeFromUrl) {
@@ -874,7 +874,7 @@ function switchPage(page) {
     if (isScanning) stopScanner();
     document.getElementById('monedasPage').classList.add('active');
     document.querySelectorAll('.nav-item')[2].classList.add('active');
-    updateStats();
+  
 }
 }
 
@@ -1203,7 +1203,7 @@ async function clearInventory() {
             try {
                 await supabaseClient.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
                 inventory = [];
-                updateStats();
+              
                 alert('Inventario borrado');
             } catch (error) {
                 alert('Error: ' + error.message);
