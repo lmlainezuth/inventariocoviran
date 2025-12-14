@@ -811,34 +811,18 @@
             let message = `🛒 *PEDIDO - ${storeName}*\n📅 ${today}\n\n📦 *Productos a pedir:*\n\n`;
             
             let index = 1;
-            let totalUnits = 0;
-            let totalAmount = 0;
             
             selectedProducts.forEach((qty, code) => {
                 const product = inventory.find(p => p.code === code);
                 if (product && product.stock) {
-                    const stock = product.stock;
-                    const subtotal = stock.purchase_price * qty;
+                    // Determinar si es Frutas o Verduras para usar "cajas" en lugar de "unidades"
+                    const isFrutasVerduras = product.category === 'Frutas' || product.category === 'Verdura';
+                    const unit = isFrutasVerduras ? 'cajas' : 'unidades';
                     
-                    const stockStatus = stock.quantity === 0 
-                        ? 'AGOTADO' 
-                        : `${stock.quantity} (Mín: ${stock.min_quantity})`;
-                    
-                    message += `${index}️⃣ *${product.name}* (x${qty} unidades)\n`;
-                    message += `   💶 Precio compra: ${stock.purchase_price.toFixed(2)}€/ud\n`;
-                    message += `   📊 Stock actual: ${stockStatus}\n`;
-                    message += `   💰 Subtotal: ${subtotal.toFixed(2)}€\n\n`;
-                    
-                    totalUnits += qty;
-                    totalAmount += subtotal;
+                    message += `${index}️⃣ *${product.name}* (x${qty} ${unit})\n\n`;
                     index++;
                 }
             });
-            
-            message += `📊 *Resumen:*\n`;
-            message += `- Total productos: ${selectedProducts.size}\n`;
-            message += `- Total unidades: ${totalUnits}\n`;
-            message += `- Importe estimado: ${totalAmount.toFixed(2)}€`;
             
             const encodedMessage = encodeURIComponent(message);
             const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
