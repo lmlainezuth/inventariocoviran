@@ -476,7 +476,7 @@
         let inventory = [];
         let selectedProducts = new Map(); // code -> quantity
         let currentFilter = 'critical'; // Por defecto mostrar críticos
-        let currentCategory = 'Frutas y Verduras'; // Por defecto Frutas y Verduras
+        let currentCategory = 'frutas_verduras'; // Por defecto Frutas y Verduras
         let categories = [];
         
         // Cargar tiendas
@@ -510,6 +510,7 @@
             const container = document.getElementById('categoryList');
             container.innerHTML = `
                 <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: ${currentCategory === 'all' ? '#7c3aed' : '#f3f4f6'}; color: ${currentCategory === 'all' ? 'white' : '#374151'};" onclick="applyCategoryFilter('all')">📂 Todas las categorías</button>
+                <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: ${currentCategory === 'frutas_verduras' ? '#7c3aed' : '#f3f4f6'}; color: ${currentCategory === 'frutas_verduras' ? 'white' : '#374151'};" onclick="applyCategoryFilter('frutas_verduras')">🥬 Frutas y Verduras</button>
             `;
             categories.forEach(cat => {
                 container.innerHTML += `
@@ -613,7 +614,12 @@
                 const stock = item.stock;
                 
                 // Filtro de categoría
-                if (currentCategory !== 'all' && item.category !== currentCategory) {
+                if (currentCategory === 'frutas_verduras') {
+                    // Mostrar Frutas y Verduras juntas
+                    if (item.category !== 'Frutas' && item.category !== 'Verdura') {
+                        return false;
+                    }
+                } else if (currentCategory !== 'all' && item.category !== currentCategory) {
                     return false;
                 }
                 
