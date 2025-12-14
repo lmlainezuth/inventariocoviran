@@ -395,7 +395,8 @@
     <div class="action-buttons">
         <button class="action-btn btn-select-all" onclick="selectAll()">✓ Todos</button>
         <button class="action-btn btn-deselect-all" onclick="deselectAll()">✗ Ninguno</button>
-        <button class="action-btn btn-filter" onclick="openFilterModal()">🔍 Filtrar</button>
+        <button class="action-btn btn-filter" onclick="openFilterModal('stock')">🔍 Stock</button>
+        <button class="action-btn btn-filter" onclick="openFilterModal('category')">📂 Categoría</button>
     </div>
     
     <!-- Product List -->
@@ -431,17 +432,28 @@
         </a>
     </div>
     
-    <!-- Modal de Filtro -->
-    <div id="filterModal" class="modal">
+    <!-- Modal de Filtro de Stock -->
+    <div id="stockModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">Filtrar productos</div>
+            <div class="modal-header">Filtrar por stock</div>
             <div style="max-height: 400px; overflow-y: auto;">
                 <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('all')">📦 Todos los productos</button>
                 <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b;" onclick="applyFilter('out')">❌ Solo agotados</button>
                 <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('min')">⚠️ Solo cantidad mínima</button>
                 <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('critical')">🔴 Críticos (agotados + mínima)</button>
             </div>
-            <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal()" style="width: 100%; margin-top: 10px;">Cerrar</button>
+            <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('stock')" style="width: 100%; margin-top: 10px;">Cerrar</button>
+        </div>
+    </div>
+    
+    <!-- Modal de Filtro de Categoría -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Filtrar por categoría</div>
+            <div id="categoryList" style="max-height: 400px; overflow-y: auto;">
+                <!-- Las categorías se cargarán dinámicamente -->
+            </div>
+            <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('category')" style="width: 100%; margin-top: 10px;">Cerrar</button>
         </div>
     </div>
 
@@ -464,6 +476,8 @@
         let inventory = [];
         let selectedProducts = new Map(); // code -> quantity
         let currentFilter = 'critical'; // Por defecto mostrar críticos
+        let currentCategory = 'Frutas y Verduras'; // Por defecto Frutas y Verduras
+        let categories = [];
         
         // Cargar tiendas
         async function loadStores() {
@@ -478,6 +492,37 @@
             } catch (error) {
                 console.error('Error cargando tiendas:', error);
             }
+        }
+        
+        // Cargar categorías
+        async function loadCategories() {
+            try {
+                const { data, error } = await supabaseClient.from('categories').select('*').order('name');
+                if (error) throw error;
+                categories = data;
+                renderCategoryButtons();
+            } catch (error) {
+                console.error('Error cargando categorías:', error);
+            }
+        }
+        
+        function renderCategoryButtons() {
+            const container = document.getElementById('categoryList');
+            container.innerHTML = `
+                <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: ${currentCategory === 'all' ? '#7c3aed' : '#f3f4f6'}; color: ${currentCategory === 'all' ? 'white' : '#374151'};" onclick="applyCategoryFilter('all')">📂 Todas las categorías</button>
+            `;
+            categories.forEach(cat => {
+                container.innerHTML += `
+                    <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: ${currentCategory === cat.name ? '#7c3aed' : '#f3f4f6'}; color: ${currentCategory === cat.name ? 'white' : '#374151'};" onclick="applyCategoryFilter('${cat.name}')">📂 ${cat.name}</button>
+                `;
+            });
+        }
+        
+        function applyCategoryFilter(category) {
+            currentCategory = category;
+            closeFilterModal('category');
+            renderCategoryButtons();
+            renderProducts();
         }
         
         function changeStore() {
@@ -567,6 +612,12 @@
             let filteredProducts = inventory.filter(item => {
                 const stock = item.stock;
                 
+                // Filtro de categoría
+                if (currentCategory !== 'all' && item.category !== currentCategory) {
+                    return false;
+                }
+                
+                // Filtro de stock
                 switch(currentFilter) {
                     case 'all':
                         return true;
@@ -579,6 +630,29 @@
                     default:
                         return true;
                 }
+            });
+            
+            // Ordenar por prioridad: AGOTADOS -> MIN -> MAX
+            filteredProducts.sort((a, b) => {
+                const stockA = a.stock;
+                const stockB = b.stock;
+                
+                // Función para determinar prioridad
+                const getPriority = (stock) => {
+                    if (stock.quantity === 0) return 1; // AGOTADO (mayor prioridad)
+                    if (stock.quantity <= stock.min_quantity) return 2; // MIN
+                    if (stock.max_quantity && stock.quantity >= stock.max_quantity) return 3; // MAX
+                    return 4; // Normal (menor prioridad)
+                };
+                
+                const priorityA = getPriority(stockA);
+                const priorityB = getPriority(stockB);
+                
+                // Ordenar por prioridad, luego por nombre
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+                return a.name.localeCompare(b.name);
             });
             
             if (filteredProducts.length === 0) {
@@ -767,22 +841,23 @@
         }
         
         // Modal de filtro
-        function openFilterModal() {
-            document.getElementById('filterModal').classList.add('show');
+        function openFilterModal(type) {
+            document.getElementById(type + 'Modal').classList.add('show');
         }
         
-        function closeFilterModal() {
-            document.getElementById('filterModal').classList.remove('show');
+        function closeFilterModal(type) {
+            document.getElementById(type + 'Modal').classList.remove('show');
         }
         
         function applyFilter(filter) {
             currentFilter = filter;
-            closeFilterModal();
+            closeFilterModal('stock');
             renderProducts();
         }
         
         // Inicializar
         loadStores();
+        loadCategories();
         loadProducts();
     </script>
 </body>
