@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedidos - COVIRÁN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 160px;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        /* Store Selector */
+        .store-container {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        }
+        
+        #storeSelector {
+            width: 100%;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        #storeSelector option {
+            background: #6d28d9;
+            color: white;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #7c3aed;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            padding: 15px 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-select-all {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .btn-deselect-all {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .btn-filter {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        /* Product List */
+        .product-list {
+            padding: 0 10px;
+        }
+        
+        .product-item {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .product-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .product-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #f3f4f6;
+            flex-shrink: 0;
+        }
+        
+        .product-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .product-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .product-stock-info {
+            font-size: 13px;
+            color: #ef4444;
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+        
+        .product-price {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .product-quantity-input {
+            width: 60px;
+            padding: 8px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .product-quantity-input:focus {
+            outline: none;
+            border-color: #7c3aed;
+        }
+        
+        .product-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .badge-out {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-min {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        /* Bottom Actions */
+        .bottom-actions {
+            position: fixed;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .whatsapp-btn {
+            width: 100%;
+            padding: 16px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        
+        .whatsapp-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .whatsapp-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #6b7280;
+            text-decoration: none;
+        }
+        
+        .nav-item.active {
+            color: #7c3aed;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .nav-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+        
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1f2937;
+        }
+        
+        .modal-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .modal-btn-cancel {
+            background: #6b7280;
+            color: white;
+        }
+    </style>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='inventario-lista.html'">←</button>
+        <h1>🛒 Pedidos</h1>
+        <div style="width: 24px;"></div>
+    </div>
+    
+    <!-- Store Selector -->
+    <div class="store-container">
+        <select id="storeSelector" onchange="changeStore()">
+            <option value="">Cargando...</option>
+        </select>
+    </div>
+    
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value" id="totalProducts">0</div>
+            <div class="stat-label">Productos</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="selectedCount">0</div>
+            <div class="stat-label">Seleccionados</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="totalAmount">0€</div>
+            <div class="stat-label">Importe</div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="action-btn btn-select-all" onclick="selectAll()">✓ Todos</button>
+        <button class="action-btn btn-deselect-all" onclick="deselectAll()">✗ Ninguno</button>
+        <button class="action-btn btn-filter" onclick="openFilterModal()">🔍 Filtrar</button>
+    </div>
+    
+    <!-- Product List -->
+    <div class="product-list" id="productList">
+        <!-- Products will be loaded here -->
+    </div>
+    
+    <!-- Bottom Actions -->
+    <div class="bottom-actions">
+        <button class="whatsapp-btn" id="whatsappBtn" onclick="shareWhatsApp()" disabled>
+            <span style="font-size: 24px;">💬</span>
+            <span>Compartir por WhatsApp</span>
+        </button>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <div class="nav-icon">💰</div>
+            <div class="nav-label">Cierre Caja</div>
+        </a>
+        <a href="inventario-lista.html" class="nav-item">
+            <div class="nav-icon">📦</div>
+            <div class="nav-label">Inventario</div>
+        </a>
+        <a href="pedidos.html" class="nav-item active">
+            <div class="nav-icon">🛒</div>
+            <div class="nav-label">Pedidos</div>
+        </a>
+        <a href="monedas.html" class="nav-item">
+            <div class="nav-icon">📱</div>
+            <div class="nav-label">Escanear</div>
+        </a>
+    </div>
+    
+    <!-- Modal de Filtro -->
+    <div id="filterModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Filtrar productos</div>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('all')">📦 Todos los productos</button>
+                <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b;" onclick="applyFilter('out')">❌ Solo agotados</button>
+                <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('min')">⚠️ Solo cantidad mínima</button>
+                <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('critical')">🔴 Críticos (agotados + mínima)</button>
+            </div>
+            <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal()" style="width: 100%; margin-top: 10px;">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        // Verificar autenticación
+        (function() {
+            const isAuthenticated = localStorage.getItem('inventoryAuth');
+            if (isAuthenticated !== 'true') {
+                window.location.href = 'login.html';
+            }
+        })();
+        
+        // Configurar Supabase
+        const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
+        const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Variables globales
+        let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
+        let inventory = [];
+        let selectedProducts = new Map(); // code -> quantity
+        let currentFilter = 'critical'; // Por defecto mostrar críticos
+        
+        // Cargar tiendas
+        async function loadStores() {
+            try {
+                const { data: stores, error } = await supabaseClient.from('stores').select('*').order('name');
+                if (error) throw error;
+                
+                const selector = document.getElementById('storeSelector');
+                selector.innerHTML = stores.map(store => 
+                    `<option value="${store.code}" ${store.code === currentStore ? 'selected' : ''}>${store.name}</option>`
+                ).join('');
+            } catch (error) {
+                console.error('Error cargando tiendas:', error);
+            }
+        }
+        
+        function changeStore() {
+            currentStore = document.getElementById('storeSelector').value;
+            localStorage.setItem('currentStore', currentStore);
+            selectedProducts.clear();
+            loadProducts();
+        }
+        
+        // Cargar productos
+        async function loadProducts() {
+            const container = document.getElementById('productList');
+            
+            try {
+                container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
+                
+                // Obtener stock de la tienda actual
+                const { data: stockData, error: stockError } = await supabaseClient
+                    .from('product_stock')
+                    .select('product_code, quantity, min_quantity, max_quantity, purchase_price, public_price')
+                    .eq('store_code', currentStore);
+                
+                if (stockError) throw stockError;
+                
+                if (!stockData || stockData.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                                No hay productos en esta tienda
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Crear mapa de stock
+                const stockMap = {};
+                stockData.forEach(s => {
+                    stockMap[s.product_code] = {
+                        quantity: s.quantity,
+                        min_quantity: s.min_quantity,
+                        max_quantity: s.max_quantity,
+                        purchase_price: s.purchase_price,
+                        public_price: s.public_price
+                    };
+                });
+                
+                // Obtener productos
+                const productCodes = stockData.map(s => s.product_code);
+                const { data: products, error: productsError } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .in('code', productCodes)
+                    .order('name');
+                
+                if (productsError) throw productsError;
+                
+                // Combinar productos con stock
+                inventory = products.map(p => ({
+                    ...p,
+                    stock: stockMap[p.code]
+                }));
+                
+                // Aplicar filtros
+                renderProducts();
+                
+            } catch (error) {
+                console.error('Error cargando productos:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef4444;">
+                            Error al cargar productos
+                        </div>
+                        <div>${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Renderizar productos
+        function renderProducts() {
+            const container = document.getElementById('productList');
+            
+            // Filtrar productos según filtro actual
+            let filteredProducts = inventory.filter(item => {
+                const stock = item.stock;
+                
+                switch(currentFilter) {
+                    case 'all':
+                        return true;
+                    case 'out':
+                        return stock.quantity === 0;
+                    case 'min':
+                        return stock.quantity > 0 && stock.quantity <= stock.min_quantity;
+                    case 'critical':
+                        return stock.quantity === 0 || stock.quantity <= stock.min_quantity;
+                    default:
+                        return true;
+                }
+            });
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✅</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                            ¡Todo en orden!
+                        </div>
+                        <div>No hay productos que cumplan el filtro seleccionado</div>
+                    </div>
+                `;
+                updateStats();
+                return;
+            }
+            
+            container.innerHTML = filteredProducts.map(item => {
+                const stock = item.stock;
+                const imageUrl = item.photo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect width="60" height="60" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em"%3E📦%3C/text%3E%3C/svg%3E';
+                
+                const isOutOfStock = stock.quantity === 0;
+                const badgeClass = isOutOfStock ? 'badge-out' : 'badge-min';
+                const badgeText = isOutOfStock ? 'AGOTADO' : 'MIN';
+                
+                const stockInfo = isOutOfStock 
+                    ? `Stock: 0 (AGOTADO)` 
+                    : `Stock: ${stock.quantity} (Mín: ${stock.min_quantity})`;
+                
+                // Calcular cantidad sugerida
+                const suggestedQty = stock.max_quantity ? Math.max(0, stock.max_quantity - stock.quantity) : 10;
+                const currentQty = selectedProducts.get(item.code) || suggestedQty;
+                const isChecked = selectedProducts.has(item.code);
+                
+                return `
+                    <div class="product-item">
+                        <input type="checkbox" 
+                               class="product-checkbox" 
+                               data-code="${item.code}"
+                               ${isChecked ? 'checked' : ''}
+                               onchange="toggleProduct('${item.code}')">
+                        <img src="${imageUrl}" 
+                             class="product-image" 
+                             alt="${item.name}"
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E';">
+                        <div class="product-info">
+                            <div class="product-name">${item.name}</div>
+                            <div class="product-stock-info">${stockInfo}</div>
+                            <div class="product-price">Precio compra: ${stock.purchase_price.toFixed(2)}€</div>
+                        </div>
+                        <input type="number" 
+                               class="product-quantity-input" 
+                               min="1" 
+                               value="${currentQty}"
+                               data-code="${item.code}"
+                               onchange="updateQuantity('${item.code}', this.value)"
+                               ${!isChecked ? 'disabled' : ''}>
+                        <div class="product-badge ${badgeClass}">${badgeText}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('totalProducts').textContent = filteredProducts.length;
+            updateStats();
+        }
+        
+        // Toggle producto
+        function toggleProduct(code) {
+            const checkbox = document.querySelector(`input[data-code="${code}"]`);
+            const quantityInput = document.querySelector(`input.product-quantity-input[data-code="${code}"]`);
+            
+            if (checkbox.checked) {
+                const qty = parseInt(quantityInput.value) || 1;
+                selectedProducts.set(code, qty);
+                quantityInput.disabled = false;
+            } else {
+                selectedProducts.delete(code);
+                quantityInput.disabled = true;
+            }
+            
+            updateStats();
+        }
+        
+        // Actualizar cantidad
+        function updateQuantity(code, value) {
+            const qty = parseInt(value) || 1;
+            if (selectedProducts.has(code)) {
+                selectedProducts.set(code, qty);
+                updateStats();
+            }
+        }
+        
+        // Seleccionar todos
+        function selectAll() {
+            document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+                const code = checkbox.dataset.code;
+                const quantityInput = document.querySelector(`input.product-quantity-input[data-code="${code}"]`);
+                const qty = parseInt(quantityInput.value) || 1;
+                selectedProducts.set(code, qty);
+                quantityInput.disabled = false;
+            });
+            updateStats();
+        }
+        
+        // Deseleccionar todos
+        function deselectAll() {
+            document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+                const code = checkbox.dataset.code;
+                const quantityInput = document.querySelector(`input.product-quantity-input[data-code="${code}"]`);
+                quantityInput.disabled = true;
+            });
+            selectedProducts.clear();
+            updateStats();
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            const selectedCount = selectedProducts.size;
+            let totalAmount = 0;
+            
+            selectedProducts.forEach((qty, code) => {
+                const product = inventory.find(p => p.code === code);
+                if (product && product.stock) {
+                    totalAmount += product.stock.purchase_price * qty;
+                }
+            });
+            
+            document.getElementById('selectedCount').textContent = selectedCount;
+            document.getElementById('totalAmount').textContent = totalAmount.toFixed(2) + '€';
+            
+            const whatsappBtn = document.getElementById('whatsappBtn');
+            whatsappBtn.disabled = selectedCount === 0;
+        }
+        
+        // Compartir por WhatsApp
+        function shareWhatsApp() {
+            if (selectedProducts.size === 0) {
+                alert('⚠️ Selecciona al menos un producto');
+                return;
+            }
+            
+            const storeName = document.getElementById('storeSelector').selectedOptions[0].text;
+            const today = new Date().toLocaleDateString('es-ES', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric' 
+            });
+            
+            let message = `🛒 *PEDIDO - ${storeName}*\n📅 ${today}\n\n📦 *Productos a pedir:*\n\n`;
+            
+            let index = 1;
+            let totalUnits = 0;
+            let totalAmount = 0;
+            
+            selectedProducts.forEach((qty, code) => {
+                const product = inventory.find(p => p.code === code);
+                if (product && product.stock) {
+                    const stock = product.stock;
+                    const subtotal = stock.purchase_price * qty;
+                    
+                    const stockStatus = stock.quantity === 0 
+                        ? 'AGOTADO' 
+                        : `${stock.quantity} (Mín: ${stock.min_quantity})`;
+                    
+                    message += `${index}️⃣ *${product.name}* (x${qty} unidades)\n`;
+                    message += `   💶 Precio compra: ${stock.purchase_price.toFixed(2)}€/ud\n`;
+                    message += `   📊 Stock actual: ${stockStatus}\n`;
+                    message += `   💰 Subtotal: ${subtotal.toFixed(2)}€\n\n`;
+                    
+                    totalUnits += qty;
+                    totalAmount += subtotal;
+                    index++;
+                }
+            });
+            
+            message += `📊 *Resumen:*\n`;
+            message += `- Total productos: ${selectedProducts.size}\n`;
+            message += `- Total unidades: ${totalUnits}\n`;
+            message += `- Importe estimado: ${totalAmount.toFixed(2)}€`;
+            
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+            
+            window.open(whatsappUrl, '_blank');
+        }
+        
+        // Modal de filtro
+        function openFilterModal() {
+            document.getElementById('filterModal').classList.add('show');
+        }
+        
+        function closeFilterModal() {
+            document.getElementById('filterModal').classList.remove('show');
+        }
+        
+        function applyFilter(filter) {
+            currentFilter = filter;
+            closeFilterModal();
+            renderProducts();
+        }
+        
+        // Inicializar
+        loadStores();
+        loadProducts();
+    </script>
+</body>
+</html>
