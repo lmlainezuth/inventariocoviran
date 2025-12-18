@@ -48,6 +48,9 @@
             padding: 15px 20px;
             background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
         }
+        #searchInput::placeholder {
+    color: rgba(255,255,255,0.7);
+}
         
         #storeSelector {
             width: 100%;
@@ -374,6 +377,14 @@
             <option value="">Cargando...</option>
         </select>
     </div>
+    <!-- Search Bar -->
+<div class="store-container" style="padding-top: 0;">
+    <input type="text" 
+           id="searchInput" 
+           placeholder="🔍 Buscar productos..." 
+           style="width: 100%; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 12px; border-radius: 8px; font-size: 16px;"
+           oninput="searchProducts()">
+</div>
     
     <!-- Stats Bar -->
     <div class="stats-bar">
@@ -465,6 +476,11 @@
                 window.location.href = 'login.html';
             }
         })();
+        // Búsqueda de productos
+function searchProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    renderProducts(searchTerm);
+}
         
         // Configurar Supabase
         const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
@@ -606,7 +622,7 @@
         }
         
         // Renderizar productos
-        function renderProducts() {
+       function renderProducts(searchTerm = '') {
             const container = document.getElementById('productList');
             
             // Filtrar productos según filtro actual
@@ -637,7 +653,12 @@
                         return true;
                 }
             });
-            
+             if (searchTerm) {
+        filteredProducts = filteredProducts.filter(item => 
+            item.name.toLowerCase().includes(searchTerm) ||
+            item.code.toLowerCase().includes(searchTerm)
+        );
+    }
             // Ordenar por prioridad: AGOTADOS -> MIN -> MAX
             filteredProducts.sort((a, b) => {
                 const stockA = a.stock;
@@ -795,41 +816,39 @@
         }
         
         // Compartir por WhatsApp
-        function shareWhatsApp() {
-            if (selectedProducts.size === 0) {
-                alert('⚠️ Selecciona al menos un producto');
-                return;
-            }
-            
-            const storeName = document.getElementById('storeSelector').selectedOptions[0].text;
-            const today = new Date().toLocaleDateString('es-ES', { 
-                day: '2-digit', 
-                month: '2-digit', 
-                year: 'numeric' 
-            });
-            
-            let message = `🛒 *PEDIDO - ${storeName}*\n📅 ${today}\n\n📦 *Productos a pedir:*\n\n`;
-            
-            let index = 1;
-            
-            selectedProducts.forEach((qty, code) => {
-                const product = inventory.find(p => p.code === code);
-                if (product && product.stock) {
-                    // Determinar si es Frutas o Verduras para usar "cajas" en lugar de "unidades"
-                    const isFrutasVerduras = product.category === 'Frutas' || product.category === 'Verdura';
-                    const unit = isFrutasVerduras ? 'cajas' : 'unidades';
-                    
-                    message += `${index}️⃣ *${product.name}* (x${qty} ${unit})\n\n`;
-                    index++;
-                }
-            });
-            
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-            
-            window.open(whatsappUrl, '_blank');
+function shareWhatsApp() {
+    if (selectedProducts.size === 0) {
+        alert('⚠️ Selecciona al menos un producto');
+        return;
+    }
+    
+    const storeName = document.getElementById('storeSelector').selectedOptions[0].text;
+    const today = new Date().toLocaleDateString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    });
+    
+    // Emoji del calendario
+    const calendarEmoji = '📅';
+    
+    let message = `🛒 *PEDIDO - ${storeName}* ${calendarEmoji} ${today}\n\n📦 *Productos:*\n\n`;
+    
+    let index = 1;
+    
+    selectedProducts.forEach((qty, code) => {
+        const product = inventory.find(p => p.code === code);
+        if (product) {
+            message += `${index}. ${product.name}\n`;
+            index++;
         }
-        
+    });
+    
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    
+    window.open(whatsappUrl, '_blank');
+}
         // Modal de filtro
         function openFilterModal(type) {
             document.getElementById(type + 'Modal').classList.add('show');
