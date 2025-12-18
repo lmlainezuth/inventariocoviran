@@ -361,13 +361,7 @@
             background: #6b7280;
             color: white;
         }
-   .dropdown {
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-}
-
+ 
 .settings-btn {
     background: rgba(255,255,255,0.2);
     border: none;
@@ -386,8 +380,8 @@
 .dropdown-content {
     display: none;
     position: absolute;
-    right: 0;
-    top: 50px;
+    right: 20px;
+    top: 60px;
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -432,18 +426,16 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 </head>
 <body>
-    <!-- Header -->
-<div class="header" style="position: relative;">
+<!-- Header -->
+<div class="header">
     <button class="back-btn" onclick="window.location.href='inventario-lista.html'">←</button>
     <h1>🛒 Pedidos</h1>
-    <div class="dropdown">
-        <button class="settings-btn" onclick="toggleDropdown()">⚙️</button>
-        <div id="dropdownMenu" class="dropdown-content">
-            <button class="dropdown-item" onclick="limpiarPedido()">
-                <span>🗑️</span>
-                <span>Limpiar pedido</span>
-            </button>
-        </div>
+    <button class="settings-btn" onclick="toggleDropdown()">⚙️</button>
+    <div id="dropdownMenu" class="dropdown-content">
+        <button class="dropdown-item" onclick="limpiarPedido()">
+            <span>🗑️</span>
+            <span>Limpiar pedido</span>
+        </button>
     </div>
 </div>
     
