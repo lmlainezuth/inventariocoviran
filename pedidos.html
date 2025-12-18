@@ -481,6 +481,30 @@ function searchProducts() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     renderProducts(searchTerm);
 }
+// Guardar pedido en localStorage
+function saveOrder() {
+    const orderData = {
+        store: currentStore,
+        products: Array.from(selectedProducts.entries()),
+        timestamp: new Date().toISOString()
+    };
+    localStorage.setItem('currentOrder', JSON.stringify(orderData));
+}
+// Cargar pedido desde localStorage
+function loadOrder() {
+    const savedOrder = localStorage.getItem('currentOrder');
+    if (savedOrder) {
+        try {
+            const orderData = JSON.parse(savedOrder);
+            // Solo cargar si es de la misma tienda
+            if (orderData.store === currentStore) {
+                selectedProducts = new Map(orderData.products);
+            }
+        } catch (error) {
+            console.error('Error cargando pedido:', error);
+        }
+    }
+}
         
         // Configurar Supabase
         const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
@@ -604,8 +628,15 @@ function searchProducts() {
                     stock: stockMap[p.code]
                 }));
                 
-                // Aplicar filtros
-                renderProducts();
+               // Al final de loadProducts(), después de renderProducts()
+renderProducts();
+
+// ⬇️⬇️⬇️ AGREGAR ESTAS LÍNEAS ⬇️⬇️⬇️
+// Cargar pedido guardado
+loadOrder();
+updateStats();
+// ⬆️⬆️⬆️ HASTA AQUÍ ⬆️⬆️⬆️
+
                 
             } catch (error) {
                 console.error('Error cargando productos:', error);
@@ -758,43 +789,45 @@ function searchProducts() {
                 selectedProducts.delete(code);
                 quantityInput.disabled = true;
             }
-            
+             saveOrder();
             updateStats();
         }
         
         // Actualizar cantidad
-        function updateQuantity(code, value) {
-            const qty = parseInt(value) || 1;
-            if (selectedProducts.has(code)) {
-                selectedProducts.set(code, qty);
-                updateStats();
-            }
-        }
-        
+function updateQuantity(code, value) {
+    const qty = parseInt(value) || 1;
+    if (selectedProducts.has(code)) {
+        selectedProducts.set(code, qty);
+        saveOrder(); // ⬅️ AGREGAR ESTA LÍNEA
+        updateStats();
+    }
+}
         // Seleccionar todos
-        function selectAll() {
-            document.querySelectorAll('.product-checkbox').forEach(checkbox => {
-                checkbox.checked = true;
-                const code = checkbox.dataset.code;
-                const quantityInput = document.querySelector(`input.product-quantity-input[data-code="${code}"]`);
-                const qty = parseInt(quantityInput.value) || 1;
-                selectedProducts.set(code, qty);
-                quantityInput.disabled = false;
-            });
-            updateStats();
-        }
-        
-        // Deseleccionar todos
-        function deselectAll() {
-            document.querySelectorAll('.product-checkbox').forEach(checkbox => {
-                checkbox.checked = false;
-                const code = checkbox.dataset.code;
-                const quantityInput = document.querySelector(`input.product-quantity-input[data-code="${code}"]`);
-                quantityInput.disabled = true;
-            });
-            selectedProducts.clear();
-            updateStats();
-        }
+function selectAll() {
+    document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+        const code = checkbox.dataset.code;
+        const quantityInput = document.querySelector(`input.product-quantity-input[data-code="${code}"]`);
+        const qty = parseInt(quantityInput.value) || 1;
+        selectedProducts.set(code, qty);
+        quantityInput.disabled = false;
+    });
+    saveOrder(); // ⬅️ AGREGAR ESTA LÍNEA
+    updateStats();
+}
+
+// Deseleccionar todos
+function deselectAll() {
+    document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+        const code = checkbox.dataset.code;
+        const quantityInput = document.querySelector(`input.product-quantity-input[data-code="${code}"]`);
+        quantityInput.disabled = true;
+    });
+    selectedProducts.clear();
+    saveOrder(); // ⬅️ AGREGAR ESTA LÍNEA
+    updateStats();
+}
         
         // Actualizar estadísticas
         function updateStats() {
@@ -848,6 +881,14 @@ function shareWhatsApp() {
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     
     window.open(whatsappUrl, '_blank');
+      // ⬇️⬇️⬇️ AGREGAR OPCIÓN PARA LIMPIAR ⬇️⬇️⬇️
+    // Preguntar si desea limpiar el pedido
+    setTimeout(() => {
+        if (confirm('✅ Pedido compartido.\n¿Deseas limpiar el pedido actual?')) {
+            deselectAll();
+            localStorage.removeItem('currentOrder');
+        }
+    }, 500);
 }
         // Modal de filtro
         function openFilterModal(type) {
