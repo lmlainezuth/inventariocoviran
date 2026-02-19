@@ -500,7 +500,7 @@ function logout() {
         
         let inventory = [];
         let currentFilter = 'all';
-        let currentSort = 'created_desc';
+       let currentSort = 'expiry_asc';
         let filters = {
     category: 'all',
     brand: 'all',
@@ -577,10 +577,9 @@ async function loadProducts() {
     try {
         container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
         
-        // PRIMERO: Obtener los product_code de la tienda actual
         const { data: stockData, error: stockError } = await supabaseClient
             .from('product_stock')
-            .select('product_code, quantity, min_quantity, max_quantity, purchase_price, public_price')
+            .select('product_code, store_code, quantity, min_quantity, max_quantity, purchase_price, public_price, batch_number, expiry_date')
             .eq('store_code', currentStore);
         
         if (stockError) throw stockError;
@@ -589,62 +588,87 @@ async function loadProducts() {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">📦</div>
-                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
-                        No hay productos en esta tienda
-                    </div>
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">No hay productos en esta tienda</div>
                     <div>Comienza escaneando códigos de barras</div>
-                </div>
-            `;
+                </div>`;
             return;
         }
         
-        // Crear un mapa de stock por product_code
+        // Agrupar stock por product_code (un producto puede tener múltiples lotes)
         const stockMap = {};
         stockData.forEach(s => {
-            stockMap[s.product_code] = {
-                quantity: s.quantity,
-                min_quantity: s.min_quantity,
-                max_quantity: s.max_quantity,
-                purchase_price: s.purchase_price,
-                public_price: s.public_price
-            };
+            if (!stockMap[s.product_code]) stockMap[s.product_code] = [];
+            stockMap[s.product_code].push(s);
         });
         
-        // SEGUNDO: Obtener los productos
-        const productCodes = stockData.map(s => s.product_code);
+        const productCodes = [...new Set(stockData.map(s => s.product_code))];
         const { data: products, error: productsError } = await supabaseClient
             .from('products')
             .select('*')
-            .in('code', productCodes)
-            .order('created_at', { ascending: false });
+            .in('code', productCodes);
         
         if (productsError) throw productsError;
         
-        // Combinar productos con su stock
-        inventory = products.map(p => ({
-            ...p,
-            stock: [stockMap[p.code]]
-        }));
+        // Crear items planos: una fila por cada lote
+        inventory = [];
+        products.forEach(p => {
+            const lots = stockMap[p.code] || [];
+            lots.forEach(lot => {
+                inventory.push({
+                    ...p,
+                    lot_quantity: lot.quantity,
+                    lot_min: lot.min_quantity,
+                    lot_max: lot.max_quantity,
+                    lot_purchase_price: lot.purchase_price,
+                    lot_public_price: lot.public_price,
+                    batch_number: lot.batch_number,
+                    expiry_date: lot.expiry_date,
+                    total_quantity: lots.reduce((sum, l) => sum + Number(l.quantity), 0)
+                });
+            });
+        });
         
         let sortedInventory = [...inventory];
 
-        // Aplicar filtros
+        // Filtros
         sortedInventory = sortedInventory.filter(item => {
-            const stock = item.stock && item.stock[0] ? item.stock[0] : { quantity: 0, min_quantity: 0, max_quantity: null };
-            
             if (filters.category !== 'all' && item.category !== filters.category) return false;
             if (filters.brand !== 'all' && item.brand !== filters.brand) return false;
             if (filters.location !== 'all' && item.location !== filters.location) return false;
             
-            if (filters.stock === 'out' && stock.quantity > 0) return false;
-            if (filters.stock === 'min' && stock.quantity > stock.min_quantity) return false;
-            if (filters.stock === 'max' && (!stock.max_quantity || stock.quantity < stock.max_quantity)) return false;
+            if (filters.stock === 'out' && item.lot_quantity > 0) return false;
+            if (filters.stock === 'min' && item.lot_quantity > item.lot_min) return false;
+            if (filters.stock === 'max' && (!item.lot_max || item.lot_quantity < item.lot_max)) return false;
+            if (filters.stock === 'expired') {
+                const badge = getExpiryBadge(item.expiry_date);
+                if (badge.type !== 'expired') return false;
+            }
+            if (filters.stock === 'critical') {
+                const badge = getExpiryBadge(item.expiry_date);
+                if (badge.type !== 'critical' && badge.type !== 'expired') return false;
+            }
             
             return true;
         });
 
         // Ordenar
         switch(currentSort) {
+            case 'expiry_asc':
+                sortedInventory.sort((a, b) => {
+                    if (!a.expiry_date && !b.expiry_date) return 0;
+                    if (!a.expiry_date) return 1;
+                    if (!b.expiry_date) return -1;
+                    return new Date(a.expiry_date) - new Date(b.expiry_date);
+                });
+                break;
+            case 'expiry_desc':
+                sortedInventory.sort((a, b) => {
+                    if (!a.expiry_date && !b.expiry_date) return 0;
+                    if (!a.expiry_date) return 1;
+                    if (!b.expiry_date) return -1;
+                    return new Date(b.expiry_date) - new Date(a.expiry_date);
+                });
+                break;
             case 'created_desc':
                 sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 break;
@@ -661,40 +685,34 @@ async function loadProducts() {
                 sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
                 break;
             case 'quantity':
-                sortedInventory.sort((a, b) => {
-                    const stockA = a.stock && a.stock[0] ? a.stock[0].quantity : 0;
-                    const stockB = b.stock && b.stock[0] ? b.stock[0].quantity : 0;
-                    return stockB - stockA;
-                });
+                sortedInventory.sort((a, b) => b.lot_quantity - a.lot_quantity);
                 break;
         }
         
         container.innerHTML = sortedInventory.map((item) => {
-            const stock = item.stock && item.stock[0] ? item.stock[0] : {
-                quantity: 0,
-                min_quantity: 0,
-                max_quantity: null,
-                purchase_price: 0,
-                public_price: 0
-            };
-            
-            const badge = getStockBadge(stock);
+            const expiryBadge = getExpiryBadge(item.expiry_date);
+            const stockBadge = getStockBadge({ quantity: item.lot_quantity, min_quantity: item.lot_min, max_quantity: item.lot_max });
             const imageUrl = item.photo || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect width="60" height="60" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em"%3E📦%3C/text%3E%3C/svg%3E';
-            const priceDisplay = stock.public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600; margin-top: 2px;">${stock.public_price.toFixed(2)}€</div>` : '';
+            const priceDisplay = item.lot_public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600;">${Number(item.lot_public_price).toFixed(2)}€</div>` : '';
+            const expiryDisplay = item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('es-ES') : 'Sin fecha';
+            const batchDisplay = item.batch_number ? `Lote: ${item.batch_number}` : '';
             
             return `
-                <div class="product-item">
+                <div class="product-item" style="border-left: 4px solid ${expiryBadge.bg === '#f3f4f6' ? '#d1d5db' : expiryBadge.color};">
                     <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E';" onclick="viewProduct('${item.code}')">
                     <div class="product-info" onclick="viewProduct('${item.code}')">
                         <div class="product-name">${item.name}</div>
-                        <div class="product-quantity">Cantidad: ${stock.quantity} ${item.unit || 'unidad'}</div>
-                        <div class="product-code">${item.code}</div>
+                        <div class="product-quantity">Cant: ${item.lot_quantity} ${item.unit || 'ud'} · ${batchDisplay}</div>
+                        <div class="product-code">${item.code} ${item.internal_code ? '· Int: ' + item.internal_code : ''}</div>
+                        <div style="font-size: 12px; color: ${expiryBadge.color}; font-weight: 600;">📅 ${expiryDisplay}</div>
                         ${priceDisplay}
                     </div>
-                    <div class="product-badge badge-${badge.type}" onclick="viewProduct('${item.code}')">${badge.text}</div>
-                    <button onclick="event.stopPropagation(); deleteProduct('${item.code}', '${item.name.replace(/'/g, "\\'")}');" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; margin-left: 8px;">🗑️</button>
-                </div>
-            `;
+                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+                        <div style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; background: ${expiryBadge.bg}; color: ${expiryBadge.color};">${expiryBadge.text}</div>
+                        <div class="product-badge badge-${stockBadge.type}" style="font-size: 11px;">${stockBadge.text}</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); deleteProduct('${item.code}', '${item.name.replace(/'/g, "\\'")}');" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; margin-left: 4px;">🗑️</button>
+                </div>`;
         }).join('');
         
     } catch (error) {
@@ -702,28 +720,24 @@ async function loadProducts() {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">❌</div>
-                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef4444;">
-                    Error al cargar productos
-                </div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef4444;">Error al cargar productos</div>
                 <div>${error.message}</div>
-            </div>
-        `;
+            </div>`;
     }
-}      
-
-function getStockBadge(stock) {
-    if (stock.quantity === 0) {
-        return { type: 'out', text: 'AGOTADO' };
-    }
-    else if (stock.quantity <= stock.min_quantity) {
-        return { type: 'min', text: 'MIN' };
-    }
-    else if (stock.max_quantity && stock.quantity >= stock.max_quantity) {
-        return { type: 'max', text: 'MAX' };
-    }
-    else {
-        return { type: 'normal', text: 'OK' };
-    }
+}
+function getExpiryBadge(expiryDate) {
+    if (!expiryDate) return { type: 'normal', text: 'Sin fecha', color: '#6b7280', bg: '#f3f4f6' };
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const expiry = new Date(expiryDate);
+    const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return { type: 'expired', text: 'CADUCADO', color: '#ffffff', bg: '#991b1b' };
+    if (diffDays <= 15) return { type: 'critical', text: `${diffDays}d`, color: '#991b1b', bg: '#fee2e2' };
+    if (diffDays <= 30) return { type: 'warning', text: `${diffDays}d`, color: '#92400e', bg: '#fef3c7' };
+    if (diffDays <= 60) return { type: 'caution', text: `${diffDays}d`, color: '#9a3412', bg: '#ffedd5' };
+    return { type: 'ok', text: `${diffDays}d`, color: '#166534', bg: '#dcfce7' };
 }
         function filterProducts() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -895,13 +909,15 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="modal-content">
         <div class="modal-header">Ordenar por</div>
         <div style="max-height: 400px; overflow-y: auto;">
-            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_desc')">Fecha creación 🧓→👶</button>
-            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_asc')">Fecha creación 👶→🧓</button>
-            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_asc')">Alfabético A→Z</button>
-            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_desc')">Alfabético Z→A</button>
-            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('code')">Por código</button>
-            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('quantity')">Por cantidad</button>
-        </div>
+            <!-- Reemplazar el contenido del orderModal -->
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b; font-weight: 600;" onclick="applyOrder('expiry_asc')">🔥 Caducidad (próxima primero)</button>
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('expiry_desc')">📅 Caducidad (lejana primero)</button>
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_desc')">Fecha creación 🧓→👶</button>
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_asc')">Fecha creación 👶→🧓</button>
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_asc')">Alfabético A→Z</button>
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_desc')">Alfabético Z→A</button>
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('code')">Por código</button>
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('quantity')">Por cantidad</button> </div>
         <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('order')" style="width: 100%; margin-top: 10px;">Cerrar</button>
     </div>
 </div>
@@ -947,6 +963,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('stock', 'out')">❌ Agotados (0)</button>
             <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('stock', 'min')">⚠️ Cantidad mínima</button>
             <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #dcfce7; color: #166534;" onclick="applyFilter('stock', 'max')">✅ Cantidad máxima</button>
+            <!-- Agregar dentro del stockModal, después de "Cantidad máxima" -->
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b;" onclick="applyFilter('stock', 'expired')">💀 Caducados</button>
+<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b;" onclick="applyFilter('stock', 'critical')">🔥 Próximos a caducar (≤15d)</button>
         </div>
         <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('stock')" style="width: 100%; margin-top: 10px;">Cerrar</button>
     </div>
