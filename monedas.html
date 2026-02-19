@@ -572,6 +572,22 @@
                             </div>
                         </div>
 
+                        <!-- Código Interno, Lote y Caducidad -->
+                        <div class="form-group">
+                            <label>Código Interno</label>
+                            <input type="text" id="internalCode" placeholder="Ej: 401002">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Nº Lote</label>
+                                <input type="text" id="batchNumber" placeholder="Opcional">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Fecha Caducidad</label>
+                                <input type="date" id="expiryDate">
+                            </div>
+                        </div>
+
                         <!-- Categoría y Marca -->
                         <div class="form-row">
                             <div class="form-group" style="flex: 1;">
@@ -1023,6 +1039,8 @@ async function loadProductData(code) {
                 document.getElementById('maxQuantity').value = stockData.max_quantity || '';
                 document.getElementById('purchasePrice').value = stockData.purchase_price || '';
                 document.getElementById('publicPrice').value = stockData.public_price || '';
+                document.getElementById('batchNumber').value = stockData.batch_number || '';
+                document.getElementById('expiryDate').value = stockData.expiry_date || '';
             } else {
                 // Si no hay stock en esta tienda, valores por defecto
                 document.getElementById('productQuantity').value = 0;
@@ -1033,6 +1051,7 @@ async function loadProductData(code) {
             }
             
             if (existingProduct.photo) {
+                document.getElementById('internalCode').value = existingProduct.internal_code || '';
                 document.getElementById('productPhoto').src = existingProduct.photo;
                 document.getElementById('productPhoto').style.display = 'block';
                 currentPhotoBase64 = existingProduct.photo;
@@ -1137,6 +1156,9 @@ async function saveProduct() {
     const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
     const category = document.getElementById('category').value;
     const brand = document.getElementById('brand').value;
+    const internalCode = document.getElementById('internalCode').value.trim() || null;
+const batchNumber = document.getElementById('batchNumber').value.trim() || null;
+const expiryDate = document.getElementById('expiryDate').value || null;
   
     
     try {
@@ -1152,19 +1174,20 @@ async function saveProduct() {
     if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
         // Actualizar info general del producto
         await supabaseClient.from('products').update({
-            name, unit, category, brand, photo: currentPhotoBase64
-        }).eq('code', currentCode);
+    name, unit, category, brand, photo: currentPhotoBase64, internal_code: internalCode
+}).eq('code', currentCode);
         
-        // Actualizar stock de la tienda
         await supabaseClient.from('product_stock').upsert({
-            product_code: currentCode,
-            store_code: selectedStore,
-            quantity,
-            min_quantity: minQuantity,
-            max_quantity: maxQuantity,
-            purchase_price: purchasePrice,
-            public_price: publicPrice
-        }, { onConflict: 'product_code,store_code' });
+    product_code: currentCode,
+    store_code: selectedStore,
+    quantity,
+    min_quantity: minQuantity,
+    max_quantity: maxQuantity,
+    purchase_price: purchasePrice,
+    public_price: publicPrice,
+    batch_number: batchNumber,
+    expiry_date: expiryDate
+}, { onConflict: 'product_code,store_code,batch_number,expiry_date' });
     } else {
         // Solo sumar cantidad
         const { data: currentStock } = await supabaseClient
@@ -1175,38 +1198,34 @@ async function saveProduct() {
             .single();
         
         await supabaseClient.from('product_stock').upsert({
-            product_code: currentCode,
-            store_code: selectedStore,
-            quantity: (currentStock?.quantity || 0) + quantity,
-            min_quantity: minQuantity,
-            max_quantity: maxQuantity,
-            purchase_price: purchasePrice,
-            public_price: publicPrice
-        }, { onConflict: 'product_code,store_code' });
+    product_code: currentCode,
+    store_code: selectedStore,
+    quantity: (currentStock?.quantity || 0) + quantity,
+    min_quantity: minQuantity,
+    max_quantity: maxQuantity,
+    purchase_price: purchasePrice,
+    public_price: publicPrice,
+    batch_number: batchNumber,
+    expiry_date: expiryDate
+}, { onConflict: 'product_code,store_code,batch_number,expiry_date' });
     }
 } else {
     const selectedStore = document.getElementById('storeSelector').value;
     
-    // Crear producto
     await supabaseClient.from('products').insert([{
-        code: currentCode,
-        name,
-        unit,
-        category,
-        brand,
-        photo: currentPhotoBase64
-    }]);
+    code: currentCode,
+    name, unit, category, brand,
+    photo: currentPhotoBase64,
+    internal_code: internalCode
+}]);
     
-    // Crear stock para la tienda
     await supabaseClient.from('product_stock').insert([{
-        product_code: currentCode,
-        store_code: selectedStore,
-        quantity,
-        min_quantity: minQuantity,
-        max_quantity: maxQuantity,
-        purchase_price: purchasePrice,
-        public_price: publicPrice
-    }]);
+    product_code: currentCode,
+    store_code: selectedStore,
+    quantity, min_quantity: minQuantity, max_quantity: maxQuantity,
+    purchase_price: purchasePrice, public_price: publicPrice,
+    batch_number: batchNumber, expiry_date: expiryDate
+}]);
 }
         
         alert('✅ Producto guardado');
@@ -1254,6 +1273,9 @@ function clearProductForm() {
     document.getElementById('result').classList.remove('show');
     document.getElementById('productForm').classList.remove('show');
     document.getElementById('scannerContainer').style.display = 'block';
+    document.getElementById('internalCode').value = '';
+document.getElementById('batchNumber').value = '';
+document.getElementById('expiryDate').value = '';
     }
 
 async function updateStats() {
