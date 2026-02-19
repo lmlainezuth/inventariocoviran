@@ -537,6 +537,26 @@ async function loadFilterOptions() {
     }
 }
 
+function getStockBadge(stock) {
+    if (stock.quantity === 0) return { type: 'out', text: 'AGOTADO' };
+    if (stock.quantity <= stock.min_quantity) return { type: 'min', text: 'MIN' };
+    if (stock.max_quantity && stock.quantity >= stock.max_quantity) return { type: 'max', text: 'MAX' };
+    return { type: 'normal', text: 'OK' };
+}
+
+function getExpiryBadge(expiryDate) {
+    if (!expiryDate) return { type: 'normal', text: 'Sin fecha', color: '#6b7280', bg: '#f3f4f6' };
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const expiry = new Date(expiryDate);
+    const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return { type: 'expired', text: 'CADUCADO', color: '#ffffff', bg: '#991b1b' };
+    if (diffDays <= 15) return { type: 'critical', text: `${diffDays}d`, color: '#991b1b', bg: '#fee2e2' };
+    if (diffDays <= 30) return { type: 'warning', text: `${diffDays}d`, color: '#92400e', bg: '#fef3c7' };
+    if (diffDays <= 60) return { type: 'caution', text: `${diffDays}d`, color: '#9a3412', bg: '#ffedd5' };
+    return { type: 'ok', text: `${diffDays}d`, color: '#166534', bg: '#dcfce7' };
+}
+
 function openFilterModal(type) {
     document.getElementById(type + 'Modal').classList.add('show');
 }
