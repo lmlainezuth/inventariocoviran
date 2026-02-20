@@ -600,7 +600,8 @@ async function loadProducts() {
         const { data: stockData, error: stockError } = await supabaseClient
             .from('product_stock')
             .select('product_code, store_code, quantity, min_quantity, max_quantity, purchase_price, public_price, batch_number, expiry_date')
-            .eq('store_code', currentStore);
+        .eq('store_code', currentStore)
+.or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
         
         if (stockError) throw stockError;
         
