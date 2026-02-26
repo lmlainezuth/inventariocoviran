@@ -1005,12 +1005,27 @@ function playBeep() {
 
 async function loadProductData(code) {
     try {
-        // Obtener datos del producto
-        const { data: existingProduct, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('code', code)
-            .maybeSingle();
+ let { data: existingProduct, error } = await supabaseClient
+    .from('products')
+    .select('*')
+    .eq('code', code)
+    .maybeSingle();
+
+if (error) throw error;
+
+// Si no encontró por código de barras, buscar por código interno
+if (!existingProduct) {
+    const { data: byInternal, error: error2 } = await supabaseClient
+        .from('products')
+        .select('*')
+        .eq('internal_code', code)
+        .maybeSingle();
+    
+    if (byInternal) {
+        existingProduct = byInternal;
+        currentCode = byInternal.code; // ← importante: usar el code real del producto
+    }
+}
         
         if (error) throw error;
         
@@ -1050,8 +1065,9 @@ async function loadProductData(code) {
                 document.getElementById('publicPrice').value = '';
             }
             
+             document.getElementById('internalCode').value = existingProduct.internal_code || '';
             if (existingProduct.photo) {
-                document.getElementById('internalCode').value = existingProduct.internal_code || '';
+               
                 document.getElementById('productPhoto').src = existingProduct.photo;
                 document.getElementById('productPhoto').style.display = 'block';
                 currentPhotoBase64 = existingProduct.photo;
