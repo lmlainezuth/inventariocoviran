@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pegar SQL - Inventario</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 80px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .info-text {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 2px solid #d1d5db;
+        }
+        
+        .btn-secondary:hover {
+            background: #f9fafb;
+        }
+        
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+        
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            max-height: 500px;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            margin-bottom: 10px;
+            background: white;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        
+        .resumen {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 15px;
+        }
+        
+        .mensaje {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .mensaje.show {
+            display: flex;
+        }
+        
+        .mensaje-exito {
+            background: #e6f4ea;
+            color: #0f6e56;
+            border: 1px solid #1d9e75;
+        }
+        
+        .mensaje-error {
+            background: #fcebeb;
+            color: #791f1f;
+            border: 1px solid #a32d2d;
+        }
+        
+        .mensaje-icon {
+            font-size: 20px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #6b7280;
+            text-decoration: none;
+        }
+        
+        .nav-item.active {
+            color: #2563eb;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .nav-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='inventario-lista.html'">←</button>
+        <h1>📝 Pegar SQL</h1>
+    </div>
+
+    <div class="container">
+        <p class="info-text">
+            Pega aquí el SQL generado para guardar el albarán. Solo se permiten INSERTs en <strong>products</strong> y <strong>product_stock</strong>.
+        </p>
+
+        <button class="btn btn-secondary" onclick="pegarDelPortapapeles()">
+            📋 Pegar del portapapeles
+        </button>
+
+        <textarea 
+            id="sqlTexto" 
+            placeholder="INSERT INTO product_stock ..."
+            oninput="actualizarResumen()"></textarea>
+        
+        <div class="resumen" id="resumen"></div>
+
+        <div id="mensaje" class="mensaje">
+            <span class="mensaje-icon" id="mensajeIcon"></span>
+            <span id="mensajeTexto"></span>
+        </div>
+
+        <button class="btn btn-primary" id="btnEjecutar" onclick="ejecutarSql()" disabled>
+            ▶ Ejecutar SQL
+        </button>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <div class="nav-icon">💰</div>
+            <div class="nav-label">Cierre Caja</div>
+        </a>
+        <a href="inventario-lista.html" class="nav-item">
+            <div class="nav-icon">📦</div>
+            <div class="nav-label">Inventario</div>
+        </a>
+        <a href="pedidos.html" class="nav-item">
+            <div class="nav-icon">🛒</div>
+            <div class="nav-label">Pedidos</div>
+        </a>
+        <a href="monedas.html" class="nav-item">
+            <div class="nav-icon">📱</div>
+            <div class="nav-label">Escanear</div>
+        </a>
+    </div>
+
+    <script>
+        // Verificar autenticación
+        (function() {
+            const isAuthenticated = localStorage.getItem('inventoryAuth');
+            if (isAuthenticated !== 'true') {
+                window.location.href = 'login.html';
+            }
+        })();
+
+        // Configuración de Supabase (proyecto coviran, donde está la Edge Function)
+        const SUPABASE_URL = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
+
+        const textarea = document.getElementById('sqlTexto');
+        const btnEjecutar = document.getElementById('btnEjecutar');
+        const resumen = document.getElementById('resumen');
+        const mensaje = document.getElementById('mensaje');
+        const mensajeIcon = document.getElementById('mensajeIcon');
+        const mensajeTexto = document.getElementById('mensajeTexto');
+
+        async function pegarDelPortapapeles() {
+            try {
+                const texto = await navigator.clipboard.readText();
+                if (texto && texto.trim().length > 0) {
+                    textarea.value = texto;
+                    actualizarResumen();
+                    mostrarToast('SQL pegado');
+                } else {
+                    mostrarToast('Portapapeles vacío');
+                }
+            } catch (err) {
+                console.error('Error leyendo portapapeles:', err);
+                alert('No se pudo leer el portapapeles. Pega manualmente con Ctrl+V o el menú largo.');
+            }
+        }
+
+        function actualizarResumen() {
+            const texto = textarea.value;
+            if (texto.trim().length === 0) {
+                resumen.textContent = '';
+                btnEjecutar.disabled = true;
+            } else {
+                const sentencias = (texto.match(/;/g) || []).length;
+                resumen.textContent = `${texto.length} caracteres · ${sentencias} sentencias aprox.`;
+                btnEjecutar.disabled = false;
+            }
+        }
+
+        function mostrarMensaje(tipo, texto) {
+            mensaje.className = 'mensaje show ' + (tipo === 'exito' ? 'mensaje-exito' : 'mensaje-error');
+            mensajeIcon.textContent = tipo === 'exito' ? '✅' : '❌';
+            mensajeTexto.textContent = texto;
+        }
+
+        function ocultarMensaje() {
+            mensaje.className = 'mensaje';
+        }
+
+        function mostrarToast(texto) {
+            // Toast simple, podríamos mejorarlo después
+            console.log(texto);
+        }
+
+        async function ejecutarSql() {
+            const sql = textarea.value.trim();
+            if (!sql) return;
+
+            ocultarMensaje();
+            btnEjecutar.disabled = true;
+            btnEjecutar.innerHTML = '<span class="spinner"></span> Ejecutando...';
+
+            try {
+                const url = `${SUPABASE_URL}/functions/v1/ejecutar-sql-albaran`;
+                console.log('POST', url, 'len=', sql.length);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sql: sql })
+                });
+
+                const body = await response.text();
+                console.log('HTTP', response.status, 'body=', body.substring(0, 300));
+
+                let json;
+                try {
+                    json = JSON.parse(body);
+                } catch (e) {
+                    throw new Error(`Respuesta no es JSON: ${body.substring(0, 200)}`);
+                }
+
+                if (json.exito) {
+                    const filas = json.detalles?.filas_afectadas || 0;
+                    mostrarMensaje('exito', `✓ SQL ejecutado. ${filas} filas afectadas.`);
+                    textarea.value = '';
+                    actualizarResumen();
+                    
+                    // Esperar 1.5s y redirigir a inventario
+                    setTimeout(() => {
+                        window.location.href = 'inventario-lista.html';
+                    }, 1500);
+                } else {
+                    const err = json.error || 'Error desconocido';
+                    mostrarMensaje('error', err);
+                    btnEjecutar.disabled = false;
+                    btnEjecutar.innerHTML = '▶ Ejecutar SQL';
+                }
+            } catch (e) {
+                console.error('Error ejecutando SQL:', e);
+                mostrarMensaje('error', e.message || 'Error de red');
+                btnEjecutar.disabled = false;
+                btnEjecutar.innerHTML = '▶ Ejecutar SQL';
+            }
+        }
+    </script>
+
+</body>
+</html>
