@@ -309,6 +309,7 @@ body {
     font-size: 18px;
 }
     </style>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 </head>
 <body>
     <div class="container">
@@ -510,6 +511,21 @@ body {
 
     
    <script>
+// Configurar Supabase y verificar autenticación
+const supabaseUrl = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
+const supabaseKey = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+(async function() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+        localStorage.removeItem('inventoryAuth');
+        window.location.href = 'login.html';
+    } else {
+        localStorage.setItem('inventoryAuth', 'true');
+    }
+})();
+
 // Verificar y limpiar datos si es después de las 22:30
 function verificarYLimpiarDatos() {
     const ahora = new Date();
@@ -732,10 +748,12 @@ window.onclick = function(event) {
     }
 }
 
-// Función de logout
-function logout() {
-    localStorage.removeItem('authenticated');
-    window.location.href = 'login.html';
+async function logout() {
+    if (confirm('¿Seguro que quieres cerrar sesión?')) {
+        await supabaseClient.auth.signOut();
+        localStorage.removeItem('inventoryAuth');
+        window.location.href = 'login.html';
+    }
 }
 // Función para limpiar datos manualmente
 function limpiarDatosCaja() {
