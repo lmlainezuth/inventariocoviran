@@ -462,23 +462,29 @@
 
     <script>
         // Verificar autenticación
-(function() {
-    const isAuthenticated = localStorage.getItem('inventoryAuth');
-    if (isAuthenticated !== 'true') {
+// Configurar Supabase
+const supabaseUrl = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
+const supabaseKey = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// Verificar autenticación con Supabase
+(async function() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+        localStorage.removeItem('inventoryAuth');
         window.location.href = 'login.html';
+    } else {
+        localStorage.setItem('inventoryAuth', 'true'); // compat con páginas aún no migradas
     }
 })();
 
-function logout() {
+async function logout() {
     if (confirm('¿Seguro que quieres cerrar sesión?')) {
+        await supabaseClient.auth.signOut();
         localStorage.removeItem('inventoryAuth');
         window.location.href = 'login.html';
     }
 }
-        // Configurar Supabase
-        const supabaseUrl = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
-        const supabaseKey = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
-          const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         
         // Gestión de tiendas
         let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
