@@ -606,10 +606,11 @@ async function loadProducts() {
         container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
         
         const { data: stockData, error: stockError } = await supabaseClient
-            .from('product_stock')
-            .select('product_code, store_code, quantity, min_quantity, max_quantity, purchase_price, public_price, batch_number, expiry_date')
-        .eq('store_code', currentStore)
-.or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
+    .from('product_stock')
+    .select('product_code, store_code, quantity, min_quantity, max_quantity, purchase_price, public_price, batch_number, expiry_date, status')
+    .eq('store_code', currentStore)
+    .eq('status', 'activo')
+    .or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
         
         if (stockError) throw stockError;
         
@@ -789,59 +790,26 @@ function getExpiryBadge(expiryDate) {
 }
         
    async function deleteProduct(code, name) {
-    if (confirm(`⚠️ ¿Estás seguro de eliminar "${name}"?`)) {
-        try {
-            // 1. Obtener la URL de la foto antes de eliminar
-            const { data: product, error: fetchError } = await supabaseClient
-                .from('products')
-                .select('photo')
-                .eq('code', code)
-                .single();
-            
-            if (fetchError) throw fetchError;
-            
-            // 2. Si tiene foto, eliminarla del storage
-            if (product.photo && product.photo.includes('product-images')) {
-                try {
-                    // Extraer solo el nombre del archivo desde la URL
-                    // Ejemplo: https://...supabase.co/storage/v1/object/public/product-images/products/1765316881967-7mys2gi.jpg
-                    const fileName = product.photo.split('/').pop(); // Obtiene "1765316881967-7mys2gi.jpg"
-                    const filePath = `products/${fileName}`; // Reconstruye "products/1765316881967-7mys2gi.jpg"
-                    
-                    console.log('Intentando eliminar:', filePath);
-                    
-                    const { error: storageError } = await supabaseClient.storage
-                        .from('product-images')
-                        .remove([filePath]);
-                    
-                    if (storageError) {
-                        console.error('Error eliminando imagen:', storageError);
-                    } else {
-                        console.log('✅ Imagen eliminada del storage');
-                    }
-                } catch (storageErr) {
-                    console.error('Error procesando eliminación de imagen:', storageErr);
-                }
-            }
-            
-            // 3. Eliminar el producto de la base de datos
-            const { error } = await supabaseClient
-                .from('products')
-                .delete()
-                .eq('code', code);
-            
-            if (error) throw error;
-            
-            alert('✅ Producto e imagen eliminados correctamente');
-            loadProducts();
-            
-        } catch (error) {
-            alert('Error al eliminar: ' + error.message);
-        }
+    if (!confirm(`⚠️ ¿Marcar "${name}" como caducado en ${currentStore}?\n\nDejará de aparecer en la lista pero no se borra de la BD.`)) {
+        return;
     }
-}
-        function toggleDropdown() {
-    document.getElementById('dropdownMenu').classList.toggle('show');
+    
+    try {
+        const { error } = await supabaseClient
+            .from('product_stock')
+            .update({ status: 'caducado' })
+            .eq('product_code', code)
+            .eq('store_code', currentStore)
+            .eq('status', 'activo');
+        
+        if (error) throw error;
+        
+        alert('✅ Marcado como caducado');
+        loadProducts();
+        
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
 }
 
 // Cerrar el dropdown si se hace clic fuera de él

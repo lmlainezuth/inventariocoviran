@@ -397,15 +397,16 @@
                 const hoyISO = hoy.toISOString();
                 
                 const { data, error } = await supabaseClient
-                    .from('product_stock')
-                    .select(`
-                        product_code, store_code, quantity, batch_number, expiry_date,
-                        purchase_price, public_price, created_at,
-                        products (name, category, brand)
-                    `)
-                    .eq('store_code', STORE)
-                    .gte('created_at', hoyISO)
-                    .order('created_at', { ascending: false });
+    .from('product_stock')
+    .select(`
+        product_code, store_code, quantity, batch_number, expiry_date,
+        purchase_price, public_price, created_at, status,
+        products (name, category, brand)
+    `)
+    .eq('store_code', STORE)
+    .eq('status', 'activo')
+    .gte('created_at', hoyISO)
+    .order('created_at', { ascending: false });
                 
                 if (error) throw error;
                 
