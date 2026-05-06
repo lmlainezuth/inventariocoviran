@@ -1375,11 +1375,11 @@ window.onclick = function(event) {
     }
 }
 
-// Función de logout
 async function logout() {
     if (confirm('¿Seguro que quieres cerrar sesión?')) {
         await supabaseClient.auth.signOut();
         localStorage.removeItem('inventoryAuth');
+        localStorage.removeItem('currentStore');  // ← añade esta línea
         window.location.href = 'login.html';
     }
 }

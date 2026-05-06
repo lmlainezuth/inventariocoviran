@@ -616,10 +616,13 @@ window.onclick = function(event) {
     }
 }
 
-// Función de logout
-function logout() {
-    localStorage.removeItem('inventoryAuth');
-    window.location.href = 'login.html';
+async function logout() {
+    if (confirm('¿Seguro que quieres cerrar sesión?')) {
+        await supabaseClient.auth.signOut();
+        localStorage.removeItem('inventoryAuth');
+        localStorage.removeItem('currentStore');  // ← añade esta línea
+        window.location.href = 'login.html';
+    }
 }
     </script>
 </body>

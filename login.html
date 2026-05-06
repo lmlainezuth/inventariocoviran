@@ -118,7 +118,7 @@ input[type="password"]:focus {
 <div id="errorMessage" class="error-message">
     Email o contraseña incorrectos.
 </div>
-
+<div id="loginStep">
 <form onsubmit="validateAccess(event)">
     <div class="input-group">
         <label for="email">Email</label>
@@ -131,6 +131,19 @@ input[type="password"]:focus {
     
     <button type="submit" class="btn-login" id="submitBtn">Acceder</button>
 </form>
+</div>
+<div id="storeStep" style="display:none;">
+    <p style="text-align:center; color:#6b7280; margin-bottom:20px;">
+        Selecciona la tienda donde vas a trabajar
+    </p>
+    <div class="input-group">
+        <label for="storeSelect">Tienda</label>
+        <select id="storeSelect" style="width:100%; padding:12px 16px; border:2px solid #e5e7eb; border-radius:10px; font-size:16px;">
+            <option value="">Cargando...</option>
+        </select>
+    </div>
+    <button type="button" class="btn-login" onclick="continueToApp()">Continuar</button>
+</div>
     </div>
 
     <script>
@@ -138,43 +151,71 @@ input[type="password"]:focus {
     const supabaseKey = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     
-    // Si ya hay sesión activa, redirigir directamente
-    window.addEventListener('DOMContentLoaded', async function() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) {
-            localStorage.setItem('inventoryAuth', 'true'); // compat con páginas aún no migradas
-            window.location.href = 'index.html';
-        }
-    });
-    
-    async function validateAccess(event) {
-        event.preventDefault();
-        
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        const errorMessage = document.getElementById('errorMessage');
-        const submitBtn = document.getElementById('submitBtn');
-        
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Accediendo...';
-        errorMessage.classList.remove('show');
-        
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        
-        if (error) {
-            errorMessage.textContent = 'Email o contraseña incorrectos.';
-            errorMessage.classList.add('show');
-            document.getElementById('password').value = '';
-            document.getElementById('password').focus();
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Acceder';
-            setTimeout(() => errorMessage.classList.remove('show'), 3000);
-            return;
-        }
-        
-        localStorage.setItem('inventoryAuth', 'true'); // compat con páginas aún no migradas
-        window.location.href = 'index.html';
+    // Si ya hay sesión activa, ir al paso de tienda (no redirigir directo)
+window.addEventListener('DOMContentLoaded', async function() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        localStorage.setItem('inventoryAuth', 'true');
+        showStoreStep();
     }
+});
+
+async function validateAccess(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errorMessage = document.getElementById('errorMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Accediendo...';
+    errorMessage.classList.remove('show');
+    
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+        errorMessage.textContent = 'Email o contraseña incorrectos.';
+        errorMessage.classList.add('show');
+        document.getElementById('password').value = '';
+        document.getElementById('password').focus();
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Acceder';
+        setTimeout(() => errorMessage.classList.remove('show'), 3000);
+        return;
+    }
+    
+    localStorage.setItem('inventoryAuth', 'true');
+    showStoreStep();
+}
+
+async function showStoreStep() {
+    document.getElementById('loginStep').style.display = 'none';
+    document.getElementById('storeStep').style.display = 'block';
+    
+    const { data: stores, error } = await supabaseClient.from('stores').select('*').order('name');
+    if (error) {
+        alert('Error cargando tiendas: ' + error.message);
+        return;
+    }
+    
+    const select = document.getElementById('storeSelect');
+    const tiendaActual = localStorage.getItem('currentStore') || '';
+    select.innerHTML = stores.map(s => 
+        `<option value="${s.code}" ${s.code === tiendaActual ? 'selected' : ''}>${s.name}</option>`
+    ).join('');
+}
+
+function continueToApp() {
+    const code = document.getElementById('storeSelect').value;
+    if (!code) {
+        alert('Por favor selecciona una tienda');
+        return;
+    }
+    localStorage.setItem('currentStore', code);
+    window.location.href = 'index.html';
+}
+
 </script>
 </body>
 </html>
