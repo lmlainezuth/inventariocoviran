@@ -335,7 +335,7 @@ const SUPABASE_URL = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const STORE_CODE = 'IZTIETA';
+let storeCode = localStorage.getItem('currentStore');
 const MAX_FOTOS = 10;
 
 // ===========================================
@@ -364,6 +364,12 @@ let state = {
 async function comprobarAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) {
+    window.location.href = 'login.html';
+    return false;
+  }
+  storeCode = localStorage.getItem('currentStore');
+  if (!storeCode) {
+    alert('No has seleccionado tienda. Vuelve a iniciar sesión.');
     window.location.href = 'login.html';
     return false;
   }
@@ -505,7 +511,7 @@ function renderListoParaGuardar() {
       ${r?.proveedor ? `<div class="resumen-row"><span class="label">Proveedor</span><span class="val">${r.proveedor}</span></div>` : ''}
       ${r?.pedido_venta ? `<div class="resumen-row"><span class="label">Pedido de venta</span><span class="val">${r.pedido_venta}</span></div>` : ''}
       ${r?.fecha_albaran ? `<div class="resumen-row"><span class="label">Fecha</span><span class="val">${r.fecha_albaran}</span></div>` : ''}
-      <div class="resumen-row"><span class="label">Tienda</span><span class="val">${r?.store_code || STORE_CODE}</span></div>
+      <div class="resumen-row"><span class="label">Tienda</span><span class="val">${storeCode}</span></div>
       <div class="resumen-row" style="border-top:1px solid var(--borde); margin-top:6px; padding-top:8px;">
         <span class="label">Líneas a guardar</span>
         <span class="val" style="color: var(--verde); font-weight:700">✓ ${state.lineas.length}</span>
@@ -842,7 +848,7 @@ async function guardarTodo() {
         const expiry = (lt.caducidad || '').trim() || null;
         filasStock.push({
           product_code: l.codigo.trim(),
-          store_code: STORE_CODE,
+          store_code: storeCode,
           quantity: idx === 0 ? cantidad : 0,
           batch_number: batch,
           expiry_date: expiry,
