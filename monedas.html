@@ -605,13 +605,11 @@
                         </div>
 
                         <!-- Tienda (selector) -->
+<<!-- Tienda (fija desde el login) -->
 <div class="form-group">
     <label>Tienda</label>
-    <select id="storeSelector" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; background: white; cursor: pointer;">
-        <option value="">Cargando...</option>
-    </select>
+    <div id="storeName" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; background: #f9fafb; color: #374151;">📍 ...</div>
 </div>
-
                         <button onclick="saveProduct()" class="btn-primary"
                             style="width: 100%;">💾 Guardar Producto</button>
                     </div>
@@ -710,17 +708,16 @@ window.addEventListener('DOMContentLoaded', function() {
 // Gestión de tiendas
 let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
 
-async function loadStores() {
+async function showStoreName() {
     try {
-        const { data: stores, error } = await supabaseClient.from('stores').select('*').order('name');
-        if (error) throw error;
-        
-        const selector = document.getElementById('storeSelector');
-        selector.innerHTML = stores.map(store => 
-            `<option value="${store.code}" ${store.code === currentStore ? 'selected' : ''}>${store.name}</option>`
-        ).join('');
+        const { data: store } = await supabaseClient
+            .from('stores')
+            .select('name')
+            .eq('code', currentStore)
+            .maybeSingle();
+        document.getElementById('storeName').textContent = '📍 ' + (store?.name ?? currentStore);
     } catch (error) {
-        console.error('Error cargando tiendas:', error);
+        document.getElementById('storeName').textContent = '📍 ' + currentStore;
     }
 }
 
@@ -731,8 +728,7 @@ const codeFromUrl = urlParams.get('code');
 
 
     
-   Promise.all([loadInventory(), loadCategories(), loadBrands(), loadStores()]).then(() => {
-      
+ Promise.all([loadInventory(), loadCategories(), loadBrands(), showStoreName()]).then(() => {   
         setupModalListeners();
         
         if (codeFromUrl) {
@@ -1040,7 +1036,7 @@ if (!existingProduct) {
         
         if (existingProduct) {
             // Obtener el stock de la tienda actual
-            const selectedStore = document.getElementById('storeSelector').value;
+            const selectedStore = currentStore;
             const { data: stockData } = await supabaseClient
                 .from('product_stock')
                 .select('*')
@@ -1193,7 +1189,7 @@ const expiryDate = document.getElementById('expiryDate').value || null;
         const fromList = urlParams.has('code');
         
         if (existingProduct) {
-    const selectedStore = document.getElementById('storeSelector').value;
+    const selectedStore = currentStore;
     
     if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
     // Actualizar info general del producto
