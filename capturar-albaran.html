@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Capturar albarán · IZTIETA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --verde: #1D9E75;
+    --verde-oscuro: #173404;
+    --fondo: #F1EFE8;
+    --gris-texto: #888780;
+    --gris-oscuro: #444441;
+    --rojo: #D14343;
+    --borde: #D3D1C7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--fondo);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--verde-oscuro);
+    -webkit-tap-highlight-color: transparent;
+  }
+  body { padding-bottom: 80px; }
+  header {
+    background: var(--verde);
+    color: white;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { font-size: 17px; font-weight: 700; flex: 1; }
+  .btn-back {
+    background: transparent;
+    border: 0;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  main { padding: 16px; max-width: 720px; margin: 0 auto; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 14px;
+    border: 0.5px solid var(--borde);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .card-fuente {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    padding: 18px 16px;
+    transition: transform 0.05s;
+  }
+  .card-fuente:active { transform: scale(0.98); }
+  .icon-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(29, 158, 117, 0.12);
+    color: var(--verde);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .card-fuente .titulo { font-weight: 700; font-size: 16px; }
+  .card-fuente .desc { font-size: 12px; color: var(--gris-texto); margin-top: 2px; }
+  .card-fuente .arrow { color: var(--gris-texto); font-size: 20px; }
+  .hero {
+    text-align: center;
+    padding: 28px 8px 8px;
+  }
+  .hero .big-icon { font-size: 56px; color: var(--verde); }
+  .hero h2 { font-size: 20px; margin: 12px 0 8px; }
+  .hero p { font-size: 13px; color: var(--gris-texto); }
+
+  /* Miniaturas */
+  .scroll-fotos {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 6px 2px;
+    scroll-snap-type: x mandatory;
+  }
+  .miniatura {
+    position: relative;
+    flex: 0 0 130px;
+    height: 130px;
+    border-radius: 10px;
+    overflow: hidden;
+    scroll-snap-align: start;
+    background: #eee;
+  }
+  .miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .miniatura .num {
+    position: absolute;
+    top: 6px; left: 6px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--verde);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .miniatura .borrar {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(209, 67, 67, 0.92);
+    color: white;
+    border: 0;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Botones */
+  button.primary {
+    width: 100%;
+    background: var(--verde);
+    color: white;
+    border: 0;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  button.primary:disabled { background: #aaa; cursor: not-allowed; }
+  button.outline {
+    flex: 1;
+    background: white;
+    color: var(--verde);
+    border: 1.5px solid var(--verde);
+    padding: 11px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .row { display: flex; gap: 8px; }
+
+  /* Resumen */
+  .resumen-row { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; }
+  .resumen-row .label { color: var(--gris-texto); }
+  .resumen-row .val { color: var(--verde-oscuro); font-weight: 500; }
+
+  /* Línea editable */
+  .linea-card {
+    background: white;
+    border: 0.5px solid var(--borde);
+    border-left: 3px solid var(--verde);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .linea-card .row-fields { display: flex; gap: 6px; }
+  .linea-card label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 10px;
+    color: var(--gris-texto);
+    flex: 1;
+  }
+  .linea-card label.w-codigo { flex: 0.8; }
+  .linea-card label.w-nombre { flex: 1.6; }
+  .linea-card input {
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    padding: 8px 8px;
+    font-size: 13px;
+    background: var(--fondo);
+    color: var(--verde-oscuro);
+    width: 100%;
+    font-family: inherit;
+  }
+  .linea-card input:focus { outline: 2px solid var(--verde); border-color: var(--verde); }
+  .lotes-titulo {
+    font-size: 11px;
+    color: var(--gris-texto);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* Saltados */
+  .card-saltados {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .card-saltados h3 {
+    font-size: 14px;
+    color: #991B1B;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-saltados .descripcion {
+    font-size: 11px;
+    color: #B91C1C;
+    margin-bottom: 10px;
+  }
+  .saltado-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-top: 1px solid #FECACA;
+  }
+  .saltado-row:first-of-type { border-top: 0; }
+  .saltado-row .info { flex: 1; min-width: 0; }
+  .saltado-row .info .nombre {
+    font-size: 12px;
+    color: #7F1D1D;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .saltado-row .info .motivo {
+    font-size: 10px;
+    color: #B91C1C;
+  }
+  .btn-incluir {
+    background: white;
+    color: #991B1B;
+    border: 1px solid #FCA5A5;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Spinner */
+  .center-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 64px 16px;
+    text-align: center;
+  }
+  .spinner {
+    width: 56px;
+    height: 56px;
+    border: 5px solid rgba(29, 158, 117, 0.2);
+    border-top-color: var(--verde);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Mensajes / errores */
+  .error-banner {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #991B1B;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--verde-oscuro);
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  /* Sólo escritorio: limita ancho de fotos */
+  @media (min-width: 600px) {
+    .miniatura { flex: 0 0 160px; height: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="btn-back" id="btnAtras" aria-label="Volver">←</button>
+  <h1 id="tituloHeader">Nuevo albarán</h1>
+</header>
+
+<main id="app"></main>
+
+<!-- Inputs ocultos para cámara y galería -->
+<input type="file" id="inputCamara" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="inputGaleria" accept="image/*" multiple style="display:none">
+
+<script>
+// ===========================================
+// CONFIG SUPABASE
+// ===========================================
+const SUPABASE_URL = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const STORE_CODE = 'IZTIETA';
+const MAX_FOTOS = 10;
+
+// ===========================================
+// ESTADO
+// ===========================================
+const ESTADO = {
+  SELECCIONAR_FUENTE: 'SELECCIONAR_FUENTE',
+  REVISANDO_FOTOS:    'REVISANDO_FOTOS',
+  TRANSCRIBIENDO:     'TRANSCRIBIENDO',
+  LISTO_PARA_GUARDAR: 'LISTO_PARA_GUARDAR',
+  GUARDANDO:          'GUARDANDO'
+};
+
+let state = {
+  estado: ESTADO.SELECCIONAR_FUENTE,
+  fotos: [],          // array de { file: File, b64: string, url: string }
+  respuesta: null,    // payload completo de la edge function
+  lineas: [],         // editable, copia de respuesta.lineas
+  saltadosPendientes: [],
+  error: null
+};
+
+// ===========================================
+// AUTH
+// ===========================================
+async function comprobarAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    window.location.href = 'login.html';
+    return false;
+  }
+  return true;
+}
+
+// ===========================================
+// RENDER PRINCIPAL
+// ===========================================
+const $ = (id) => document.getElementById(id);
+const app = $('app');
+
+function setEstado(nuevo, patch = {}) {
+  state = { ...state, estado: nuevo, ...patch };
+  render();
+}
+
+function render() {
+  const titulos = {
+    SELECCIONAR_FUENTE: 'Nuevo albarán',
+    REVISANDO_FOTOS:    `Fotos (${state.fotos.length}/${MAX_FOTOS})`,
+    TRANSCRIBIENDO:     'Transcribiendo...',
+    LISTO_PARA_GUARDAR: 'Revisar líneas',
+    GUARDANDO:          'Guardando...'
+  };
+  $('tituloHeader').textContent = titulos[state.estado];
+  $('btnAtras').style.display =
+    (state.estado === ESTADO.TRANSCRIBIENDO || state.estado === ESTADO.GUARDANDO)
+    ? 'none' : 'block';
+
+  switch (state.estado) {
+    case ESTADO.SELECCIONAR_FUENTE: return renderSeleccionarFuente();
+    case ESTADO.REVISANDO_FOTOS:    return renderRevisandoFotos();
+    case ESTADO.TRANSCRIBIENDO:     return renderTranscribiendo();
+    case ESTADO.LISTO_PARA_GUARDAR: return renderListoParaGuardar();
+    case ESTADO.GUARDANDO:          return renderGuardando();
+  }
+}
+
+// -------- SELECCIONAR FUENTE --------
+function renderSeleccionarFuente() {
+  app.innerHTML = `
+    <div class="hero">
+      <div class="big-icon">📦</div>
+      <h2>Nuevo albarán</h2>
+      <p>Puedes tomar foto de cada página o elegir varias de la galería. Máximo ${MAX_FOTOS} fotos.</p>
+    </div>
+    <div class="stack">
+      <div class="card card-fuente" id="optCamara">
+        <div class="icon-circle">📷</div>
+        <div style="flex:1">
+          <div class="titulo">Tomar foto</div>
+          <div class="desc">Usar la cámara ahora</div>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+      <div class="card card-fuente" id="optGaleria">
+        <div class="icon-circle">🖼</div>
+        <div style="flex:1">
+          <div class="titulo">Elegir de la galería</div>
+          <div class="desc">Seleccionar una o varias fotos</div>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+    </div>
+  `;
+  $('optCamara').onclick = () => abrirCamara();
+  $('optGaleria').onclick = () => abrirGaleria();
+}
+
+// -------- REVISANDO FOTOS --------
+function renderRevisandoFotos() {
+  const fotosHtml = state.fotos.map((f, i) => `
+    <div class="miniatura">
+      <img src="${f.url}" alt="Página ${i+1}">
+      <div class="num">${i+1}</div>
+      <button class="borrar" data-i="${i}" aria-label="Eliminar foto ${i+1}">✕</button>
+    </div>
+  `).join('');
+
+  const errorHtml = state.error ? `
+    <div class="error-banner">
+      <span>⚠️</span>
+      <div>${state.error}</div>
+    </div>` : '';
+
+  const addRowHtml = state.fotos.length < MAX_FOTOS ? `
+    <div class="row">
+      <button class="outline" id="btnAddFoto">📷 Foto</button>
+      <button class="outline" id="btnAddGaleria">🖼 Galería</button>
+    </div>` : '';
+
+  app.innerHTML = `
+    <div class="stack">
+      <p style="font-size:13px; color: var(--gris-texto)">
+        Revisa las fotos en orden. Toca la ✕ de una foto para eliminarla.
+      </p>
+      <div class="scroll-fotos">${fotosHtml}</div>
+      ${addRowHtml}
+      ${errorHtml}
+      <button class="primary" id="btnTranscribir" ${state.fotos.length === 0 ? 'disabled' : ''}>
+        ✨ ${state.fotos.length === 1 ? 'Transcribir albarán' : `Transcribir ${state.fotos.length} páginas`}
+      </button>
+    </div>
+  `;
+
+  document.querySelectorAll('.miniatura .borrar').forEach(b => {
+    b.onclick = () => eliminarFoto(parseInt(b.dataset.i));
+  });
+  if ($('btnAddFoto'))    $('btnAddFoto').onclick    = abrirCamara;
+  if ($('btnAddGaleria')) $('btnAddGaleria').onclick = abrirGaleria;
+  $('btnTranscribir').onclick = transcribir;
+}
+
+// -------- TRANSCRIBIENDO --------
+function renderTranscribiendo() {
+  app.innerHTML = `
+    <div class="center-col">
+      <div class="spinner"></div>
+      <h2 style="font-size:18px; font-weight:700">
+        ${state.fotos.length === 1 ? 'Transcribiendo foto...' : `Transcribiendo ${state.fotos.length} páginas...`}
+      </h2>
+      <p style="font-size:14px; color: var(--gris-texto); max-width: 320px">
+        Levin está leyendo el albarán. Esto puede tardar entre 15 y 60 segundos.
+      </p>
+    </div>
+  `;
+}
+
+// -------- LISTO PARA GUARDAR --------
+function renderListoParaGuardar() {
+  const r = state.respuesta;
+  const cabeceraHtml = `
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <span style="font-size:18px;">📋</span>
+        <strong style="font-size:15px;">Resumen del albarán</strong>
+      </div>
+      ${r?.proveedor ? `<div class="resumen-row"><span class="label">Proveedor</span><span class="val">${r.proveedor}</span></div>` : ''}
+      ${r?.pedido_venta ? `<div class="resumen-row"><span class="label">Pedido de venta</span><span class="val">${r.pedido_venta}</span></div>` : ''}
+      ${r?.fecha_albaran ? `<div class="resumen-row"><span class="label">Fecha</span><span class="val">${r.fecha_albaran}</span></div>` : ''}
+      <div class="resumen-row"><span class="label">Tienda</span><span class="val">${r?.store_code || STORE_CODE}</span></div>
+      <div class="resumen-row" style="border-top:1px solid var(--borde); margin-top:6px; padding-top:8px;">
+        <span class="label">Líneas a guardar</span>
+        <span class="val" style="color: var(--verde); font-weight:700">✓ ${state.lineas.length}</span>
+      </div>
+    </div>
+  `;
+
+  const lineasHtml = state.lineas.length ? `
+    <p style="font-size:12px; color: var(--gris-texto); margin-top:4px">
+      Líneas a guardar — edita si Levin se equivocó
+    </p>
+    ${state.lineas.map((l, i) => renderLineaEditable(l, i)).join('')}
+  ` : '';
+
+  const saltadosHtml = state.saltadosPendientes.length ? `
+    <div class="card-saltados">
+      <h3>⚠ Levin saltó ${state.saltadosPendientes.length} producto(s)</h3>
+      <div class="descripcion">
+        Si alguno debería estar en la lista, pulsa "Incluir". Podrás rellenar lote y caducidad a mano.
+      </div>
+      ${state.saltadosPendientes.map((s, i) => `
+        <div class="saltado-row">
+          <div class="info">
+            <div class="nombre">${escapeHtml(s.codigo)} · ${escapeHtml(s.nombre)}</div>
+            ${s.motivo ? `<div class="motivo">${escapeHtml(s.motivo)}</div>` : ''}
+          </div>
+          <button class="btn-incluir" data-i="${i}">Incluir</button>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  const errorHtml = state.error ? `
+    <div class="error-banner">
+      <span>⚠️</span>
+      <div>${state.error}</div>
+    </div>` : '';
+
+  app.innerHTML = `
+    <div class="stack">
+      ${cabeceraHtml}
+      ${lineasHtml}
+      ${saltadosHtml}
+      ${errorHtml}
+      <button class="primary" id="btnGuardar" ${state.lineas.length === 0 ? 'disabled' : ''}>
+        💾 Guardar ${state.lineas.length} líneas en inventario
+      </button>
+    </div>
+  `;
+
+  // Eventos: edición de campos
+  document.querySelectorAll('[data-linea]').forEach(input => {
+    input.oninput = onCampoLineaInput;
+  });
+  // Eventos: incluir saltado
+  document.querySelectorAll('.btn-incluir').forEach(b => {
+    b.onclick = () => incluirSaltado(parseInt(b.dataset.i));
+  });
+  $('btnGuardar').onclick = guardarTodo;
+}
+
+function renderLineaEditable(linea, idx) {
+  const lotes = (linea.lotes && linea.lotes.length) ? linea.lotes : [{ numero: '', caducidad: '' }];
+  return `
+    <div class="linea-card">
+      <div class="row-fields">
+        <label class="w-codigo">Código
+          <input data-linea="${idx}" data-campo="codigo" value="${escapeAttr(linea.codigo ?? '')}">
+        </label>
+        <label class="w-nombre">Nombre
+          <input data-linea="${idx}" data-campo="nombre" value="${escapeAttr(linea.nombre ?? '')}">
+        </label>
+      </div>
+      <div class="row-fields">
+        <label>Cant.
+          <input type="text" inputmode="decimal" data-linea="${idx}" data-campo="cantidad" value="${linea.cantidad ?? 0}">
+        </label>
+        <label>P.Compra
+          <input type="text" inputmode="decimal" data-linea="${idx}" data-campo="precio_compra" value="${linea.precio_compra ?? 0}">
+        </label>
+        <label>PVP
+          <input type="text" inputmode="decimal" data-linea="${idx}" data-campo="pvp" value="${linea.pvp ?? 0}">
+        </label>
+      </div>
+      <div class="lotes-titulo">Lotes (${lotes.length})</div>
+      ${lotes.map((lt, j) => `
+        <div class="row-fields">
+          <label style="flex:1.3">Lote
+            <input data-linea="${idx}" data-lote="${j}" data-campo="numero" value="${escapeAttr(lt.numero ?? '')}">
+          </label>
+          <label>Caducidad
+            <input data-linea="${idx}" data-lote="${j}" data-campo="caducidad" placeholder="YYYY-MM-DD" value="${escapeAttr(lt.caducidad ?? '')}">
+          </label>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// -------- GUARDANDO --------
+function renderGuardando() {
+  app.innerHTML = `
+    <div class="center-col">
+      <div class="spinner"></div>
+      <h2 style="font-size:18px; font-weight:700">Guardando albarán...</h2>
+    </div>
+  `;
+}
+
+// ===========================================
+// EDICIÓN DE CAMPOS
+// ===========================================
+function onCampoLineaInput(e) {
+  const i = parseInt(e.target.dataset.linea);
+  const campo = e.target.dataset.campo;
+  const loteIdx = e.target.dataset.lote;
+  const valor = e.target.value;
+  const linea = { ...state.lineas[i] };
+
+  if (loteIdx !== undefined) {
+    const j = parseInt(loteIdx);
+    const lotes = (linea.lotes && linea.lotes.length) ? [...linea.lotes] : [{ numero: '', caducidad: '' }];
+    lotes[j] = { ...lotes[j], [campo]: valor };
+    linea.lotes = lotes;
+  } else if (['cantidad', 'precio_compra', 'pvp'].includes(campo)) {
+    const num = parseFloat(valor.replace(',', '.'));
+    linea[campo] = isNaN(num) ? 0 : num;
+  } else {
+    linea[campo] = valor;
+  }
+
+  state.lineas[i] = linea;
+  // No volvemos a renderizar para no perder el foco del input
+}
+
+function incluirSaltado(idx) {
+  const s = state.saltadosPendientes[idx];
+  state.saltadosPendientes = state.saltadosPendientes.filter((_, i) => i !== idx);
+  state.lineas.push({
+    codigo: s.codigo,
+    nombre: s.nombre,
+    cantidad: 0,
+    precio_compra: 0,
+    pvp: 0,
+    lotes: [{ numero: '', caducidad: '' }]
+  });
+  render();
+}
+
+// ===========================================
+// FOTOS
+// ===========================================
+function abrirCamara() {
+  if (state.fotos.length >= MAX_FOTOS) {
+    alert(`Máximo ${MAX_FOTOS} fotos por albarán`);
+    return;
+  }
+  $('inputCamara').value = '';
+  $('inputCamara').click();
+}
+function abrirGaleria() {
+  if (state.fotos.length >= MAX_FOTOS) {
+    alert(`Máximo ${MAX_FOTOS} fotos por albarán`);
+    return;
+  }
+  $('inputGaleria').value = '';
+  $('inputGaleria').click();
+}
+
+$('inputCamara').addEventListener('change', async (e) => {
+  if (!e.target.files[0]) return;
+  await añadirArchivo(e.target.files[0]);
+});
+
+$('inputGaleria').addEventListener('change', async (e) => {
+  const archivos = Array.from(e.target.files);
+  const espacio = MAX_FOTOS - state.fotos.length;
+  const aProcesar = archivos.slice(0, espacio);
+  if (archivos.length > espacio) {
+    alert(`Solo se añadieron ${espacio} fotos (máximo ${MAX_FOTOS})`);
+  }
+  for (const f of aProcesar) await añadirArchivo(f);
+});
+
+async function añadirArchivo(file) {
+  try {
+    const { b64, url } = await comprimirAJpeg(file);
+    state.fotos.push({ file, b64, url });
+    if (state.estado === ESTADO.SELECCIONAR_FUENTE) {
+      setEstado(ESTADO.REVISANDO_FOTOS);
+    } else {
+      render();
+    }
+  } catch (err) {
+    console.error('Error procesando imagen', err);
+    alert('No se pudo procesar la imagen: ' + err.message);
+  }
+}
+
+function eliminarFoto(idx) {
+  URL.revokeObjectURL(state.fotos[idx].url);
+  state.fotos.splice(idx, 1);
+  if (state.fotos.length === 0) {
+    setEstado(ESTADO.SELECCIONAR_FUENTE);
+  } else {
+    render();
+  }
+}
+
+// Comprime imagen a JPEG con tamaño máx 2000px en su lado largo
+async function comprimirAJpeg(file) {
+  const dataUrl = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(new Error('Error leyendo archivo'));
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('Error cargando imagen'));
+    i.src = dataUrl;
+  });
+
+  const MAX_DIM = 2000;
+  let { width, height } = img;
+  if (Math.max(width, height) > MAX_DIM) {
+    const scale = MAX_DIM / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+  const url = URL.createObjectURL(blob);
+  const b64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Error a base64'));
+    r.readAsDataURL(blob);
+  });
+  return { b64, url };
+}
+
+// ===========================================
+// LLAMADA A LA EDGE FUNCTION
+// ===========================================
+async function transcribir() {
+  setEstado(ESTADO.TRANSCRIBIENDO, { error: null });
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token || SUPABASE_ANON_KEY;
+
+    const body = {
+      imagenes: state.fotos.map(f => ({ base64: f.b64, media_type: 'image/jpeg' }))
+    };
+
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/transcribir-albaran`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(body)
+    });
+
+    const txt = await r.text();
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`;
+      try { msg = JSON.parse(txt).error || msg; } catch {}
+      throw new Error(msg);
+    }
+    const resp = JSON.parse(txt);
+    if (resp.error) throw new Error(resp.error);
+
+    setEstado(ESTADO.LISTO_PARA_GUARDAR, {
+      respuesta: resp,
+      lineas: (resp.lineas || []).map(l => ({
+        codigo: l.codigo ?? '',
+        nombre: l.nombre ?? '',
+        cantidad: Number(l.cantidad ?? 0),
+        precio_compra: Number(l.precio_compra ?? 0),
+        pvp: Number(l.pvp ?? 0),
+        lotes: Array.isArray(l.lotes) && l.lotes.length
+          ? l.lotes.map(lt => ({ numero: lt.numero ?? '', caducidad: lt.caducidad ?? '' }))
+          : [{ numero: '', caducidad: '' }]
+      })),
+      saltadosPendientes: resp.saltados || []
+    });
+  } catch (e) {
+    console.error(e);
+    setEstado(ESTADO.REVISANDO_FOTOS, { error: e.message || 'Error desconocido' });
+  }
+}
+
+// ===========================================
+// GUARDAR EN BASE DE DATOS
+// ===========================================
+async function guardarTodo() {
+  setEstado(ESTADO.GUARDANDO, { error: null });
+  try {
+    // 1) Validar líneas mínimas
+    const validas = state.lineas.filter(l => l.codigo && l.codigo.trim());
+    if (validas.length === 0) throw new Error('No hay líneas con código');
+
+    // 2) Upsert productos (code = internal_code para los nuevos)
+    const productos = validas.map(l => ({
+      code: l.codigo.trim(),
+      internal_code: l.codigo.trim(),
+      name: (l.nombre || '').trim() || l.codigo.trim()
+    }));
+
+    const { error: errProd } = await sb
+      .from('products')
+      .upsert(productos, { onConflict: 'code', ignoreDuplicates: true });
+    if (errProd) throw new Error(`Error en products: ${errProd.message}`);
+
+    // 3) Upsert product_stock (regla multi-lote: 1er lote cantidad completa, resto 0)
+    const filasStock = [];
+    for (const l of validas) {
+      const cantidad = Number(l.cantidad) || 0;
+      const precioCompra = Number(l.precio_compra) || 0;
+      const pvp = Number(l.pvp) || 0;
+      const lotes = (l.lotes && l.lotes.length) ? l.lotes : [{ numero: '', caducidad: '' }];
+
+      lotes.forEach((lt, idx) => {
+        const batch = (lt.numero || '').trim() || null;
+        const expiry = (lt.caducidad || '').trim() || null;
+        filasStock.push({
+          product_code: l.codigo.trim(),
+          store_code: STORE_CODE,
+          quantity: idx === 0 ? cantidad : 0,
+          batch_number: batch,
+          expiry_date: expiry,
+          purchase_price: precioCompra,
+          public_price: pvp,
+          status: 'activo'
+        });
+      });
+    }
+
+    // Nota: la unique key es (product_code, store_code, batch_number, expiry_date).
+    // Si batch o expiry son NULL puede haber conflictos en la lógica; insertamos en bloque.
+    const { error: errStock } = await sb
+      .from('product_stock')
+      .upsert(filasStock, {
+        onConflict: 'product_code,store_code,batch_number,expiry_date'
+      });
+    if (errStock) throw new Error(`Error en product_stock: ${errStock.message}`);
+
+    toast(`✓ Guardadas ${validas.length} líneas`);
+    // Limpieza y redirección
+    state.fotos.forEach(f => URL.revokeObjectURL(f.url));
+    setTimeout(() => { window.location.href = 'hoy.html'; }, 700);
+
+  } catch (e) {
+    console.error(e);
+    setEstado(ESTADO.LISTO_PARA_GUARDAR, { error: e.message || 'Error desconocido' });
+  }
+}
+
+// ===========================================
+// HELPERS
+// ===========================================
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ===========================================
+// BOTÓN ATRÁS
+// ===========================================
+$('btnAtras').onclick = () => {
+  if (state.estado === ESTADO.SELECCIONAR_FUENTE) {
+    window.location.href = 'inventario-lista.html';
+    return;
+  }
+  if (state.estado === ESTADO.REVISANDO_FOTOS || state.estado === ESTADO.LISTO_PARA_GUARDAR) {
+    const msg = state.estado === ESTADO.REVISANDO_FOTOS
+      ? `¿Descartar las ${state.fotos.length} foto(s) tomadas?`
+      : `¿Descartar las ${state.lineas.length} líneas transcritas? Tendrás que volver a sacar las fotos.`;
+    if (confirm(msg)) {
+      state.fotos.forEach(f => URL.revokeObjectURL(f.url));
+      state = {
+        estado: ESTADO.SELECCIONAR_FUENTE,
+        fotos: [], respuesta: null, lineas: [], saltadosPendientes: [], error: null
+      };
+      render();
+    }
+  }
+};
+
+// ===========================================
+// INIT
+// ===========================================
+(async () => {
+  if (!(await comprobarAuth())) return;
+  render();
+})();
+</script>
+</body>
+</html>
