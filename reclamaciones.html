@@ -438,6 +438,42 @@ const SUPABASE_ANON_KEY = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let storeCode = localStorage.getItem('currentStore');
 
+
+// ===========================================
+// CACHE DE PRODUCTOS  ← AQUÍ
+// ===========================================
+let productosCache = [];
+let stockLatestPorProducto = {};
+
+async function cargarProductosCache() {
+  const [{ data: prods }, { data: stocks }] = await Promise.all([
+    sb.from('products').select('code, internal_code, name').order('name'),
+    sb.from('product_stock')
+      .select('product_code, batch_number, expiry_date, purchase_price, public_price, created_at')
+      .eq('store_code', storeCode)
+      .eq('status', 'activo')
+      .order('created_at', { ascending: false })
+  ]);
+  productosCache = prods || [];
+  stockLatestPorProducto = {};
+  for (const s of stocks || []) {
+    if (!stockLatestPorProducto[s.product_code]) stockLatestPorProducto[s.product_code] = s;
+  }
+}
+
+function actualizarDatalist() {
+  let dl = document.getElementById('productosDatalist');
+  if (!dl) {
+    dl = document.createElement('datalist');
+    dl.id = 'productosDatalist';
+    document.body.appendChild(dl);
+  }
+  dl.innerHTML = productosCache
+    .map(p => `<option value="${escapeAttr(p.name)}">`)
+    .join('');
+}
+
+
 // ===========================================
 // ESTADO
 // ===========================================
@@ -725,6 +761,7 @@ function renderItemCard(item, idx) {
                value="${escapeAttr(item.product_name ?? '')}"
                placeholder="ej. Huevos camperos docena">
       </label>
+      <small id="hint-${idx}" style="font-size:11px;color:var(--gris-texto);margin-top:-6px;display:${item._hint ? 'block' : 'none'}">${item._hint ?? ''}</small>
       <div class="row-fields">
         <div class="ean-row">
           <label>Código barras (EAN)
@@ -792,7 +829,33 @@ function onCampoItem(e) {
     item[campo] = valor;
   }
   state.reclamacionActual.items[i] = item;
-  // No re-render para no perder el foco
+
+  // ← AQUÍ va el bloque nuevo
+  if (campo === 'product_name') {
+    const match = productosCache.find(p => p.name === valor);
+    if (match) {
+      item.product_code  = match.code || '';
+      item.internal_code = match.internal_code || '';
+      const stock = stockLatestPorProducto[match.code];
+      if (stock) {
+        const cad  = stock.expiry_date ? new Date(stock.expiry_date + 'T00:00:00').toLocaleDateString('es-ES') : '—';
+        const lote = stock.batch_number || '—';
+        const pc   = stock.purchase_price != null ? Number(stock.purchase_price).toFixed(3) : '—';
+        const pv   = stock.public_price   != null ? Number(stock.public_price).toFixed(2)   : '—';
+        item._hint = `📦 Último: lote ${lote} · cad ${cad} · €${pc} / PVP €${pv}`;
+      } else {
+        item._hint = 'Sin stock previo en esta tienda';
+      }
+      state.reclamacionActual.items[i] = item;
+
+      const inpCode = document.querySelector(`input[data-item="${i}"][data-campo="product_code"]`);
+      const inpInt  = document.querySelector(`input[data-item="${i}"][data-campo="internal_code"]`);
+      const hint    = document.getElementById(`hint-${i}`);
+      if (inpCode) inpCode.value = item.product_code;
+      if (inpInt)  inpInt.value  = item.internal_code;
+      if (hint) { hint.textContent = item._hint; hint.style.display = 'block'; }
+    }
+  }
 }
 
 function cambiarEstadoItem(idx, valor) {
@@ -1140,6 +1203,8 @@ function cerrarScanner() {
 // ===========================================
 (async () => {
   if (!(await comprobarAuth())) return;
+  await cargarProductosCache();
+  actualizarDatalist();
   cargarLista();
 })();
 </script>
