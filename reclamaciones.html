@@ -757,10 +757,12 @@ function renderItemCard(item, idx) {
         <button class="btn-eliminar-item" data-eliminar-item="${idx}">✕ Quitar</button>
       </div>
       <label>Nombre del producto *
-        <input data-item="${idx}" data-campo="product_name"
-               value="${escapeAttr(item.product_name ?? '')}"
-               placeholder="ej. Huevos camperos docena">
-      </label>
+  <input data-item="${idx}" data-campo="product_name"
+         list="productosDatalist"
+         autocomplete="off"
+         value="${escapeAttr(item.product_name ?? '')}"
+         placeholder="ej. Huevos camperos docena">
+</label>
       <small id="hint-${idx}" style="font-size:11px;color:var(--gris-texto);margin-top:-6px;display:${item._hint ? 'block' : 'none'}">${item._hint ?? ''}</small>
       <div class="row-fields">
         <div class="ean-row">
