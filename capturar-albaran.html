@@ -312,6 +312,20 @@
   @media (min-width: 600px) {
     .miniatura { flex: 0 0 160px; height: 160px; }
   }
+
+  .btn-excluir {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #FEF2F2;
+  color: var(--rojo);
+  border: 1px solid #FECACA;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+.btn-excluir:active { background: #FECACA; }
 </style>
 </head>
 <body>
@@ -519,6 +533,12 @@ function renderListoParaGuardar() {
     </div>
   `;
 
+  document.querySelectorAll('[data-excluir]').forEach(b => {
+  b.onclick = () => excluirLinea(parseInt(b.dataset.excluir));
+});
+
+
+
   const lineasHtml = state.lineas.length ? `
     <p style="font-size:12px; color: var(--gris-texto); margin-top:4px">
       Líneas a guardar — edita si Levin se equivocó
@@ -577,14 +597,15 @@ function renderLineaEditable(linea, idx) {
   const lotes = (linea.lotes && linea.lotes.length) ? linea.lotes : [{ numero: '', caducidad: '' }];
   return `
     <div class="linea-card">
-      <div class="row-fields">
-        <label class="w-codigo">Código
-          <input data-linea="${idx}" data-campo="codigo" value="${escapeAttr(linea.codigo ?? '')}">
-        </label>
-        <label class="w-nombre">Nombre
-          <input data-linea="${idx}" data-campo="nombre" value="${escapeAttr(linea.nombre ?? '')}">
-        </label>
-      </div>
+      <div class="row-fields" style="align-items:flex-end">
+  <label class="w-codigo">Código
+    <input data-linea="${idx}" data-campo="codigo" value="${escapeAttr(linea.codigo ?? '')}">
+  </label>
+  <label class="w-nombre">Nombre
+    <input data-linea="${idx}" data-campo="nombre" value="${escapeAttr(linea.nombre ?? '')}">
+  </label>
+  <button class="btn-excluir" data-excluir="${idx}" aria-label="Excluir línea">✕</button>
+</div>
       <div class="row-fields">
         <label>Cant.
           <input type="text" inputmode="decimal" data-linea="${idx}" data-campo="cantidad" value="${linea.cantidad ?? 0}">
@@ -661,6 +682,18 @@ function incluirSaltado(idx) {
   render();
 }
 
+function excluirLinea(idx) {
+  const l = state.lineas[idx];
+  const nombre = (l?.nombre || l?.codigo || 'esta línea').trim();
+  if (!confirm(`¿Excluir "${nombre}" del albarán?`)) return;
+  state.saltadosPendientes.push({
+    codigo: l.codigo,
+    nombre: l.nombre,
+    motivo: 'Excluido manualmente'
+  });
+  state.lineas = state.lineas.filter((_, i) => i !== idx);
+  render();
+}
 // ===========================================
 // FOTOS
 // ===========================================
