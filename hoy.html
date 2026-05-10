@@ -290,6 +290,42 @@
         }
         
         .toast.show { opacity: 1; }
+        .filtros-fecha {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 12px;
+  padding: 0 4px;
+  flex-wrap: wrap;
+}
+.filtros-fecha label {
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  flex: 1;
+  min-width: 120px;
+}
+.filtros-fecha input {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+  margin-top: 3px;
+}
+.filtros-fecha .btn-quick {
+  padding: 8px 12px;
+  background: #1d9e75;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  height: 36px;
+}
     </style>
     <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 </head>
@@ -301,10 +337,16 @@
         <button class="refresh-btn" onclick="cargarItems()">🔄</button>
     </div>
 
-    <div class="container">
-        <p class="info-text" id="infoText">Cargando...</p>
-        <div id="lista"></div>
+   <div class="container">
+    <div class="filtros-fecha">
+        <label>Desde <input type="date" id="fechaDesde"></label>
+        <label>Hasta <input type="date" id="fechaHasta"></label>
+        <button class="btn-quick" id="btnHoy">Hoy</button>
+        <button class="btn-quick" id="btnSemana" style="background:#173404">Semana</button>
     </div>
+    <p class="info-text" id="infoText">Cargando...</p>
+    <div id="lista"></div>
+</div>
 
     <!-- Modal de edición -->
     <div class="modal" id="modalEditar">
@@ -379,90 +421,102 @@
         // Estado actual del item que se está editando
         let itemEditando = null;
 
-        async function cargarItems() {
-            const lista = document.getElementById('lista');
-            const infoText = document.getElementById('infoText');
-            
+    async function cargarItems() {
+    const lista = document.getElementById('lista');
+    const infoText = document.getElementById('infoText');
+    
+    lista.innerHTML = `
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <div>Cargando...</div>
+        </div>`;
+    infoText.textContent = '';
+    
+    try {
+        const desdeStr = document.getElementById('fechaDesde').value;
+        const hastaStr = document.getElementById('fechaHasta').value;
+        
+        // Rango: inicio del 'desde' hasta fin del 'hasta'
+        const desde = new Date(desdeStr + 'T00:00:00');
+        const hasta = new Date(hastaStr + 'T23:59:59.999');
+        const desdeISO = desde.toISOString();
+        const hastaISO = hasta.toISOString();
+        
+        const { data, error } = await supabaseClient
+            .from('product_stock')
+            .select(`
+                product_code, store_code, quantity, batch_number, expiry_date,
+                purchase_price, public_price, created_at, status,
+                products (name, category, brand)
+            `)
+            .eq('store_code', STORE)
+            .eq('status', 'activo')
+            .gte('created_at', desdeISO)
+            .lte('created_at', hastaISO)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Mensaje según rango
+        const mismoDia = desdeStr === hastaStr;
+        const hoyStr = new Date().toISOString().slice(0, 10);
+        let etiqueta;
+        if (mismoDia && desdeStr === hoyStr) etiqueta = 'hoy';
+        else if (mismoDia) etiqueta = `el ${desde.toLocaleDateString('es-ES')}`;
+        else etiqueta = `del ${desde.toLocaleDateString('es-ES')} al ${hasta.toLocaleDateString('es-ES')}`;
+        
+        if (!data || data.length === 0) {
             lista.innerHTML = `
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <div>Cargando...</div>
+                <div class="empty-state">
+                    <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+                    <div>No hay entradas ${etiqueta} en ${STORE}</div>
                 </div>`;
             infoText.textContent = '';
-            
-            try {
-                // Calcular inicio del día de hoy en formato ISO
-                const hoy = new Date();
-                hoy.setHours(0, 0, 0, 0);
-                const hoyISO = hoy.toISOString();
-                
-                const { data, error } = await supabaseClient
-    .from('product_stock')
-    .select(`
-        product_code, store_code, quantity, batch_number, expiry_date,
-        purchase_price, public_price, created_at, status,
-        products (name, category, brand)
-    `)
-    .eq('store_code', STORE)
-    .eq('status', 'activo')
-    .gte('created_at', hoyISO)
-    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (!data || data.length === 0) {
-                    lista.innerHTML = `
-                        <div class="empty-state">
-                            <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
-                            <div>Hoy no se ha insertado nada en ${STORE}</div>
-                        </div>`;
-                    infoText.textContent = '';
-                    return;
-                }
-                
-                infoText.textContent = `${data.length} entradas de hoy · pulsa para editar`;
-                
-                lista.innerHTML = data.map(item => {
-                    const nombre = item.products?.name || '(sin nombre)';
-                    const expiryStr = item.expiry_date 
-                        ? new Date(item.expiry_date + 'T00:00:00').toLocaleDateString('es-ES')
-                        : '—';
-                    const cantStr = formatearCantidad(item.quantity);
-                    const loteStr = item.batch_number ? ` · Lote: ${escapeHtml(item.batch_number)}` : '';
-                    
-                    // Codificar item completo en data attribute para edición
-                    const itemData = encodeURIComponent(JSON.stringify({
-                        product_code: item.product_code,
-                        nombre: nombre,
-                        quantity: item.quantity,
-                        batch_number: item.batch_number || '',
-                        expiry_date: item.expiry_date,
-                        purchase_price: item.purchase_price || 0,
-                        public_price: item.public_price || 0
-                    }));
-                    
-                    return `
-                        <div class="product-item" onclick="abrirModal('${itemData}')">
-                            <div class="product-icon">📦</div>
-                            <div class="product-info">
-                                <div class="product-name">${escapeHtml(nombre)}</div>
-                                <div class="product-quantity">Cant: ${cantStr}${loteStr}</div>
-                                <div class="product-code">${escapeHtml(item.product_code)}</div>
-                                <div class="product-expiry">📅 ${expiryStr}</div>
-                            </div>
-                        </div>`;
-                }).join('');
-                
-            } catch (e) {
-                console.error('Error cargando:', e);
-                lista.innerHTML = `
-                    <div class="error-state">
-                        <div style="font-size: 48px; margin-bottom: 12px;">❌</div>
-                        <div>Error: ${escapeHtml(e.message)}</div>
-                    </div>`;
-            }
+            return;
         }
-
+        
+        infoText.textContent = `${data.length} entradas ${etiqueta} · pulsa para editar`;
+        
+        lista.innerHTML = data.map(item => {
+            const nombre = item.products?.name || '(sin nombre)';
+            const expiryStr = item.expiry_date 
+                ? new Date(item.expiry_date + 'T00:00:00').toLocaleDateString('es-ES')
+                : '—';
+            const cantStr = formatearCantidad(item.quantity);
+            const loteStr = item.batch_number ? ` · Lote: ${escapeHtml(item.batch_number)}` : '';
+            const fechaCreado = new Date(item.created_at).toLocaleDateString('es-ES');
+            
+            const itemData = encodeURIComponent(JSON.stringify({
+                product_code: item.product_code,
+                nombre: nombre,
+                quantity: item.quantity,
+                batch_number: item.batch_number || '',
+                expiry_date: item.expiry_date,
+                purchase_price: item.purchase_price || 0,
+                public_price: item.public_price || 0
+            }));
+            
+            return `
+                <div class="product-item" onclick="abrirModal('${itemData}')">
+                    <div class="product-icon">📦</div>
+                    <div class="product-info">
+                        <div class="product-name">${escapeHtml(nombre)}</div>
+                        <div class="product-quantity">Cant: ${cantStr}${loteStr}</div>
+                        <div class="product-code">${escapeHtml(item.product_code)} · ${fechaCreado}</div>
+                        <div class="product-expiry">📅 ${expiryStr}</div>
+                    </div>
+                </div>`;
+        }).join('');
+        
+    } catch (e) {
+        console.error('Error cargando:', e);
+        lista.innerHTML = `
+            <div class="error-state">
+                <div style="font-size: 48px; margin-bottom: 12px;">❌</div>
+                <div>Error: ${escapeHtml(e.message)}</div>
+            </div>`;
+    }
+}
         function abrirModal(itemDataEncoded) {
             const item = JSON.parse(decodeURIComponent(itemDataEncoded));
             itemEditando = item;
@@ -558,6 +612,28 @@
         document.getElementById('modalEditar').addEventListener('click', function(e) {
             if (e.target === this) cerrarModal();
         });
+
+// Inicializar fechas y botones rápidos
+const hoyISO = new Date().toISOString().slice(0, 10);
+document.getElementById('fechaDesde').value = hoyISO;
+document.getElementById('fechaHasta').value = hoyISO;
+
+document.getElementById('fechaDesde').addEventListener('change', cargarItems);
+document.getElementById('fechaHasta').addEventListener('change', cargarItems);
+
+document.getElementById('btnHoy').addEventListener('click', () => {
+    document.getElementById('fechaDesde').value = hoyISO;
+    document.getElementById('fechaHasta').value = hoyISO;
+    cargarItems();
+});
+
+document.getElementById('btnSemana').addEventListener('click', () => {
+    const hace7 = new Date();
+    hace7.setDate(hace7.getDate() - 6);
+    document.getElementById('fechaDesde').value = hace7.toISOString().slice(0, 10);
+    document.getElementById('fechaHasta').value = hoyISO;
+    cargarItems();
+});
 
         // Cargar al inicio
         cargarItems();
