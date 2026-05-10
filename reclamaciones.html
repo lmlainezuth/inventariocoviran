@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Reclamaciones · IZTIETA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+<style>
+  :root {
+    --verde: #1D9E75;
+    --verde-oscuro: #173404;
+    --fondo: #F1EFE8;
+    --gris-texto: #888780;
+    --gris-oscuro: #444441;
+    --rojo: #D14343;
+    --naranja: #E0A823;
+    --borde: #D3D1C7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--fondo);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--verde-oscuro);
+    -webkit-tap-highlight-color: transparent;
+  }
+  body { padding-bottom: 80px; }
+  header {
+    background: var(--verde);
+    color: white;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { font-size: 17px; font-weight: 700; flex: 1; }
+  .btn-back, .btn-header {
+    background: transparent;
+    border: 0;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .btn-header { font-size: 14px; font-weight: 600; }
+  main { padding: 16px; max-width: 720px; margin: 0 auto; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 14px;
+    border: 0.5px solid var(--borde);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  /* ---------- LISTA ---------- */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--gris-texto);
+  }
+  .empty .big-icon { font-size: 56px; margin-bottom: 12px; }
+  .empty h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--verde-oscuro); }
+  .empty p { font-size: 13px; }
+
+  .claim-card {
+    background: white;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 0.5px solid var(--borde);
+    cursor: pointer;
+    transition: transform 0.05s;
+  }
+  .claim-card:active { transform: scale(0.99); }
+  .claim-card .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .claim-card .supplier {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--verde-oscuro);
+  }
+  .claim-card .date {
+    font-size: 11px;
+    color: var(--gris-texto);
+  }
+  .claim-card .meta {
+    font-size: 12px;
+    color: var(--gris-texto);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .claim-card .meta span {
+    background: var(--fondo);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .claim-card .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--borde);
+    font-size: 12px;
+  }
+  .badge {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-pendiente { background: #FEF3C7; color: #92400E; }
+  .badge-abonado   { background: #D1FAE5; color: #065F46; }
+  .badge-mixto     { background: #DBEAFE; color: #1E40AF; }
+
+  /* ---------- FORM ---------- */
+  .seccion-titulo {
+    font-size: 11px;
+    color: var(--gris-texto);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    padding: 0 4px;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+    color: var(--gris-texto);
+    font-weight: 600;
+  }
+  input, textarea, select {
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    padding: 9px 10px;
+    font-size: 14px;
+    background: var(--fondo);
+    color: var(--verde-oscuro);
+    width: 100%;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: 2px solid var(--verde);
+    border-color: var(--verde);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  .row-fields { display: flex; gap: 8px; }
+  .row-fields > label { flex: 1; }
+
+  /* Item card */
+  .item-card {
+    background: white;
+    border: 0.5px solid var(--borde);
+    border-left: 3px solid var(--verde);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+  }
+  .item-card .item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .item-card .item-num {
+    font-size: 12px;
+    color: var(--gris-texto);
+    font-weight: 700;
+  }
+  .btn-eliminar-item {
+    background: #FEF2F2;
+    color: var(--rojo);
+    border: 1px solid #FECACA;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .estado-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .estado-toggle {
+    flex: 1;
+    display: flex;
+    background: var(--fondo);
+    border-radius: 6px;
+    padding: 3px;
+    border: 1px solid var(--borde);
+  }
+  .estado-toggle button {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    padding: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--gris-texto);
+  }
+  .estado-toggle button.activo-pend {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+  .estado-toggle button.activo-abon {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  /* Botones */
+  button.primary {
+    width: 100%;
+    background: var(--verde);
+    color: white;
+    border: 0;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.primary:disabled { background: #aaa; cursor: not-allowed; }
+  button.outline {
+    width: 100%;
+    background: white;
+    color: var(--verde);
+    border: 1.5px dashed var(--verde);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.outline-rojo {
+    width: 100%;
+    background: white;
+    color: var(--rojo);
+    border: 1.5px solid #FCA5A5;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .fab-nueva {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--verde);
+    color: white;
+    border: 0;
+    font-size: 28px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 5;
+  }
+
+  /* Mensajes / errores */
+  .error-banner {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #991B1B;
+    font-size: 13px;
+  }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--verde-oscuro);
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  /* Spinner */
+  .center-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 64px 16px;
+    text-align: center;
+  }
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(29, 158, 117, 0.2);
+    border-top-color: var(--verde);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- SCANNER ---------- */
+  .ean-row { display: flex; gap: 6px; align-items: stretch; flex: 1; }
+  .ean-row > label { flex: 1; }
+  .btn-scan {
+    background: var(--verde);
+    color: white;
+    border: 0;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 18px;
+    cursor: pointer;
+    align-self: flex-end;
+    height: 38px;
+    flex-shrink: 0;
+  }
+  .scanner-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+  }
+  .scanner-overlay header {
+    background: rgba(0,0,0,0.6);
+    position: static;
+  }
+  .scanner-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+  }
+  .scanner-viewport > video,
+  .scanner-viewport > canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+  .scanner-marco {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 320px;
+    height: 100px;
+    border: 2px solid var(--verde);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
+    pointer-events: none;
+  }
+  .scanner-msg {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 13px;
+    background: rgba(0,0,0,0.7);
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="btn-back" id="btnAtras" aria-label="Volver">←</button>
+  <h1 id="tituloHeader">Reclamaciones</h1>
+  <button class="btn-header" id="btnAccionHeader" style="display:none"></button>
+</header>
+
+<main id="app"></main>
+
+<script>
+// ===========================================
+// CONFIG
+// ===========================================
+const SUPABASE_URL = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let storeCode = localStorage.getItem('currentStore');
+
+// ===========================================
+// ESTADO
+// ===========================================
+const VISTAS = {
+  LISTA:    'LISTA',
+  NUEVA:    'NUEVA',
+  DETALLE:  'DETALLE',
+  CARGANDO: 'CARGANDO'
+};
+
+let state = {
+  vista: VISTAS.CARGANDO,
+  claims: [],            // lista de reclamaciones (cabecera + items resumidos)
+  reclamacionActual: null, // cabecera + items en NUEVA o DETALLE
+  error: null,
+  guardando: false
+};
+
+// ===========================================
+// AUTH
+// ===========================================
+async function comprobarAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    window.location.href = 'login.html';
+    return false;
+  }
+  storeCode = localStorage.getItem('currentStore');
+  if (!storeCode) {
+    alert('No has seleccionado tienda.');
+    window.location.href = 'login.html';
+    return false;
+  }
+  return true;
+}
+
+// ===========================================
+// RENDER PRINCIPAL
+// ===========================================
+const $ = (id) => document.getElementById(id);
+const app = $('app');
+
+function setVista(nueva, patch = {}) {
+  state = { ...state, vista: nueva, ...patch };
+  render();
+}
+
+function render() {
+  // Header
+  const titulos = {
+    LISTA:    'Reclamaciones',
+    NUEVA:    'Nueva reclamación',
+    DETALLE:  'Detalle reclamación',
+    CARGANDO: 'Cargando...'
+  };
+  $('tituloHeader').textContent = titulos[state.vista];
+  const accion = $('btnAccionHeader');
+  accion.style.display = 'none';
+  accion.onclick = null;
+
+  switch (state.vista) {
+    case VISTAS.LISTA:    return renderLista();
+    case VISTAS.NUEVA:    return renderForm('nueva');
+    case VISTAS.DETALLE:  return renderForm('detalle');
+    case VISTAS.CARGANDO: return renderCargando();
+  }
+}
+
+// -------- LISTA --------
+function renderLista() {
+  if (!state.claims.length) {
+    app.innerHTML = `
+      <div class="empty">
+        <div class="big-icon">📋</div>
+        <h2>Sin reclamaciones</h2>
+        <p>Pulsa el botón <strong>+</strong> para crear la primera.</p>
+      </div>
+      <button class="fab-nueva" id="fabNueva" aria-label="Nueva reclamación">+</button>
+    `;
+    $('fabNueva').onclick = abrirNueva;
+    return;
+  }
+
+  const cards = state.claims.map(c => {
+    const total = c.items_count || 0;
+    const pend  = c.items_pendientes || 0;
+    const abon  = c.items_abonados || 0;
+    let badge;
+    if (pend === 0 && abon > 0) badge = `<span class="badge badge-abonado">Abonada</span>`;
+    else if (abon === 0)        badge = `<span class="badge badge-pendiente">Pendiente</span>`;
+    else                        badge = `<span class="badge badge-mixto">Parcial · ${abon}/${total}</span>`;
+
+    const meta = [];
+    if (c.pedido_venta)   meta.push(`Venta: ${escapeHtml(c.pedido_venta)}`);
+    if (c.pedido_albaran) meta.push(`Albarán: ${escapeHtml(c.pedido_albaran)}`);
+
+    return `
+      <div class="claim-card" data-id="${c.id}">
+        <div class="top">
+          <div class="supplier">${escapeHtml(c.supplier || 'Sin proveedor')}</div>
+          <div class="date">${formatDate(c.claim_date)}</div>
+        </div>
+        <div class="meta">
+          ${meta.map(m => `<span>${m}</span>`).join('') || '<span style="visibility:hidden">·</span>'}
+        </div>
+        <div class="footer">
+          <span>${total} producto${total === 1 ? '' : 's'}</span>
+          ${badge}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  app.innerHTML = `<div class="stack">${cards}</div>
+    <button class="fab-nueva" id="fabNueva" aria-label="Nueva reclamación">+</button>`;
+
+  document.querySelectorAll('.claim-card').forEach(c => {
+    c.onclick = () => abrirDetalle(c.dataset.id);
+  });
+  $('fabNueva').onclick = abrirNueva;
+}
+
+// -------- FORM (nueva o detalle) --------
+function renderForm(modo) {
+  const r = state.reclamacionActual;
+  if (!r) {
+    app.innerHTML = `<div class="error-banner">No se pudo cargar la reclamación.</div>`;
+    return;
+  }
+
+  const cabecera = `
+    <div class="seccion-titulo">Cabecera</div>
+    <div class="card">
+      <div class="stack" style="gap:10px">
+        <label>Proveedor
+          <input data-cab="supplier" value="${escapeAttr(r.supplier ?? '')}" placeholder="Coviran, ElPozo...">
+        </label>
+        <div class="row-fields">
+          <label>Pedido venta
+            <input data-cab="pedido_venta" value="${escapeAttr(r.pedido_venta ?? '')}" placeholder="opcional">
+          </label>
+          <label>Pedido albarán
+            <input data-cab="pedido_albaran" value="${escapeAttr(r.pedido_albaran ?? '')}" placeholder="opcional">
+          </label>
+        </div>
+        <label>Fecha
+          <input type="date" data-cab="claim_date" value="${escapeAttr(r.claim_date ?? '')}">
+        </label>
+        <label>Notas generales
+          <textarea data-cab="notes" placeholder="opcional">${escapeHtml(r.notes ?? '')}</textarea>
+        </label>
+      </div>
+    </div>
+  `;
+
+  const items = (r.items && r.items.length) ? r.items : [];
+  const itemsHtml = items.map((it, i) => renderItemCard(it, i)).join('');
+
+  const errorHtml = state.error
+    ? `<div class="error-banner">⚠️ ${escapeHtml(state.error)}</div>` : '';
+
+  const btnEliminar = (modo === 'detalle' && r.id)
+    ? `<button class="outline-rojo" id="btnEliminar">🗑 Eliminar reclamación</button>` : '';
+
+  app.innerHTML = `
+    <div class="stack">
+      ${cabecera}
+      <div class="seccion-titulo">Productos reclamados (${items.length})</div>
+      ${itemsHtml}
+      <button class="outline" id="btnAddItem">+ Añadir producto</button>
+      ${errorHtml}
+      <button class="primary" id="btnGuardar" ${state.guardando ? 'disabled' : ''}>
+        ${state.guardando ? 'Guardando...' : '💾 Guardar reclamación'}
+      </button>
+      ${btnEliminar}
+    </div>
+  `;
+
+  // Listeners cabecera
+  document.querySelectorAll('[data-cab]').forEach(el => {
+    el.oninput = (e) => {
+      const campo = e.target.dataset.cab;
+      state.reclamacionActual[campo] = e.target.value;
+    };
+  });
+
+  // Listeners items
+  document.querySelectorAll('[data-item]').forEach(el => {
+    el.oninput = onCampoItem;
+  });
+  document.querySelectorAll('[data-eliminar-item]').forEach(b => {
+    b.onclick = () => eliminarItem(parseInt(b.dataset.eliminarItem));
+  });
+  document.querySelectorAll('[data-estado-item]').forEach(b => {
+    b.onclick = () => cambiarEstadoItem(
+      parseInt(b.dataset.estadoItem),
+      b.dataset.estadoValor
+    );
+  });
+  document.querySelectorAll('[data-scan-item]').forEach(b => {
+    b.onclick = () => abrirScanner(parseInt(b.dataset.scanItem));
+  });
+
+  $('btnAddItem').onclick = añadirItem;
+  $('btnGuardar').onclick = guardarReclamacion;
+  if ($('btnEliminar')) $('btnEliminar').onclick = eliminarReclamacion;
+}
+
+function renderItemCard(item, idx) {
+  const estado = item.status || 'pendiente';
+  return `
+    <div class="item-card">
+      <div class="item-head">
+        <span class="item-num">Producto #${idx + 1}</span>
+        <button class="btn-eliminar-item" data-eliminar-item="${idx}">✕ Quitar</button>
+      </div>
+      <label>Nombre del producto *
+        <input data-item="${idx}" data-campo="product_name"
+               value="${escapeAttr(item.product_name ?? '')}"
+               placeholder="ej. Huevos camperos docena">
+      </label>
+      <div class="row-fields">
+        <div class="ean-row">
+          <label>Código barras (EAN)
+            <input data-item="${idx}" data-campo="product_code"
+                   value="${escapeAttr(item.product_code ?? '')}" placeholder="opcional">
+          </label>
+          <button type="button" class="btn-scan" data-scan-item="${idx}" aria-label="Escanear código">📷</button>
+        </div>
+        <label style="flex:1">Código interno
+          <input data-item="${idx}" data-campo="internal_code"
+                 value="${escapeAttr(item.internal_code ?? '')}" placeholder="opcional">
+        </label>
+      </div>
+      <div class="row-fields">
+        <label>Facturado
+          <input type="text" inputmode="decimal"
+                 data-item="${idx}" data-campo="quantity_invoiced"
+                 value="${item.quantity_invoiced ?? 0}">
+        </label>
+        <label>Servido
+          <input type="text" inputmode="decimal"
+                 data-item="${idx}" data-campo="quantity_served"
+                 value="${item.quantity_served ?? 0}">
+        </label>
+        <label>Cantidades dañadas
+          <input type="text" inputmode="decimal"
+                 data-item="${idx}" data-campo="quantity_damaged"
+                 value="${item.quantity_damaged ?? 0}">
+        </label>
+      </div>
+      <div class="estado-row">
+        <div class="estado-toggle">
+          <button data-estado-item="${idx}" data-estado-valor="pendiente"
+                  class="${estado === 'pendiente' ? 'activo-pend' : ''}">Pendiente</button>
+          <button data-estado-item="${idx}" data-estado-valor="abonado"
+                  class="${estado === 'abonado' ? 'activo-abon' : ''}">Abonado</button>
+        </div>
+      </div>
+      <label>Observaciones
+        <textarea data-item="${idx}" data-campo="observations"
+                  placeholder="ej. No llegó el producto pero lo cobraron / 4 unidades rotas...">${escapeHtml(item.observations ?? '')}</textarea>
+      </label>
+    </div>
+  `;
+}
+
+// -------- CARGANDO --------
+function renderCargando() {
+  app.innerHTML = `<div class="center-col"><div class="spinner"></div></div>`;
+}
+
+// ===========================================
+// EDICIÓN DE ITEMS
+// ===========================================
+function onCampoItem(e) {
+  const i = parseInt(e.target.dataset.item);
+  const campo = e.target.dataset.campo;
+  const valor = e.target.value;
+  const item = { ...state.reclamacionActual.items[i] };
+
+  if (['quantity_invoiced', 'quantity_served', 'quantity_damaged'].includes(campo)) {
+    const num = parseFloat(String(valor).replace(',', '.'));
+    item[campo] = isNaN(num) ? 0 : num;
+  } else {
+    item[campo] = valor;
+  }
+  state.reclamacionActual.items[i] = item;
+  // No re-render para no perder el foco
+}
+
+function cambiarEstadoItem(idx, valor) {
+  state.reclamacionActual.items[idx].status = valor;
+  render();
+}
+
+function añadirItem() {
+  state.reclamacionActual.items.push({
+    product_code: '',
+    internal_code: '',
+    product_name: '',
+    quantity_invoiced: 0,
+    quantity_served: 0,
+    quantity_damaged: 0,
+    status: 'pendiente',
+    observations: ''
+  });
+  render();
+}
+
+function eliminarItem(idx) {
+  if (state.reclamacionActual.items.length === 1) {
+    alert('La reclamación debe tener al menos un producto.');
+    return;
+  }
+  if (!confirm('¿Quitar este producto de la reclamación?')) return;
+  state.reclamacionActual.items.splice(idx, 1);
+  render();
+}
+
+// ===========================================
+// FLUJOS
+// ===========================================
+function abrirNueva() {
+  state.reclamacionActual = {
+    id: null,
+    store_code: storeCode,
+    supplier: '',
+    pedido_venta: '',
+    pedido_albaran: '',
+    claim_date: hoyISO(),
+    notes: '',
+    items: [{
+      product_code: '',
+      internal_code: '',
+      product_name: '',
+      quantity_invoiced: 0,
+      quantity_served: 0,
+      quantity_damaged: 0,
+      status: 'pendiente',
+      observations: ''
+    }]
+  };
+  setVista(VISTAS.NUEVA, { error: null });
+}
+
+async function abrirDetalle(id) {
+  setVista(VISTAS.CARGANDO);
+  try {
+    const { data: cab, error: e1 } = await sb
+      .from('claims').select('*').eq('id', id).single();
+    if (e1) throw e1;
+    const { data: items, error: e2 } = await sb
+      .from('claim_items').select('*').eq('claim_id', id).order('created_at');
+    if (e2) throw e2;
+
+    state.reclamacionActual = {
+      ...cab,
+      items: (items || []).map(it => ({
+        id: it.id,
+        product_code: it.product_code ?? '',
+        internal_code: it.internal_code ?? '',
+        product_name: it.product_name ?? '',
+        quantity_invoiced: Number(it.quantity_invoiced ?? 0),
+        quantity_served: Number(it.quantity_served ?? 0),
+        quantity_damaged: Number(it.quantity_damaged ?? 0),
+        status: it.status ?? 'pendiente',
+        observations: it.observations ?? ''
+      }))
+    };
+    setVista(VISTAS.DETALLE, { error: null });
+  } catch (e) {
+    console.error(e);
+    alert('Error cargando reclamación: ' + e.message);
+    cargarLista();
+  }
+}
+
+async function cargarLista() {
+  setVista(VISTAS.CARGANDO);
+  try {
+    const { data: cabs, error: e1 } = await sb
+      .from('claims')
+      .select('*')
+      .eq('store_code', storeCode)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (e1) throw e1;
+
+    const ids = (cabs || []).map(c => c.id);
+    let resumen = {};
+    if (ids.length) {
+      const { data: items, error: e2 } = await sb
+        .from('claim_items')
+        .select('claim_id,status')
+        .in('claim_id', ids);
+      if (e2) throw e2;
+      for (const it of items || []) {
+        if (!resumen[it.claim_id]) resumen[it.claim_id] = { total: 0, pend: 0, abon: 0 };
+        resumen[it.claim_id].total++;
+        if (it.status === 'abonado') resumen[it.claim_id].abon++;
+        else resumen[it.claim_id].pend++;
+      }
+    }
+    const claims = (cabs || []).map(c => ({
+      ...c,
+      items_count: resumen[c.id]?.total || 0,
+      items_pendientes: resumen[c.id]?.pend || 0,
+      items_abonados: resumen[c.id]?.abon || 0
+    }));
+    setVista(VISTAS.LISTA, { claims, error: null });
+  } catch (e) {
+    console.error(e);
+    setVista(VISTAS.LISTA, { claims: [], error: e.message });
+  }
+}
+
+// ===========================================
+// GUARDAR / ELIMINAR
+// ===========================================
+async function guardarReclamacion() {
+  const r = state.reclamacionActual;
+
+  // Validar al menos un item con nombre
+  const itemsValidos = r.items.filter(i => (i.product_name || '').trim());
+  if (!itemsValidos.length) {
+    setVista(state.vista, { error: 'Cada producto debe tener al menos un nombre.' });
+    return;
+  }
+
+  state.guardando = true;
+  state.error = null;
+  render();
+
+  try {
+    let claimId = r.id;
+    const cabPayload = {
+      store_code: r.store_code,
+      supplier: (r.supplier || '').trim() || null,
+      pedido_venta: (r.pedido_venta || '').trim() || null,
+      pedido_albaran: (r.pedido_albaran || '').trim() || null,
+      claim_date: r.claim_date || hoyISO(),
+      notes: (r.notes || '').trim() || null
+    };
+
+    if (claimId) {
+      // UPDATE cabecera
+      const { error: eUpd } = await sb.from('claims').update(cabPayload).eq('id', claimId);
+      if (eUpd) throw eUpd;
+    } else {
+      // INSERT cabecera
+      const { data: ins, error: eIns } = await sb.from('claims').insert(cabPayload)
+        .select('id').single();
+      if (eIns) throw eIns;
+      claimId = ins.id;
+    }
+
+    // Items: estrategia simple — borrar todos y reinsertar.
+    // Como CASCADE está activado, esto es seguro.
+    const { error: eDel } = await sb.from('claim_items').delete().eq('claim_id', claimId);
+    if (eDel) throw eDel;
+
+    const itemsPayload = itemsValidos.map(i => ({
+      claim_id: claimId,
+      product_code: (i.product_code || '').trim() || null,
+      internal_code: (i.internal_code || '').trim() || null,
+      product_name: (i.product_name || '').trim(),
+      quantity_invoiced: Number(i.quantity_invoiced) || 0,
+      quantity_served: Number(i.quantity_served) || 0,
+      quantity_damaged: Number(i.quantity_damaged) || 0,
+      status: i.status === 'abonado' ? 'abonado' : 'pendiente',
+      observations: (i.observations || '').trim() || null
+    }));
+    const { error: eInsItems } = await sb.from('claim_items').insert(itemsPayload);
+    if (eInsItems) throw eInsItems;
+
+    state.guardando = false;
+    toast(`✓ Reclamación guardada (${itemsValidos.length} productos)`);
+    setTimeout(() => { cargarLista(); }, 600);
+
+  } catch (e) {
+    console.error(e);
+    state.guardando = false;
+    setVista(state.vista, { error: e.message || 'Error desconocido' });
+  }
+}
+
+async function eliminarReclamacion() {
+  const r = state.reclamacionActual;
+  if (!r?.id) return;
+  if (!confirm('¿Eliminar esta reclamación y todos sus productos? No se puede deshacer.')) return;
+  try {
+    const { error } = await sb.from('claims').delete().eq('id', r.id);
+    if (error) throw error;
+    toast('✓ Reclamación eliminada');
+    setTimeout(() => { cargarLista(); }, 500);
+  } catch (e) {
+    console.error(e);
+    alert('Error eliminando: ' + e.message);
+  }
+}
+
+// ===========================================
+// HELPERS
+// ===========================================
+function hoyISO() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+function formatDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ===========================================
+// BOTÓN ATRÁS
+// ===========================================
+$('btnAtras').onclick = () => {
+  if (state.vista === VISTAS.LISTA) {
+    window.location.href = 'index.html';
+    return;
+  }
+  if (state.vista === VISTAS.NUEVA || state.vista === VISTAS.DETALLE) {
+    if (confirm('¿Descartar cambios y volver?')) {
+      cargarLista();
+    }
+  }
+};
+
+// ===========================================
+// SCANNER QUAGGA
+// ===========================================
+let scannerActivo = false;
+let scannerItemIdx = null;
+
+function abrirScanner(itemIdx) {
+  if (scannerActivo) return;
+  if (typeof Quagga === 'undefined') {
+    alert('No se pudo cargar el escáner. Revisa la conexión.');
+    return;
+  }
+  scannerItemIdx = itemIdx;
+  scannerActivo = true;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'scanner-overlay';
+  overlay.id = 'scannerOverlay';
+  overlay.innerHTML = `
+    <header>
+      <button class="btn-back" id="btnCerrarScanner">←</button>
+      <h1>Escanear código</h1>
+    </header>
+    <div class="scanner-viewport" id="scannerViewport">
+      <div class="scanner-marco"></div>
+      <div class="scanner-msg" id="scannerMsg">Apunta al código de barras</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  $('btnCerrarScanner').onclick = cerrarScanner;
+
+  Quagga.init({
+    inputStream: {
+      type: 'LiveStream',
+      target: $('scannerViewport'),
+      constraints: {
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    },
+    locator: { patchSize: 'medium', halfSample: true },
+    numOfWorkers: navigator.hardwareConcurrency || 2,
+    decoder: {
+      readers: ['ean_reader', 'ean_8_reader', 'code_128_reader', 'upc_reader', 'upc_e_reader']
+    },
+    locate: true
+  }, (err) => {
+    if (err) {
+      console.error('Quagga init error:', err);
+      const msg = $('scannerMsg');
+      if (msg) msg.textContent = 'No se pudo acceder a la cámara';
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(onCodigoDetectado);
+}
+
+function onCodigoDetectado(result) {
+  const codigo = result?.codeResult?.code;
+  if (!codigo || !scannerActivo) return;
+
+  if (navigator.vibrate) navigator.vibrate(80);
+
+  if (scannerItemIdx !== null && state.reclamacionActual?.items[scannerItemIdx]) {
+    state.reclamacionActual.items[scannerItemIdx].product_code = codigo;
+  }
+  cerrarScanner();
+  render();
+  toast(`✓ Código: ${codigo}`);
+}
+
+function cerrarScanner() {
+  if (!scannerActivo) return;
+  try {
+    Quagga.offDetected(onCodigoDetectado);
+    Quagga.stop();
+  } catch (e) { console.warn('Error parando Quagga:', e); }
+  const ov = $('scannerOverlay');
+  if (ov) ov.remove();
+  scannerActivo = false;
+  scannerItemIdx = null;
+}
+
+// ===========================================
+// INIT
+// ===========================================
+(async () => {
+  if (!(await comprobarAuth())) return;
+  cargarLista();
+})();
+</script>
+</body>
+</html>
