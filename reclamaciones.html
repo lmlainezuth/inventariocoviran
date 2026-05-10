@@ -122,6 +122,45 @@
   .badge-abonado   { background: #D1FAE5; color: #065F46; }
   .badge-mixto     { background: #DBEAFE; color: #1E40AF; }
 
+  /* ---------- FILTROS ---------- */
+  .filtros {
+    background: white;
+    border: 0.5px solid var(--borde);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .filtros .row-fields { display: flex; gap: 8px; }
+  .filtros select {
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: var(--fondo);
+    color: var(--verde-oscuro);
+    width: 100%;
+    font-family: inherit;
+  }
+  .filtros .filtro-info {
+    font-size: 11px;
+    color: var(--gris-texto);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2px;
+  }
+  .btn-limpiar {
+    background: transparent;
+    border: 0;
+    color: var(--verde);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+
   /* ---------- FORM ---------- */
   .seccion-titulo {
     font-size: 11px;
@@ -414,7 +453,9 @@ let state = {
   claims: [],            // lista de reclamaciones (cabecera + items resumidos)
   reclamacionActual: null, // cabecera + items en NUEVA o DETALLE
   error: null,
-  guardando: false
+  guardando: false,
+  filtroProveedor: '',
+  filtroEstado: 'todos'  // 'todos' | 'pendiente' | 'abonado'
 };
 
 // ===========================================
@@ -469,6 +510,43 @@ function render() {
 
 // -------- LISTA --------
 function renderLista() {
+  // Proveedores únicos para el select (de los claims cargados)
+  const proveedores = [...new Set(
+    state.claims.map(c => (c.supplier || '').trim()).filter(Boolean)
+  )].sort();
+
+  // Aplicar filtros
+  const filtrados = state.claims.filter(c => {
+    if (state.filtroProveedor && (c.supplier || '') !== state.filtroProveedor) return false;
+    if (state.filtroEstado === 'pendiente' && (c.items_pendientes || 0) === 0) return false;
+    if (state.filtroEstado === 'abonado' && (c.items_pendientes || 0) > 0) return false;
+    return true;
+  });
+
+  const hayFiltros = !!state.filtroProveedor || state.filtroEstado !== 'todos';
+
+  const filtrosHtml = state.claims.length ? `
+    <div class="filtros">
+      <div class="row-fields">
+        <select id="fProveedor">
+          <option value="">Todos los proveedores</option>
+          ${proveedores.map(p => `
+            <option value="${escapeAttr(p)}" ${state.filtroProveedor === p ? 'selected' : ''}>${escapeHtml(p)}</option>
+          `).join('')}
+        </select>
+        <select id="fEstado">
+          <option value="todos"     ${state.filtroEstado === 'todos' ? 'selected' : ''}>Todos los estados</option>
+          <option value="pendiente" ${state.filtroEstado === 'pendiente' ? 'selected' : ''}>Con pendientes</option>
+          <option value="abonado"   ${state.filtroEstado === 'abonado' ? 'selected' : ''}>Todo abonado</option>
+        </select>
+      </div>
+      <div class="filtro-info">
+        <span>${filtrados.length} de ${state.claims.length}</span>
+        ${hayFiltros ? `<button class="btn-limpiar" id="btnLimpiar">Limpiar filtros</button>` : ''}
+      </div>
+    </div>
+  ` : '';
+
   if (!state.claims.length) {
     app.innerHTML = `
       <div class="empty">
@@ -482,7 +560,7 @@ function renderLista() {
     return;
   }
 
-  const cards = state.claims.map(c => {
+  const cards = filtrados.map(c => {
     const total = c.items_count || 0;
     const pend  = c.items_pendientes || 0;
     const abon  = c.items_abonados || 0;
@@ -512,13 +590,40 @@ function renderLista() {
     `;
   }).join('');
 
-  app.innerHTML = `<div class="stack">${cards}</div>
-    <button class="fab-nueva" id="fabNueva" aria-label="Nueva reclamación">+</button>`;
+  const sinResultadosHtml = (filtrados.length === 0 && hayFiltros) ? `
+    <div class="empty" style="padding: 30px 20px">
+      <div class="big-icon" style="font-size:36px">🔍</div>
+      <p>Ninguna reclamación cumple los filtros.</p>
+    </div>
+  ` : '';
+
+  app.innerHTML = `
+    <div class="stack">
+      ${filtrosHtml}
+      ${cards}
+      ${sinResultadosHtml}
+    </div>
+    <button class="fab-nueva" id="fabNueva" aria-label="Nueva reclamación">+</button>
+  `;
 
   document.querySelectorAll('.claim-card').forEach(c => {
     c.onclick = () => abrirDetalle(c.dataset.id);
   });
   $('fabNueva').onclick = abrirNueva;
+
+  if ($('fProveedor')) $('fProveedor').onchange = (e) => {
+    state.filtroProveedor = e.target.value;
+    render();
+  };
+  if ($('fEstado')) $('fEstado').onchange = (e) => {
+    state.filtroEstado = e.target.value;
+    render();
+  };
+  if ($('btnLimpiar')) $('btnLimpiar').onclick = () => {
+    state.filtroProveedor = '';
+    state.filtroEstado = 'todos';
+    render();
+  };
 }
 
 // -------- FORM (nueva o detalle) --------
