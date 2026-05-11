@@ -1186,8 +1186,32 @@ const expiryDate = document.getElementById('expiryDate').value || null;
   
     
     try {
-        const { data: existingProduct } = await supabaseClient.from('products').select('*').eq('code', currentCode).maybeSingle();
-        
+       let { data: existingProduct } = await supabaseClient
+    .from('products')
+    .select('*')
+    .eq('code', currentCode)
+    .maybeSingle();
+
+// Si no se encontró por code pero hay internal_code en el formulario,
+// intentar vincular el EAN escaneado al producto existente
+if (!existingProduct && internalCode) {
+    const { data: byInternal } = await supabaseClient
+        .from('products')
+        .select('*')
+        .eq('internal_code', internalCode)
+        .maybeSingle();
+
+    if (byInternal) {
+        if (confirm(`Ya existe un producto con código interno "${internalCode}":\n\n${byInternal.name}\n\n¿Vincular el código de barras escaneado (${currentCode}) a este producto?`)) {
+            const { error: linkErr } = await supabaseClient
+                .from('products')
+                .update({ code: currentCode })
+                .eq('id', byInternal.id);
+            if (linkErr) throw linkErr;
+            existingProduct = { ...byInternal, code: currentCode };
+        }
+    }
+}
         // Verificar si venimos desde la lista (URL tiene parámetro 'code')
         const urlParams = new URLSearchParams(window.location.search);
         const fromList = urlParams.has('code');
