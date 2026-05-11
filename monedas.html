@@ -701,6 +701,7 @@ let currentPhotoBase64 = null;
 const DETECTION_THRESHOLD = 5;
 let scanTimeout = null;
 let currentStockId = null;  // id del lote que se está editando
+let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
 
 
 // Inicializar cuando la página esté lista
@@ -710,7 +711,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
 
 // Gestión de tiendas
-let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
+currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
 
 async function showStoreName() {
     try {
