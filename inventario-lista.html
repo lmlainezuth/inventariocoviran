@@ -607,11 +607,9 @@ async function loadProducts() {
         
         const { data: stockData, error: stockError } = await supabaseClient
     .from('product_stock')
-    .select('product_code, store_code, quantity, min_quantity, max_quantity, purchase_price, public_price, batch_number, expiry_date, status')
-    .eq('store_code', currentStore)
+    .select('id, product_code, store_code, quantity, min_quantity, max_quantity, purchase_price, public_price, batch_number, expiry_date, status').eq('store_code', currentStore)
     .eq('status', 'activo')
     .or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
-        
         if (stockError) throw stockError;
         
         if (!stockData || stockData.length === 0) {
@@ -646,6 +644,7 @@ async function loadProducts() {
             lots.forEach(lot => {
                 inventory.push({
                     ...p,
+                    stock_id: lot.id,  
                     lot_quantity: lot.quantity,
                     lot_min: lot.min_quantity,
                     lot_max: lot.max_quantity,
@@ -729,8 +728,8 @@ async function loadProducts() {
             
             return `
                 <div class="product-item" style="border-left: 4px solid ${expiryBadge.bg === '#f3f4f6' ? '#d1d5db' : expiryBadge.color};">
-                    <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E';" onclick="viewProduct('${item.code}')">
-                    <div class="product-info" onclick="viewProduct('${item.code}')">
+                    <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E';" onclick="viewProduct('${item.code}', '${item.stock_id}')">
+                    <div class="product-info" onclick="viewProduct('${item.code}', '${item.stock_id}')">
                         <div class="product-name">${item.name}</div>
                         <div class="product-quantity">Cant: ${item.lot_quantity} ${item.unit || 'ud'} · ${batchDisplay}</div>
                         <div class="product-code">${item.code} ${item.internal_code ? '· Int: ' + item.internal_code : ''}</div>
@@ -784,11 +783,11 @@ function getExpiryBadge(expiryDate) {
         }
         
               
-        function viewProduct(code) {
-    // Redirigir a página de escaneo con el código
-    window.location.href = 'monedas.html?code=' + code;
-}
-        
+     function viewProduct(code, stockId) {
+    let url = 'monedas.html?code=' + encodeURIComponent(code);
+    if (stockId) url += '&stockId=' + encodeURIComponent(stockId);
+    window.location.href = url;
+}     
    async function deleteProduct(code, name) {
     if (!confirm(`⚠️ ¿Marcar "${name}" como caducado en ${currentStore}?\n\nDejará de aparecer en la lista pero no se borra de la BD.`)) {
         return;

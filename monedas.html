@@ -577,6 +577,11 @@
                             <label>Código Interno</label>
                             <input type="text" id="internalCode" placeholder="Ej: 401002">
                         </div>
+                        <!-- Selector de lote existente -->
+<div class="form-group" id="lotSelectorGroup" style="display:none;">
+    <label>Lote existente</label>
+    <select id="lotSelector"></select>
+</div>
                         <div class="form-row">
                             <div class="form-group" style="flex: 1;">
                                 <label>Nº Lote</label>
@@ -728,7 +733,7 @@ async function showStoreName() {
 
 // Verificar si viene un código en la URL
 const urlParams = new URLSearchParams(window.location.search);
-const codeFromUrl = urlParams.get('code');
+const stockIdFromUrl = urlParams.get('stockId');
 
 
 
@@ -741,7 +746,7 @@ const codeFromUrl = urlParams.get('code');
             document.getElementById('scannedCode').textContent = codeFromUrl;
             document.getElementById('result').classList.add('show');
             document.getElementById('scannerContainer').style.display = 'none';
-            loadProductData(codeFromUrl);
+            loadProductData(codeFromUrl, stockIdFromUrl);
         } else {
             startScanner();
         }
@@ -1011,7 +1016,7 @@ function playBeep() {
     oscillator.stop(audioContext.currentTime + 0.1);
 }
 
-async function loadProductData(code) {
+async function loadProductData(code, preferredStockId = null) {
     try {
         let { data: existingProduct, error } = await supabaseClient
             .from('products')
@@ -1021,7 +1026,6 @@ async function loadProductData(code) {
 
         if (error) throw error;
 
-        // Si no encontró por código de barras, buscar por código interno
         if (!existingProduct) {
             const { data: byInternal } = await supabaseClient
                 .from('products')
@@ -1035,8 +1039,6 @@ async function loadProductData(code) {
             }
         }
         
-        // Si tampoco encontró, intentar con el patrón Coviran:
-        // EAN 8422823XXXXXX → internal_code = "4" + dígitos 8-12
         if (!existingProduct && code.startsWith('8422823') && code.length === 13) {
             const implied = '4' + code.substring(7, 12);
             const { data: byImplied } = await supabaseClient
@@ -1057,40 +1059,81 @@ async function loadProductData(code) {
         document.getElementById('scannerContainer').style.display = 'none';
         
         if (existingProduct) {
-            const { data: stockData } = await supabaseClient
-                .from('product_stock')
-                .select('*')
-                .eq('product_code', existingProduct.code)
-                .eq('store_code', currentStore)
-                .maybeSingle();
-            
             document.getElementById('productName').value = existingProduct.name;
             document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
             document.getElementById('category').value = existingProduct.category || '';
             document.getElementById('brand').value = existingProduct.brand || '';
             document.getElementById('internalCode').value = existingProduct.internal_code || '';
-            
-            if (stockData) {
-                currentStockId = stockData.id;
-                document.getElementById('productQuantity').value = stockData.quantity;
-                document.getElementById('minQuantity').value = stockData.min_quantity || 0;
-                document.getElementById('maxQuantity').value = stockData.max_quantity || '';
-                document.getElementById('purchasePrice').value = stockData.purchase_price || existingProduct.purchase_price || '';
-                document.getElementById('publicPrice').value = stockData.public_price > 0 ? stockData.public_price : (existingProduct.public_price || '');
-                document.getElementById('batchNumber').value = stockData.batch_number || '';
-                document.getElementById('expiryDate').value = stockData.expiry_date || '';
-            } else {
-                document.getElementById('productQuantity').value = 0;
-                document.getElementById('minQuantity').value = 0;
-                document.getElementById('maxQuantity').value = '';
-                document.getElementById('purchasePrice').value = existingProduct.purchase_price || '';
-                document.getElementById('publicPrice').value = existingProduct.public_price || '';
-            }
-            
             if (existingProduct.photo) {
                 document.getElementById('productPhoto').src = existingProduct.photo;
                 document.getElementById('productPhoto').style.display = 'block';
                 currentPhotoBase64 = existingProduct.photo;
+            }
+
+            const hoy = new Date().toISOString().split('T')[0];
+            const { data: allLots } = await supabaseClient
+                .from('product_stock')
+                .select('*')
+                .eq('product_code', existingProduct.code)
+                .eq('store_code', currentStore)
+                .eq('status', 'activo')
+                .or('expiry_date.is.null,expiry_date.gte.' + hoy)
+                .order('expiry_date', { ascending: true, nullsFirst: false });
+
+            const selectorGroup = document.getElementById('lotSelectorGroup');
+            const selector = document.getElementById('lotSelector');
+
+            const rellenarConLote = (lot) => {
+                if (!lot) {
+                    currentStockId = null;
+                    document.getElementById('productQuantity').value = 0;
+                    document.getElementById('minQuantity').value = 0;
+                    document.getElementById('maxQuantity').value = '';
+                    document.getElementById('purchasePrice').value = existingProduct.purchase_price || '';
+                    document.getElementById('publicPrice').value = existingProduct.public_price || '';
+                    document.getElementById('batchNumber').value = '';
+                    document.getElementById('expiryDate').value = '';
+                    return;
+                }
+                currentStockId = lot.id;
+                document.getElementById('productQuantity').value = lot.quantity;
+                document.getElementById('minQuantity').value = lot.min_quantity || 0;
+                document.getElementById('maxQuantity').value = lot.max_quantity || '';
+                document.getElementById('purchasePrice').value = lot.purchase_price || existingProduct.purchase_price || '';
+                document.getElementById('publicPrice').value = lot.public_price > 0 ? lot.public_price : (existingProduct.public_price || '');
+                document.getElementById('batchNumber').value = lot.batch_number || '';
+                document.getElementById('expiryDate').value = lot.expiry_date || '';
+            };
+
+            if (allLots && allLots.length > 0) {
+                selector.innerHTML = '<option value="__new__">➕ Nuevo lote</option>';
+                allLots.forEach(lot => {
+                    const fecha = lot.expiry_date 
+                        ? new Date(lot.expiry_date + 'T00:00:00').toLocaleDateString('es-ES')
+                        : 'Sin fecha';
+                    const opt = document.createElement('option');
+                    opt.value = lot.id;
+                    opt.textContent = `${lot.batch_number || '(sin lote)'} · cad ${fecha} · ${lot.quantity} ud`;
+                    selector.appendChild(opt);
+                });
+                selectorGroup.style.display = 'block';
+
+                selector.onchange = function() {
+                    if (this.value === '__new__') {
+                        rellenarConLote(null);
+                    } else {
+                        rellenarConLote(allLots.find(l => l.id === this.value));
+                    }
+                };
+
+                const lotToSelect = preferredStockId 
+                    ? (allLots.find(l => l.id === preferredStockId) || allLots[0]) 
+                    : allLots[0];
+                selector.value = lotToSelect.id;
+                rellenarConLote(lotToSelect);
+            } else {
+                selectorGroup.style.display = 'none';
+                rellenarConLote(null);
             }
             
             document.getElementById('result').innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
@@ -1107,6 +1150,7 @@ async function loadProductData(code) {
         document.getElementById('productName').focus();
     }
 }
+
 async function uploadImageToSupabase(file) {
     try {
         const fileExt = file.name.split('.').pop();
@@ -1227,6 +1271,7 @@ if (!existingProduct && internalCode) {
         // Verificar si venimos desde la lista (URL tiene parámetro 'code')
         const urlParams = new URLSearchParams(window.location.search);
         const fromList = urlParams.has('code');
+        const stockIdFromUrl = urlParams.get('stockId');
         
         if (existingProduct) {
     const selectedStore = currentStore;
