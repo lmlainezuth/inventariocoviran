@@ -1011,35 +1011,41 @@ function playBeep() {
 }
 
 async function loadProductData(code) {
+    alert('1) Buscando producto con code = ' + code);
     try {
- let { data: existingProduct, error } = await supabaseClient
-    .from('products')
-    .select('*')
-    .eq('code', code)
-    .maybeSingle();
+        let { data: existingProduct, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('code', code)
+            .maybeSingle();
 
-if (error) throw error;
+        alert('2) Resultado consulta por code:\n\nerror: ' + JSON.stringify(error) + '\n\nexistingProduct: ' + JSON.stringify(existingProduct));
 
-// Si no encontró por código de barras, buscar por código interno
-if (!existingProduct) {
-    const { data: byInternal, error: error2 } = await supabaseClient
-        .from('products')
-        .select('*')
-        .eq('internal_code', code)
-        .maybeSingle();
-    
-    if (byInternal) {
-        existingProduct = byInternal;
-        currentCode = byInternal.code; // ← importante: usar el code real del producto
-    }
-}
-        
         if (error) throw error;
+
+        if (!existingProduct) {
+            alert('3) No encontrado por code, buscando por internal_code...');
+            const { data: byInternal, error: error2 } = await supabaseClient
+                .from('products')
+                .select('*')
+                .eq('internal_code', code)
+                .maybeSingle();
+            
+            alert('4) Resultado por internal_code:\n\nerror: ' + JSON.stringify(error2) + '\n\nbyInternal: ' + JSON.stringify(byInternal));
+            
+            if (byInternal) {
+                existingProduct = byInternal;
+                currentCode = byInternal.code;
+            }
+        }
+        
+        alert('5) existingProduct final: ' + JSON.stringify(existingProduct));
         
         document.getElementById('scannerContainer').style.display = 'none';
         
         if (existingProduct) {
-            // Obtener el stock de la tienda actual
+            alert('6) Producto encontrado, rellenando formulario');
+            
             const selectedStore = currentStore;
             const { data: stockData } = await supabaseClient
                 .from('product_stock')
@@ -1048,15 +1054,13 @@ if (!existingProduct) {
                 .eq('store_code', selectedStore)
                 .maybeSingle();
             
-            // Cargar datos del producto
             document.getElementById('productName').value = existingProduct.name;
             document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
             document.getElementById('category').value = existingProduct.category || '';
             document.getElementById('brand').value = existingProduct.brand || '';
             
-            // Cargar datos del stock de la tienda
             if (stockData) {
-             currentStockId = stockData.id;   // ← AÑADIDO
+                currentStockId = stockData.id;
                 document.getElementById('productQuantity').value = stockData.quantity;
                 document.getElementById('minQuantity').value = stockData.min_quantity || 0;
                 document.getElementById('maxQuantity').value = stockData.max_quantity || '';
@@ -1065,7 +1069,6 @@ if (!existingProduct) {
                 document.getElementById('batchNumber').value = stockData.batch_number || '';
                 document.getElementById('expiryDate').value = stockData.expiry_date || '';
             } else {
-                // Si no hay stock en esta tienda, valores por defecto
                 document.getElementById('productQuantity').value = 0;
                 document.getElementById('minQuantity').value = 0;
                 document.getElementById('maxQuantity').value = '';
@@ -1073,9 +1076,8 @@ if (!existingProduct) {
                 document.getElementById('publicPrice').value = '';
             }
             
-             document.getElementById('internalCode').value = existingProduct.internal_code || '';
+            document.getElementById('internalCode').value = existingProduct.internal_code || '';
             if (existingProduct.photo) {
-               
                 document.getElementById('productPhoto').src = existingProduct.photo;
                 document.getElementById('productPhoto').style.display = 'block';
                 currentPhotoBase64 = existingProduct.photo;
@@ -1083,18 +1085,20 @@ if (!existingProduct) {
             
             document.getElementById('result').innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
         } else {
+            alert('7) NO encontrado, mostrando como nuevo');
             document.getElementById('result').innerHTML = `<div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>`;
         }
         
         document.getElementById('productForm').classList.add('show');
         document.getElementById('productName').focus();
     } catch (error) {
-        console.error('Error:', error);
+        alert('❌ ERROR en catch: ' + (error?.message || JSON.stringify(error)));
         document.getElementById('scannerContainer').style.display = 'none';
         document.getElementById('productForm').classList.add('show');
         document.getElementById('productName').focus();
     }
 }
+
 async function uploadImageToSupabase(file) {
     try {
         const fileExt = file.name.split('.').pop();
