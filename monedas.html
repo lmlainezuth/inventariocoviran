@@ -1012,7 +1012,6 @@ function playBeep() {
 }
 
 async function loadProductData(code) {
-    alert('1) Buscando producto con code = ' + code);
     try {
         let { data: existingProduct, error } = await supabaseClient
             .from('products')
@@ -1020,19 +1019,15 @@ async function loadProductData(code) {
             .eq('code', code)
             .maybeSingle();
 
-        alert('2) Resultado consulta por code:\n\nerror: ' + JSON.stringify(error) + '\n\nexistingProduct: ' + JSON.stringify(existingProduct));
-
         if (error) throw error;
 
+        // Si no encontró por código de barras, buscar por código interno
         if (!existingProduct) {
-            alert('3) No encontrado por code, buscando por internal_code...');
-            const { data: byInternal, error: error2 } = await supabaseClient
+            const { data: byInternal } = await supabaseClient
                 .from('products')
                 .select('*')
                 .eq('internal_code', code)
                 .maybeSingle();
-            
-            alert('4) Resultado por internal_code:\n\nerror: ' + JSON.stringify(error2) + '\n\nbyInternal: ' + JSON.stringify(byInternal));
             
             if (byInternal) {
                 existingProduct = byInternal;
@@ -1040,44 +1035,58 @@ async function loadProductData(code) {
             }
         }
         
-        alert('5) existingProduct final: ' + JSON.stringify(existingProduct));
+        // Si tampoco encontró, intentar con el patrón Coviran:
+        // EAN 8422823XXXXXX → internal_code = "4" + dígitos 8-12
+        if (!existingProduct && code.startsWith('8422823') && code.length === 13) {
+            const implied = '4' + code.substring(7, 12);
+            const { data: byImplied } = await supabaseClient
+                .from('products')
+                .select('*')
+                .eq('internal_code', implied)
+                .maybeSingle();
+            
+            if (byImplied) {
+                if (confirm(`No encontré el EAN escaneado.\n\nEncontré un producto con código interno "${implied}":\n${byImplied.name}\n\n¿Vincular el EAN ${code} a este producto?`)) {
+                    await supabaseClient.from('products').update({ code: code }).eq('id', byImplied.id);
+                    existingProduct = { ...byImplied, code: code };
+                    currentCode = code;
+                }
+            }
+        }
         
         document.getElementById('scannerContainer').style.display = 'none';
         
         if (existingProduct) {
-            alert('6) Producto encontrado, rellenando formulario');
-            
-            const selectedStore = currentStore;
             const { data: stockData } = await supabaseClient
                 .from('product_stock')
                 .select('*')
-                .eq('product_code', code)
-                .eq('store_code', selectedStore)
+                .eq('product_code', existingProduct.code)
+                .eq('store_code', currentStore)
                 .maybeSingle();
             
             document.getElementById('productName').value = existingProduct.name;
             document.getElementById('productUnit').value = existingProduct.unit || 'unidad';
             document.getElementById('category').value = existingProduct.category || '';
             document.getElementById('brand').value = existingProduct.brand || '';
+            document.getElementById('internalCode').value = existingProduct.internal_code || '';
             
             if (stockData) {
                 currentStockId = stockData.id;
                 document.getElementById('productQuantity').value = stockData.quantity;
                 document.getElementById('minQuantity').value = stockData.min_quantity || 0;
                 document.getElementById('maxQuantity').value = stockData.max_quantity || '';
-                document.getElementById('purchasePrice').value = stockData.purchase_price || '';
-                document.getElementById('publicPrice').value = stockData.public_price || '';
+                document.getElementById('purchasePrice').value = stockData.purchase_price || existingProduct.purchase_price || '';
+                document.getElementById('publicPrice').value = stockData.public_price > 0 ? stockData.public_price : (existingProduct.public_price || '');
                 document.getElementById('batchNumber').value = stockData.batch_number || '';
                 document.getElementById('expiryDate').value = stockData.expiry_date || '';
             } else {
                 document.getElementById('productQuantity').value = 0;
                 document.getElementById('minQuantity').value = 0;
                 document.getElementById('maxQuantity').value = '';
-                document.getElementById('purchasePrice').value = '';
-                document.getElementById('publicPrice').value = '';
+                document.getElementById('purchasePrice').value = existingProduct.purchase_price || '';
+                document.getElementById('publicPrice').value = existingProduct.public_price || '';
             }
             
-            document.getElementById('internalCode').value = existingProduct.internal_code || '';
             if (existingProduct.photo) {
                 document.getElementById('productPhoto').src = existingProduct.photo;
                 document.getElementById('productPhoto').style.display = 'block';
@@ -1086,20 +1095,18 @@ async function loadProductData(code) {
             
             document.getElementById('result').innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
         } else {
-            alert('7) NO encontrado, mostrando como nuevo');
             document.getElementById('result').innerHTML = `<div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>`;
         }
         
         document.getElementById('productForm').classList.add('show');
         document.getElementById('productName').focus();
     } catch (error) {
-        alert('❌ ERROR en catch: ' + (error?.message || JSON.stringify(error)));
+        console.error('Error en loadProductData:', error);
         document.getElementById('scannerContainer').style.display = 'none';
         document.getElementById('productForm').classList.add('show');
         document.getElementById('productName').focus();
     }
 }
-
 async function uploadImageToSupabase(file) {
     try {
         const fileExt = file.name.split('.').pop();
