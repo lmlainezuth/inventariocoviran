@@ -326,6 +326,16 @@
   margin-bottom: 0;
 }
 .btn-excluir:active { background: #FECACA; }
+
+
+.file-hidden {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
 </style>
 </head>
 <body>
@@ -338,8 +348,8 @@
 <main id="app"></main>
 
 <!-- Inputs ocultos para cámara y galería -->
-<input type="file" id="inputCamara" accept="image/*" capture="environment" style="display:none">
-<input type="file" id="inputGaleria" accept="image/*" multiple style="display:none">
+<input type="file" id="inputCamara" accept="image/*" capture="environment" class="file-hidden">
+<input type="file" id="inputGaleria" accept="image/*" multiple class="file-hidden">
 
 <script>
 // ===========================================
