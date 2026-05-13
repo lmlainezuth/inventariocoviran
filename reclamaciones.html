@@ -549,14 +549,11 @@ function render() {
 
 // -------- LISTA --------
 function renderLista() {
-  // Proveedores únicos para el select (de los claims cargados)
-  const proveedores = [...new Set(
-    state.claims.map(c => (c.supplier || '').trim()).filter(Boolean)
-  )].sort();
+  const proveedores = PROVEEDORES;
 
   // Aplicar filtros
   const filtrados = state.claims.filter(c => {
-    if (state.filtroProveedor && (c.supplier || '') !== state.filtroProveedor) return false;
+ if (state.filtroProveedor && (c.supplier || '').toUpperCase().trim() !== state.filtroProveedor) return false;
     if (state.filtroEstado === 'pendiente' && (c.items_pendientes || 0) === 0) return false;
     if (state.filtroEstado === 'abonado' && (c.items_pendientes || 0) > 0) return false;
     return true;
