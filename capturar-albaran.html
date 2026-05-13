@@ -508,20 +508,23 @@ function renderRevisandoFotos() {
   $('btnTranscribir').onclick = transcribir;
 }
 
-// -------- TRANSCRIBIENDO --------
 function renderTranscribiendo() {
+  const total = state.paginasTotales || state.fotos.length;
+  const actual = state.paginaActual || 0;
+  const progreso = total > 1
+    ? `Procesando página ${actual} de ${total}...`
+    : 'Transcribiendo foto...';
   app.innerHTML = `
     <div class="center-col">
       <div class="spinner"></div>
-      <h2 style="font-size:18px; font-weight:700">
-        ${state.fotos.length === 1 ? 'Transcribiendo foto...' : `Transcribiendo ${state.fotos.length} páginas...`}
-      </h2>
+      <h2 style="font-size:18px; font-weight:700">${progreso}</h2>
       <p style="font-size:14px; color: var(--gris-texto); max-width: 320px">
-        Levin está leyendo el albarán. Esto puede tardar entre 15 y 60 segundos.
+        Cada página tarda 20-40 segundos. Mantén la pantalla encendida.
       </p>
     </div>
   `;
 }
+
 
 // -------- LISTO PARA GUARDAR --------
 function renderListoParaGuardar() {
@@ -804,11 +807,12 @@ async function comprimirAJpeg(file) {
   return { b64, url };
 }
 
-// ===========================================
-// LLAMADA A LA EDGE FUNCTION
-// ===========================================
 async function transcribir() {
-  setEstado(ESTADO.TRANSCRIBIENDO, { error: null });
+  setEstado(ESTADO.TRANSCRIBIENDO, {
+    error: null,
+    paginaActual: 0,
+    paginasTotales: state.fotos.length
+  });
   try {
     const { data: { session } } = await sb.auth.getSession();
     const token = session?.access_token || SUPABASE_ANON_KEY;
@@ -818,6 +822,10 @@ async function transcribir() {
     let cabecera = null;
 
     for (let i = 0; i < state.fotos.length; i++) {
+      console.log(`[transcribir] página ${i+1}/${state.fotos.length}`);
+      state = { ...state, paginaActual: i + 1 };
+      render();
+
       const f = state.fotos[i];
       const body = { imagenes: [{ base64: f.b64, media_type: 'image/jpeg' }] };
 
