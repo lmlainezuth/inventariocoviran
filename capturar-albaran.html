@@ -327,7 +327,6 @@
 }
 .btn-excluir:active { background: #FECACA; }
 
-
 .file-hidden {
   position: absolute;
   left: -9999px;
@@ -336,6 +335,7 @@
   opacity: 0;
   pointer-events: none;
 }
+
 </style>
 </head>
 <body>
@@ -813,32 +813,41 @@ async function transcribir() {
     const { data: { session } } = await sb.auth.getSession();
     const token = session?.access_token || SUPABASE_ANON_KEY;
 
-    const body = {
-      imagenes: state.fotos.map(f => ({ base64: f.b64, media_type: 'image/jpeg' }))
-    };
+    const lineasAcum = [];
+    const saltadosAcum = [];
+    let cabecera = null;
 
-    const r = await fetch(`${SUPABASE_URL}/functions/v1/transcribir-albaran`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'apikey': SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify(body)
-    });
+    for (let i = 0; i < state.fotos.length; i++) {
+      const f = state.fotos[i];
+      const body = { imagenes: [{ base64: f.b64, media_type: 'image/jpeg' }] };
 
-    const txt = await r.text();
-    if (!r.ok) {
-      let msg = `HTTP ${r.status}`;
-      try { msg = JSON.parse(txt).error || msg; } catch {}
-      throw new Error(msg);
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/transcribir-albaran`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify(body)
+      });
+
+      const txt = await r.text();
+      if (!r.ok) {
+        let msg = `HTTP ${r.status} (página ${i+1})`;
+        try { msg = JSON.parse(txt).error || msg; } catch {}
+        throw new Error(msg);
+      }
+      const resp = JSON.parse(txt);
+      if (resp.error) throw new Error(`${resp.error} (página ${i+1})`);
+
+      if (!cabecera) cabecera = resp;
+      (resp.lineas || []).forEach(l => lineasAcum.push(l));
+      (resp.saltados || []).forEach(s => saltadosAcum.push(s));
     }
-    const resp = JSON.parse(txt);
-    if (resp.error) throw new Error(resp.error);
 
     setEstado(ESTADO.LISTO_PARA_GUARDAR, {
-      respuesta: resp,
-      lineas: (resp.lineas || []).map(l => ({
+      respuesta: cabecera,
+      lineas: lineasAcum.map(l => ({
         codigo: l.codigo ?? '',
         nombre: l.nombre ?? '',
         cantidad: Number(l.cantidad ?? 0),
@@ -848,13 +857,14 @@ async function transcribir() {
           ? l.lotes.map(lt => ({ numero: lt.numero ?? '', caducidad: lt.caducidad ?? '' }))
           : [{ numero: '', caducidad: '' }]
       })),
-      saltadosPendientes: resp.saltados || []
+      saltadosPendientes: saltadosAcum
     });
   } catch (e) {
     console.error(e);
     setEstado(ESTADO.REVISANDO_FOTOS, { error: e.message || 'Error desconocido' });
   }
 }
+
 
 // ===========================================
 // GUARDAR EN BASE DE DATOS
