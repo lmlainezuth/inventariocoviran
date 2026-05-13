@@ -443,6 +443,7 @@ let storeCode = localStorage.getItem('currentStore');
 // CACHE DE PRODUCTOS  ← AQUÍ
 // ===========================================
 let productosCache = [];
+let proveedoresCache = [];
 let stockLatestPorProducto = {};
 
 async function cargarProductosCache() {
@@ -454,6 +455,16 @@ async function cargarProductosCache() {
       .eq('status', 'activo')
       .order('created_at', { ascending: false })
   ]);
+
+async function cargarProveedoresCache() {
+  const { data, error } = await sb
+    .from('proveedores')
+    .select('id, nombre')
+    .order('nombre');
+  if (error) console.error('Error cargando proveedores:', error);
+  proveedoresCache = data || [];
+}
+
   productosCache = prods || [];
   stockLatestPorProducto = {};
   for (const s of stocks || []) {
@@ -675,8 +686,13 @@ function renderForm(modo) {
     <div class="card">
       <div class="stack" style="gap:10px">
         <label>Proveedor
-          <input data-cab="supplier" value="${escapeAttr(r.supplier ?? '')}" placeholder="Coviran, ElPozo...">
-        </label>
+  <select data-cab="supplier">
+    <option value="">— Selecciona proveedor —</option>
+    ${proveedoresCache.map(p => `
+      <option value="${escapeAttr(p.nombre)}" ${(r.supplier || '') === p.nombre ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>
+    `).join('')}
+  </select>
+</label>
         <div class="row-fields">
           <label>Pedido venta
             <input data-cab="pedido_venta" value="${escapeAttr(r.pedido_venta ?? '')}" placeholder="opcional">
