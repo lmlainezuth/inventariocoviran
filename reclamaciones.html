@@ -434,6 +434,7 @@
 // CONFIG
 // ===========================================
 const SUPABASE_URL = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
+const PROVEEDORES = ['COVIRAN', 'CAMPO FRIO', 'EL POZO', 'ROCARSA SNACK', 'ROCARSA CHUCHES'];
 const SUPABASE_ANON_KEY = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let storeCode = localStorage.getItem('currentStore');
@@ -443,7 +444,6 @@ let storeCode = localStorage.getItem('currentStore');
 // CACHE DE PRODUCTOS  ← AQUÍ
 // ===========================================
 let productosCache = [];
-let proveedoresCache = [];
 let stockLatestPorProducto = {};
 
 async function cargarProductosCache() {
@@ -456,14 +456,6 @@ async function cargarProductosCache() {
       .order('created_at', { ascending: false })
   ]);
 
-async function cargarProveedoresCache() {
-  const { data, error } = await sb
-    .from('proveedores')
-    .select('id, nombre')
-    .order('nombre');
-  if (error) console.error('Error cargando proveedores:', error);
-  proveedoresCache = data || [];
-}
 
   productosCache = prods || [];
   stockLatestPorProducto = {};
@@ -688,8 +680,8 @@ function renderForm(modo) {
         <label>Proveedor
   <select data-cab="supplier">
     <option value="">— Selecciona proveedor —</option>
-    ${proveedoresCache.map(p => `
-      <option value="${escapeAttr(p.nombre)}" ${(r.supplier || '') === p.nombre ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>
+    ${PROVEEDORES.map(p => `
+      <option value="${p}" ${(r.supplier || '') === p ? 'selected' : ''}>${p}</option>
     `).join('')}
   </select>
 </label>
