@@ -546,9 +546,6 @@ function renderListoParaGuardar() {
     </div>
   `;
 
-  document.querySelectorAll('[data-excluir]').forEach(b => {
-  b.onclick = () => excluirLinea(parseInt(b.dataset.excluir));
-});
 
 
 
@@ -598,6 +595,10 @@ function renderListoParaGuardar() {
   // Eventos: edición de campos
   document.querySelectorAll('[data-linea]').forEach(input => {
     input.oninput = onCampoLineaInput;
+  });
+  // Eventos: excluir línea
+  document.querySelectorAll('[data-excluir]').forEach(b => {
+    b.onclick = () => excluirLinea(parseInt(b.dataset.excluir));
   });
   // Eventos: incluir saltado
   document.querySelectorAll('.btn-incluir').forEach(b => {
