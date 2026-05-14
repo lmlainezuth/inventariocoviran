@@ -671,7 +671,7 @@
     <div class="nav-icon">⚠️</div>
     <div class="nav-label">Reclamar</div>
 </a>
-            <a href="monedas.html" class="nav-item active">
+            <a href="scanner.html" class="nav-item active">
                 <div class="nav-icon">📱</div>
                 <div class="nav-label">Escanear</div>
             </a>
@@ -731,8 +731,8 @@ async function showStoreName() {
     }
 }
 
-// Verificar si viene un código en la URL
 const urlParams = new URLSearchParams(window.location.search);
+const codeFromUrl = urlParams.get('code');
 const stockIdFromUrl = urlParams.get('stockId');
 
 
@@ -919,9 +919,9 @@ function switchPage(page) {
         document.getElementById('scanPage').classList.add('active');
         document.querySelectorAll('.nav-item')[0].classList.add('active');
         if (!isScanning) startScanner();
-    } else if (page === 'monedas') {
+    } else if (page === 'scanner') {
     if (isScanning) stopScanner();
-    document.getElementById('monedasPage').classList.add('active');
+    document.getElementById('scannerPage').classList.add('active');
     document.querySelectorAll('.nav-item')[2].classList.add('active');
   
 }
