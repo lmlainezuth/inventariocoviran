@@ -316,6 +316,7 @@ body {
         <div class="header">
     <h1>CIERRE DE CAJA</h1>
     <div class="date-display">Fecha: <span id="fecha"></span></div>
+    <a href="historico-caja.html" style="display:inline-block;margin-top:8px;color:white;text-decoration:underline;font-size:14px">📊 Ver histórico</a>
     <div class="dropdown">
         <button class="settings-btn" onclick="toggleDropdown()">⚙️</button>
         <div id="dropdownMenu" class="dropdown-content">
@@ -499,6 +500,11 @@ body {
                 
             </div>
         </div>
+    
+    <div class="section">
+  <button onclick="guardarCierreDelDia()" style="width:100%;padding:14px;background:#27ae60;color:white;border:0;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;">💾 Guardar cierre del día</button>
+</div>
+    
     </div>
 <!-- Bottom Navigation -->
      <div class="bottom-nav">
@@ -790,6 +796,59 @@ function limpiarDatosCaja() {
         
         alert('Datos limpiados correctamente');
     }
+}
+
+async function guardarCierreDelDia() {
+  const storeCode = localStorage.getItem('currentStore') || 'IZTIETA';
+  const fechaHoy  = new Date().toISOString().slice(0, 10);
+
+  // Recoger detalles
+  const detalleMonedas = {};
+  monedasInputs.forEach(i => {
+    const c = parseFloat(i.value) || 0;
+    if (c > 0) detalleMonedas[i.dataset.value] = c;
+  });
+  const detalleBilletes = {};
+  billetesInputs.forEach(i => {
+    const c = parseFloat(i.value) || 0;
+    if (c > 0) detalleBilletes[i.dataset.value] = c;
+  });
+
+  // Comprobar si ya hay cierre hoy
+  const { data: existente } = await supabaseClient
+    .from('cierres_caja')
+    .select('id')
+    .eq('store_code', storeCode)
+    .eq('fecha', fechaHoy)
+    .maybeSingle();
+
+  if (existente && !confirm('Ya hay un cierre guardado para hoy. ¿Sobreescribir?')) return;
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  const payload = {
+    store_code: storeCode,
+    fecha: fechaHoy,
+    total_monedas: parseFloat(document.getElementById('monedas-real').textContent) || 0,
+    total_billetes: parseFloat(document.getElementById('total-billetes').textContent) || 0,
+    sobrante: parseFloat(document.getElementById('sobrante').textContent) || 0,
+    recogida: parseFloat(document.getElementById('recogida').textContent) || 0,
+    importe_datafono: parseFloat(document.getElementById('importe-datafono').value) || 0,
+    importe_factura: parseFloat(document.getElementById('importe-factura').value) || 0,
+    cierre_aplicacion: parseFloat(document.getElementById('cierre-aplicacion').value) || 0,
+    cierre_ventas: parseFloat(document.getElementById('cierre-ventas').value) || 0,
+    detalle_monedas: detalleMonedas,
+    detalle_billetes: detalleBilletes,
+    closed_by: session?.user?.id || null,
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await supabaseClient
+    .from('cierres_caja')
+    .upsert(payload, { onConflict: 'store_code,fecha' });
+
+  if (error) { alert('Error guardando: ' + error.message); return; }
+  alert('✓ Cierre del día guardado');
 }
 </script>
 </body>
