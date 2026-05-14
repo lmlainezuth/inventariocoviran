@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histórico de cierres · IZTIETA</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    padding-bottom: 100px;
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  }
+  .header {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .btn-back {
+    background: rgba(255,255,255,0.2);
+    border: 0; color: white;
+    font-size: 20px; padding: 6px 12px;
+    border-radius: 6px; cursor: pointer;
+  }
+  .header h1 { font-size: 20px; flex: 1; }
+
+  .section { padding: 16px; }
+
+  .quick-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .btn-quick {
+    background: #3498db;
+    color: white;
+    border: 0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-quick.active { background: #173404; }
+
+  .filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .filtros label {
+    flex: 1;
+    min-width: 130px;
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .filtros input[type="date"] {
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  .resumen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .resumen-card {
+    background: #f1efe8;
+    border-radius: 8px;
+    padding: 12px;
+    border-left: 3px solid #3498db;
+  }
+  .resumen-card .label {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .resumen-card .valor {
+    font-size: 17px;
+    color: #173404;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .resumen-card.ventas { border-left-color: #27ae60; }
+  .resumen-card.ventas .valor { color: #27ae60; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: #ecf0f1;
+    padding: 10px 6px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #bdc3c7;
+    font-size: 12px;
+  }
+  td { padding: 10px 6px; border-bottom: 1px solid #ecf0f1; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: #f8f9fa; }
+  .ta-right { text-align: right; }
+
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888780;
+  }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #173404;
+  }
+  .modal-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 14px;
+  }
+  .modal-row .label { color: #6b7280; }
+  .modal-row .val { font-weight: 600; color: #173404; }
+  .modal-section-title {
+    margin-top: 14px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .modal-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .modal-btn {
+    flex: 1;
+    padding: 10px;
+    border: 0;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .btn-cerrar { background: #6b7280; color: white; }
+  .btn-eliminar { background: #ef4444; color: white; }
+
+  .spinner {
+    display: inline-block;
+    width: 36px;
+    height: 36px;
+    border: 4px solid #ddd;
+    border-top-color: #3498db;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  }
+  .nav-item {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    padding: 8px; color: #6b7280;
+    text-decoration: none;
+  }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 11px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <button class="btn-back" onclick="window.location.href='index.html'">←</button>
+    <h1>📊 Histórico de cierres</h1>
+  </div>
+
+  <div class="section">
+    <div class="quick-row">
+      <button class="btn-quick" data-rango="hoy">Hoy</button>
+      <button class="btn-quick" data-rango="ayer">Ayer</button>
+      <button class="btn-quick" data-rango="semana">Esta semana</button>
+      <button class="btn-quick" data-rango="mes">Este mes</button>
+      <button class="btn-quick" data-rango="mes-anterior">Mes pasado</button>
+      <button class="btn-quick" data-rango="anio">Este año</button>
+    </div>
+    <div class="filtros">
+      <label>Desde <input type="date" id="fDesde"></label>
+      <label>Hasta <input type="date" id="fHasta"></label>
+    </div>
+
+    <div id="resumenContainer" class="resumen"></div>
+    <div id="listaContainer"></div>
+  </div>
+</div>
+
+<!-- Modal detalle -->
+<div class="modal" id="modalDetalle">
+  <div class="modal-content">
+    <div class="modal-header" id="modalHeader"></div>
+    <div id="modalBody"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn btn-eliminar" id="btnEliminarCierre">🗑 Eliminar</button>
+      <button class="modal-btn btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <a href="index.html" class="nav-item"><div class="nav-icon">💰</div><div class="nav-label">Cierre Caja</div></a>
+  <a href="inventario-lista.html" class="nav-item"><div class="nav-icon">📦</div><div class="nav-label">Inventario</div></a>
+  <a href="capturar-albaran.html" class="nav-item"><div class="nav-icon">🧾</div><div class="nav-label">Albarán</div></a>
+  <a href="reclamaciones.html" class="nav-item"><div class="nav-icon">⚠️</div><div class="nav-label">Reclamar</div></a>
+  <a href="monedas.html" class="nav-item"><div class="nav-icon">📱</div><div class="nav-label">Escanear</div></a>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const STORE = localStorage.getItem('currentStore') || 'IZTIETA';
+
+let cierresActuales = [];
+let cierreSeleccionado = null;
+
+// Auth
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+  init();
+})();
+
+const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const eu  = n => `${Number(n || 0).toFixed(2)} €`;
+
+function aplicarRangoRapido(rango) {
+  const hoy = new Date();
+  let desde, hasta = fmt(hoy);
+
+  if (rango === 'hoy') {
+    desde = fmt(hoy);
+  } else if (rango === 'ayer') {
+    const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+    desde = fmt(ayer); hasta = fmt(ayer);
+  } else if (rango === 'semana') {
+    const ini = new Date(hoy);
+    const dow = ini.getDay() || 7;  // lunes = 1
+    ini.setDate(ini.getDate() - dow + 1);
+    desde = fmt(ini);
+  } else if (rango === 'mes') {
+    const ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    desde = fmt(ini);
+  } else if (rango === 'mes-anterior') {
+    const ini = new Date(hoy.getFullYear(), hoy.getMonth()-1, 1);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    desde = fmt(ini); hasta = fmt(fin);
+  } else if (rango === 'anio') {
+    const ini = new Date(hoy.getFullYear(), 0, 1);
+    desde = fmt(ini);
+  }
+
+  document.getElementById('fDesde').value = desde;
+  document.getElementById('fHasta').value = hasta;
+  cargar();
+}
+
+function init() {
+  document.querySelectorAll('.btn-quick').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('.btn-quick').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      aplicarRangoRapido(b.dataset.rango);
+    };
+  });
+  document.getElementById('fDesde').onchange = cargar;
+  document.getElementById('fHasta').onchange = cargar;
+  // Por defecto: este mes
+  document.querySelector('[data-rango="mes"]').click();
+}
+
+async function cargar() {
+  const desde = document.getElementById('fDesde').value;
+  const hasta = document.getElementById('fHasta').value;
+  if (!desde || !hasta) return;
+
+  const lista = document.getElementById('listaContainer');
+  lista.innerHTML = '<div class="empty"><div class="spinner"></div></div>';
+
+  const { data, error } = await sb
+    .from('cierres_caja')
+    .select('*')
+    .eq('store_code', STORE)
+    .gte('fecha', desde)
+    .lte('fecha', hasta)
+    .order('fecha', { ascending: false });
+
+  if (error) {
+    lista.innerHTML = `<div class="empty">Error: ${error.message}</div>`;
+    document.getElementById('resumenContainer').innerHTML = '';
+    return;
+  }
+  cierresActuales = data || [];
+  renderResumen();
+  renderLista();
+}
+
+function renderResumen() {
+  const resumen = document.getElementById('resumenContainer');
+  const n = cierresActuales.length;
+  const sumar = (campo) => cierresActuales.reduce((s, c) => s + (Number(c[campo]) || 0), 0);
+
+  resumen.innerHTML = `
+    <div class="resumen-card"><div class="label">Días</div><div class="valor">${n}</div></div>
+    <div class="resumen-card ventas"><div class="label">Cierre ventas</div><div class="valor">${eu(sumar('cierre_ventas'))}</div></div>
+    <div class="resumen-card"><div class="label">Recogida</div><div class="valor">${eu(sumar('recogida'))}</div></div>
+    <div class="resumen-card"><div class="label">Datáfono</div><div class="valor">${eu(sumar('importe_datafono'))}</div></div>
+    <div class="resumen-card"><div class="label">Facturas</div><div class="valor">${eu(sumar('importe_factura'))}</div></div>
+    <div class="resumen-card"><div class="label">Cierre aplicación</div><div class="valor">${eu(sumar('cierre_aplicacion'))}</div></div>
+  `;
+}
+
+function renderLista() {
+  const lista = document.getElementById('listaContainer');
+  if (!cierresActuales.length) {
+    lista.innerHTML = `<div class="empty"><div class="icon">📭</div><div>No hay cierres en este rango</div></div>`;
+    return;
+  }
+  lista.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th class="ta-right">Recogida</th>
+          <th class="ta-right">Datáfono</th>
+          <th class="ta-right">Ventas</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${cierresActuales.map(c => {
+          const [y,m,d] = c.fecha.split('-');
+          return `
+            <tr class="clickable" data-id="${c.id}">
+              <td>${d}/${m}/${y}</td>
+              <td class="ta-right">${eu(c.recogida)}</td>
+              <td class="ta-right">${eu(c.importe_datafono)}</td>
+              <td class="ta-right" style="font-weight:600;color:#27ae60">${eu(c.cierre_ventas)}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+  document.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.onclick = () => abrirDetalle(tr.dataset.id);
+  });
+}
+
+function abrirDetalle(id) {
+  const c = cierresActuales.find(x => x.id === id);
+  if (!c) return;
+  cierreSeleccionado = c;
+  const [y,m,d] = c.fecha.split('-');
+  document.getElementById('modalHeader').textContent = `Cierre ${d}/${m}/${y}`;
+
+  const monedas  = c.detalle_monedas  || {};
+  const billetes = c.detalle_billetes || {};
+
+  const monedasHtml = Object.entries(monedas)
+    .sort((a,b) => Number(b[0]) - Number(a[0]))
+    .map(([v,cant]) => `<div class="modal-row"><span class="label">${Number(v).toFixed(2)} € × ${cant}</span><span class="val">${eu(Number(v)*Number(cant))}</span></div>`)
+    .join('') || '<div class="modal-row"><span class="label">Sin desglose</span></div>';
+
+  const billetesHtml = Object.entries(billetes)
+    .sort((a,b) => Number(b[0]) - Number(a[0]))
+    .map(([v,cant]) => `<div class="modal-row"><span class="label">${Number(v).toFixed(0)} € × ${cant}</span><span class="val">${eu(Number(v)*Number(cant))}</span></div>`)
+    .join('') || '<div class="modal-row"><span class="label">Sin desglose</span></div>';
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-row"><span class="label">Total monedas</span><span class="val">${eu(c.total_monedas)}</span></div>
+    <div class="modal-row"><span class="label">Total billetes</span><span class="val">${eu(c.total_billetes)}</span></div>
+    <div class="modal-row"><span class="label">Sobrante</span><span class="val">${eu(c.sobrante)}</span></div>
+    <div class="modal-row"><span class="label">Recogida</span><span class="val">${eu(c.recogida)}</span></div>
+    <div class="modal-row"><span class="label">Datáfono</span><span class="val">${eu(c.importe_datafono)}</span></div>
+    <div class="modal-row"><span class="label">Factura</span><span class="val">${eu(c.importe_factura)}</span></div>
+    <div class="modal-row" style="border-top:2px solid #173404;margin-top:6px;padding-top:8px"><span class="label"><strong>Cierre ventas</strong></span><span class="val" style="color:#27ae60">${eu(c.cierre_ventas)}</span></div>
+    <div class="modal-row"><span class="label"><strong>Cierre aplicación</strong></span><span class="val" style="color:#27ae60">${eu(c.cierre_aplicacion)}</span></div>
+
+    <div class="modal-section-title">Detalle monedas</div>
+    ${monedasHtml}
+    <div class="modal-section-title">Detalle billetes</div>
+    ${billetesHtml}
+  `;
+
+  document.getElementById('modalDetalle').classList.add('show');
+}
+
+function cerrarModal() {
+  document.getElementById('modalDetalle').classList.remove('show');
+  cierreSeleccionado = null;
+}
+
+document.getElementById('btnEliminarCierre').onclick = async () => {
+  if (!cierreSeleccionado) return;
+  const [y,m,d] = cierreSeleccionado.fecha.split('-');
+  if (!confirm(`¿Eliminar el cierre del ${d}/${m}/${y}? No se puede deshacer.`)) return;
+  const { error } = await sb.from('cierres_caja').delete().eq('id', cierreSeleccionado.id);
+  if (error) { alert('Error: ' + error.message); return; }
+  cerrarModal();
+  cargar();
+};
+
+document.getElementById('modalDetalle').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModal();
+});
+</script>
+</body>
+</html>
