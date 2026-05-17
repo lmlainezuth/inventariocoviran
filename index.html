@@ -590,9 +590,9 @@ function verificarYLimpiarDatos() {
     }
 }
 
-// Guardar datos en localStorage
 function guardarDatos() {
     const datos = {
+        userId: localStorage.getItem('cierreUserId'),
         monedas: {},
         billetes: {},
         datafono: document.getElementById('importe-datafono').value,
@@ -613,12 +613,13 @@ function guardarDatos() {
     localStorage.setItem('cierreCajaData', JSON.stringify(datos));
 }
 
-// Cargar datos desde localStorage
 function cargarDatos() {
     const datosGuardados = localStorage.getItem('cierreCajaData');
     
     if (datosGuardados) {
         const datos = JSON.parse(datosGuardados);
+        const currentUserId = localStorage.getItem('cierreUserId');
+        if (datos.userId && datos.userId !== currentUserId) return;
         
         // Cargar monedas
         monedasInputs.forEach((input) => {
