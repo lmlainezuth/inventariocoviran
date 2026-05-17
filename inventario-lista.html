@@ -469,14 +469,40 @@ const supabaseUrl = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
 const supabaseKey = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// Verificar autenticación con Supabase
 (async function() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) {
         localStorage.removeItem('inventoryAuth');
         window.location.href = 'login.html';
-    } else {
-        localStorage.setItem('inventoryAuth', 'true'); // compat con páginas aún no migradas
+        return;
+    }
+    localStorage.setItem('inventoryAuth', 'true');
+
+    if (session.user.email === 'nohelia@coviran.es') {
+        const pagina = window.location.pathname.split('/').pop() || 'index.html';
+        const permitidas = ['index.html', 'scanner.html', 'login.html'];
+        if (!permitidas.some(p => pagina.includes(p))) {
+            window.location.href = 'index.html';
+            return;
+        }
+        const aplicarRestricciones = () => {
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                const href = item.getAttribute('href') || '';
+                if (!href.includes('index.html') && !href.includes('scanner.html')) {
+                    item.style.display = 'none';
+                }
+            });
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                if (!item.textContent.includes('Cerrar sesión')) {
+                    item.style.display = 'none';
+                }
+            });
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', aplicarRestricciones);
+        } else {
+            aplicarRestricciones();
+        }
     }
 })();
 
