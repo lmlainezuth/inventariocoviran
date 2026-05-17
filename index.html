@@ -547,29 +547,34 @@ const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     }
     localStorage.setItem('inventoryAuth', 'true');
 
+    const storedUserId = localStorage.getItem('cierreUserId');
+    if (storedUserId && storedUserId !== session.user.id) {
+        localStorage.removeItem('cierreCajaData');
+        localStorage.removeItem('ultimaLimpiezaCaja');
+    }
+    localStorage.setItem('cierreUserId', session.user.id);
+
     if (session.user.email === 'nohelia@coviran.es') {
-        // Ocultar items del menú que no son Cierre ni Escanear
-        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
-            const href = item.getAttribute('href') || '';
-            if (!href.includes('index.html') && !href.includes('scanner.html')) {
-                item.style.display = 'none';
-            }
-        });
-        // Ocultar botón de Administración del dropdown
-        document.querySelectorAll('.dropdown-item').forEach(item => {
-            if (item.textContent.includes('Administración')) {
-                item.style.display = 'none';
-            }
-        });
-        // Redirigir si intenta acceder a una página no permitida
-        const pagina = window.location.pathname.split('/').pop() || 'index.html';
-        const permitidas = ['index.html', 'scanner.html', 'login.html'];
-        if (!permitidas.some(p => pagina.includes(p))) {
-            window.location.href = 'index.html';
+        const aplicarRestricciones = () => {
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                const href = item.getAttribute('href') || '';
+                if (!href.includes('index.html') && !href.includes('scanner.html')) {
+                    item.style.display = 'none';
+                }
+            });
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                if (!item.textContent.includes('Cerrar sesión')) {
+                    item.style.display = 'none';
+                }
+            });
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', aplicarRestricciones);
+        } else {
+            aplicarRestricciones();
         }
     }
 })();
-
 // Verificar y limpiar datos si es después de las 22:30
 function verificarYLimpiarDatos() {
     const ahora = new Date();
