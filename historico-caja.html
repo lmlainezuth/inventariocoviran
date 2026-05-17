@@ -275,11 +275,22 @@ const STORE = localStorage.getItem('currentStore') || 'IZTIETA';
 
 let cierresActuales = [];
 let cierreSeleccionado = null;
+let currentUserId = null;
 
-// Auth
 (async () => {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = 'login.html'; return; }
+  currentUserId = session.user.id;
+
+  if (session.user.email === 'nohelia@coviran.es') {
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+      const href = item.getAttribute('href') || '';
+      if (!href.includes('index.html') && !href.includes('scanner.html')) {
+        item.style.display = 'none';
+      }
+    });
+  }
+
   init();
 })();
 
@@ -339,10 +350,11 @@ async function cargar() {
   const lista = document.getElementById('listaContainer');
   lista.innerHTML = '<div class="empty"><div class="spinner"></div></div>';
 
-  const { data, error } = await sb
+const { data, error } = await sb
     .from('cierres_caja')
     .select('*')
     .eq('store_code', STORE)
+    .eq('closed_by', currentUserId)
     .gte('fecha', desde)
     .lte('fecha', hasta)
     .order('fecha', { ascending: false });

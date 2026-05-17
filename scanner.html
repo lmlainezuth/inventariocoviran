@@ -1432,14 +1432,29 @@ window.onclick = function(event) {
     }
 }
 
-async function logout() {
-    if (confirm('¿Seguro que quieres cerrar sesión?')) {
-        await supabaseClient.auth.signOut();
+(async function() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
         localStorage.removeItem('inventoryAuth');
-        localStorage.removeItem('currentStore');  // ← añade esta línea
         window.location.href = 'login.html';
+        return;
     }
-}
+    localStorage.setItem('inventoryAuth', 'true');
+
+    if (session.user.email === 'nohelia@coviran.es') {
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+            const href = item.getAttribute('href') || '';
+            if (!href.includes('index.html') && !href.includes('scanner.html')) {
+                item.style.display = 'none';
+            }
+        });
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            if (item.textContent.includes('Administración')) {
+                item.style.display = 'none';
+            }
+        });
+    }
+})();
 </script>
 
 <!-- Modal para crear categoría -->

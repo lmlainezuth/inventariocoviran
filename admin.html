@@ -344,19 +344,27 @@
 
     <script>
         // Verificar autenticación
-(function() {
-    const isAuthenticated = localStorage.getItem('inventoryAuth');
-    if (isAuthenticated !== 'true') {
+const supabaseUrl = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
+const supabaseKey = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+(async function() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+        localStorage.removeItem('inventoryAuth');
         window.location.href = 'login.html';
+        return;
+    }
+    localStorage.setItem('inventoryAuth', 'true');
+
+    if (session.user.email === 'nohelia@coviran.es') {
+        window.location.href = 'index.html';
+        return;
     }
 })();
-        let supabaseClient;
-        let inventory = [];
-
+      
         window.addEventListener('DOMContentLoaded', function() {
-            const supabaseUrl = 'https://ajrdwhxudwyyxmljnchc.supabase.co';
-            const supabaseKey = 'sb_publishable_zknVqQ0PUPCLLiEP-p5iqg_9bsB5ZxS';
-            supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+          
             
             loadAll();
         });
