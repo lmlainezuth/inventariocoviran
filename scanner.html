@@ -1215,153 +1215,129 @@ function compressImage(file, maxWidth, quality) {
 }
 
 async function saveProduct() {
-    if (!currentCode || currentCode.length < 3) { // Cambié de 8 a 3 para permitir códigos manuales
+    if (!currentCode || currentCode.length < 3) {
         alert('❌ ERROR: Código inválido');
         clearProductForm();
         document.getElementById('scannerContainer').style.display = 'block';
         return;
     }
-    
+
     const name = document.getElementById('productName').value.trim();
-    if (!name) {
-        alert('Por favor ingresa el nombre del producto');
-        return;
-    }
-    
-    const quantity = parseFloat(document.getElementById('productQuantity').value);
-    const unit = document.getElementById('productUnit').value;
-    const minQuantity = parseFloat(document.getElementById('minQuantity').value) || 0;
-    const maxQuantity = parseFloat(document.getElementById('maxQuantity').value) || null;
+    if (!name) { alert('Por favor ingresa el nombre del producto'); return; }
+
+    const quantity      = parseFloat(document.getElementById('productQuantity').value) || 0;
+    const unit          = document.getElementById('productUnit').value;
+    const minQuantity   = parseFloat(document.getElementById('minQuantity').value) || 0;
+    const maxQuantity   = parseFloat(document.getElementById('maxQuantity').value) || null;
     const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
-    const publicPrice = parseFloat(document.getElementById('publicPrice').value) || 0;
-    const category = document.getElementById('category').value;
-    const brand = document.getElementById('brand').value;
-    const internalCode = document.getElementById('internalCode').value.trim() || null;
-const batchNumber = document.getElementById('batchNumber').value.trim() || null;
-const expiryDate = document.getElementById('expiryDate').value || null;
-  
-    
-    try {
-       let { data: existingProduct } = await supabaseClient
-    .from('products')
-    .select('*')
-    .eq('code', currentCode)
-    .maybeSingle();
-
-// Si no se encontró por code pero hay internal_code en el formulario,
-// intentar vincular el EAN escaneado al producto existente
-if (!existingProduct && internalCode) {
-    const { data: byInternal } = await supabaseClient
-        .from('products')
-        .select('*')
-        .eq('internal_code', internalCode)
-        .maybeSingle();
-
-    if (byInternal) {
-        if (confirm(`Ya existe un producto con código interno "${internalCode}":\n\n${byInternal.name}\n\n¿Vincular el código de barras escaneado (${currentCode}) a este producto?`)) {
-            const { error: linkErr } = await supabaseClient
-                .from('products')
-                .update({ code: currentCode })
-                .eq('id', byInternal.id);
-            if (linkErr) throw linkErr;
-            existingProduct = { ...byInternal, code: currentCode };
-        }
-    }
-}
-        // Verificar si venimos desde la lista (URL tiene parámetro 'code')
-        const urlParams = new URLSearchParams(window.location.search);
-        const fromList = urlParams.has('code');
-        const stockIdFromUrl = urlParams.get('stockId');
-        
-        if (existingProduct) {
+    const publicPrice   = parseFloat(document.getElementById('publicPrice').value) || 0;
+    const category      = document.getElementById('category').value;
+    const brand         = document.getElementById('brand').value;
+    const internalCode  = document.getElementById('internalCode').value.trim() || null;
+    const batchNumber   = document.getElementById('batchNumber').value.trim() || null;
+    const expiryDate    = document.getElementById('expiryDate').value || null;
     const selectedStore = currentStore;
-    
-    if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
-    // Actualizar info general del producto
-    await supabaseClient.from('products').update({
-        name, unit, category, brand, photo: currentPhotoBase64, internal_code: internalCode
-    }).eq('code', currentCode);
 
-    if (currentStockId) {
-        // Editamos el lote concreto que el usuario abrió: UPDATE por id
-        const { error: updErr } = await supabaseClient.from('product_stock').update({
-            quantity,
-            min_quantity: minQuantity,
-            max_quantity: maxQuantity,
-            purchase_price: purchasePrice,
-            public_price: publicPrice,
-            batch_number: batchNumber,
-            expiry_date: expiryDate
-        }).eq('id', currentStockId);
+    const urlParams     = new URLSearchParams(window.location.search);
+    const fromList      = urlParams.has('code');
 
-        if (updErr) throw updErr;
-    } else {
-        // No había lote previo en esta tienda: insertamos uno nuevo
-        const { error: insErr } = await supabaseClient.from('product_stock').insert([{
-            product_code: currentCode,
-            store_code: selectedStore,
-            quantity,
-            min_quantity: minQuantity,
-            max_quantity: maxQuantity,
-            purchase_price: purchasePrice,
-            public_price: publicPrice,
-            batch_number: batchNumber,
-            expiry_date: expiryDate
-        }]);
+    try {
+        let { data: existingProduct } = await supabaseClient
+            .from('products').select('*').eq('code', currentCode).maybeSingle();
 
-        if (insErr) throw insErr;
-    }
-}
-}  else {
-    // Solo sumar cantidad al lote actual
-    if (currentStockId) {
-        const { data: currentStock } = await supabaseClient
-            .from('product_stock')
-            .select('quantity')
-            .eq('id', currentStockId)
-            .single();
-        
-        const { error: updErr } = await supabaseClient.from('product_stock').update({
-            quantity: (currentStock?.quantity || 0) + quantity
-        }).eq('id', currentStockId);
-        if (updErr) throw updErr;
-    } else {
-        // No había lote previo, creamos uno nuevo
-        const { error: insErr } = await supabaseClient.from('product_stock').insert([{
-            product_code: currentCode,
-            store_code: selectedStore,
-            quantity,
-            min_quantity: minQuantity,
-            max_quantity: maxQuantity,
-            purchase_price: purchasePrice,
-            public_price: publicPrice,
-            batch_number: batchNumber,
-            expiry_date: expiryDate
-        }]);
-        if (insErr) throw insErr;
-    }
-}
-        
+        // Intentar vincular EAN a producto por internal_code
+        if (!existingProduct && internalCode) {
+            const { data: byInternal } = await supabaseClient
+                .from('products').select('*').eq('internal_code', internalCode).maybeSingle();
+            if (byInternal) {
+                if (confirm(`Ya existe un producto con código interno "${internalCode}":\n\n${byInternal.name}\n\n¿Vincular el código de barras escaneado (${currentCode}) a este producto?`)) {
+                    await supabaseClient.from('products').update({ code: currentCode }).eq('id', byInternal.id);
+                    existingProduct = { ...byInternal, code: currentCode };
+                }
+            }
+        }
+
+        if (existingProduct) {
+            // --- PRODUCTO EXISTENTE ---
+            if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
+                await supabaseClient.from('products').update({
+                    name, unit, category, brand, photo: currentPhotoBase64, internal_code: internalCode
+                }).eq('code', currentCode);
+
+                if (currentStockId) {
+                    const { error } = await supabaseClient.from('product_stock').update({
+                        quantity, min_quantity: minQuantity, max_quantity: maxQuantity,
+                        purchase_price: purchasePrice, public_price: publicPrice,
+                        batch_number: batchNumber, expiry_date: expiryDate
+                    }).eq('id', currentStockId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('product_stock').insert([{
+                        product_code: currentCode, store_code: selectedStore,
+                        quantity, min_quantity: minQuantity, max_quantity: maxQuantity,
+                        purchase_price: purchasePrice, public_price: publicPrice,
+                        batch_number: batchNumber, expiry_date: expiryDate
+                    }]);
+                    if (error) throw error;
+                }
+            } else {
+                // Solo sumar cantidad
+                if (currentStockId) {
+                    const { data: currentStock } = await supabaseClient
+                        .from('product_stock').select('quantity').eq('id', currentStockId).single();
+                    const { error } = await supabaseClient.from('product_stock').update({
+                        quantity: (currentStock?.quantity || 0) + quantity
+                    }).eq('id', currentStockId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('product_stock').insert([{
+                        product_code: currentCode, store_code: selectedStore,
+                        quantity, min_quantity: minQuantity, max_quantity: maxQuantity,
+                        purchase_price: purchasePrice, public_price: publicPrice,
+                        batch_number: batchNumber, expiry_date: expiryDate
+                    }]);
+                    if (error) throw error;
+                }
+            }
+        } else {
+            // --- PRODUCTO NUEVO ---
+            const { error: prodErr } = await supabaseClient.from('products').insert([{
+                code: currentCode,
+                internal_code: internalCode || currentCode,
+                name, unit, category, brand,
+                photo: currentPhotoBase64 || null,
+                purchase_price: purchasePrice,
+                public_price: publicPrice
+            }]);
+            if (prodErr) throw prodErr;
+
+            const { error: stockErr } = await supabaseClient.from('product_stock').insert([{
+                product_code: currentCode, store_code: selectedStore,
+                quantity, min_quantity: minQuantity, max_quantity: maxQuantity,
+                purchase_price: purchasePrice, public_price: publicPrice,
+                batch_number: batchNumber, expiry_date: expiryDate
+            }]);
+            if (stockErr) throw stockErr;
+        }
+
         alert('✅ Producto guardado');
-        
-        // Si venimos desde la lista, regresar a la lista
+
         if (fromList) {
             window.location.href = 'inventario-lista.html';
         } else {
-            // Si no, continuar escaneando
             clearProductForm();
             startScanner();
             await loadInventory();
-            updateStats();
             document.getElementById('scannerContainer').style.display = 'block';
             currentCode = null;
             currentPhotoBase64 = null;
         }
-        
+
     } catch (error) {
         alert('Error: ' + error.message);
     }
 }
+
 async function loadInventory() {
     try {
         const { data, error } = await supabaseClient.from('products').select('*').order('name', { ascending: true });

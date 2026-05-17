@@ -543,8 +543,30 @@ const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     if (!session) {
         localStorage.removeItem('inventoryAuth');
         window.location.href = 'login.html';
-    } else {
-        localStorage.setItem('inventoryAuth', 'true');
+        return;
+    }
+    localStorage.setItem('inventoryAuth', 'true');
+
+    if (session.user.email === 'nohelia@coviran.es') {
+        // Ocultar items del menú que no son Cierre ni Escanear
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+            const href = item.getAttribute('href') || '';
+            if (!href.includes('index.html') && !href.includes('scanner.html')) {
+                item.style.display = 'none';
+            }
+        });
+        // Ocultar botón de Administración del dropdown
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            if (item.textContent.includes('Administración')) {
+                item.style.display = 'none';
+            }
+        });
+        // Redirigir si intenta acceder a una página no permitida
+        const pagina = window.location.pathname.split('/').pop() || 'index.html';
+        const permitidas = ['index.html', 'scanner.html', 'login.html'];
+        if (!permitidas.some(p => pagina.includes(p))) {
+            window.location.href = 'index.html';
+        }
     }
 })();
 
@@ -744,12 +766,34 @@ document.getElementById('importe-factura').addEventListener('input', () => {
     guardarDatos();
 });
 
-// Al cargar la página
+async function cargarCierreDeHoy() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return;
+  const fechaHoy = new Date().toISOString().slice(0, 10);
+  const storeCode = localStorage.getItem('currentStore') || 'IZTIETA';
+
+  const { data } = await supabaseClient
+    .from('cierres_caja').select('*')
+    .eq('store_code', storeCode).eq('fecha', fechaHoy).eq('closed_by', session.user.id)
+    .maybeSingle();
+
+  if (!data) return;
+
+  monedasInputs.forEach(i => { if (data.detalle_monedas?.[i.dataset.value]) i.value = data.detalle_monedas[i.dataset.value]; });
+  billetesInputs.forEach(i => { if (data.detalle_billetes?.[i.dataset.value]) i.value = data.detalle_billetes[i.dataset.value]; });
+  document.getElementById('importe-datafono').value = data.importe_datafono || '';
+  document.getElementById('importe-factura').value = data.importe_factura || '';
+
+  calcularMonedas();
+  calcularBilletes();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
-    verificarYLimpiarDatos();
-    cargarDatos();
-    calcularMonedas();
-    calcularBilletes();
+  verificarYLimpiarDatos();
+  cargarDatos();
+  cargarCierreDeHoy();
+  calcularMonedas();
+  calcularBilletes();
 });
 
 // Toggle dropdown menu
@@ -800,56 +844,45 @@ function limpiarDatosCaja() {
 
 async function guardarCierreDelDia() {
   const storeCode = localStorage.getItem('currentStore') || 'IZTIETA';
-  const fechaHoy  = new Date().toISOString().slice(0, 10);
+  const fechaHoy = new Date().toISOString().slice(0, 10);
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const userId = session?.user?.id || null;
 
-  // Recoger detalles
   const detalleMonedas = {};
-  monedasInputs.forEach(i => {
-    const c = parseFloat(i.value) || 0;
-    if (c > 0) detalleMonedas[i.dataset.value] = c;
-  });
+  monedasInputs.forEach(i => { const c = parseFloat(i.value)||0; if(c>0) detalleMonedas[i.dataset.value]=c; });
   const detalleBilletes = {};
-  billetesInputs.forEach(i => {
-    const c = parseFloat(i.value) || 0;
-    if (c > 0) detalleBilletes[i.dataset.value] = c;
-  });
+  billetesInputs.forEach(i => { const c = parseFloat(i.value)||0; if(c>0) detalleBilletes[i.dataset.value]=c; });
 
-  // Comprobar si ya hay cierre hoy
   const { data: existente } = await supabaseClient
-    .from('cierres_caja')
-    .select('id')
-    .eq('store_code', storeCode)
-    .eq('fecha', fechaHoy)
+    .from('cierres_caja').select('id')
+    .eq('store_code', storeCode).eq('fecha', fechaHoy).eq('closed_by', userId)
     .maybeSingle();
 
   if (existente && !confirm('Ya hay un cierre guardado para hoy. ¿Sobreescribir?')) return;
 
-  const { data: { session } } = await supabaseClient.auth.getSession();
-
   const payload = {
-    store_code: storeCode,
-    fecha: fechaHoy,
-    total_monedas: parseFloat(document.getElementById('monedas-real').textContent) || 0,
-    total_billetes: parseFloat(document.getElementById('total-billetes').textContent) || 0,
-    sobrante: parseFloat(document.getElementById('sobrante').textContent) || 0,
-    recogida: parseFloat(document.getElementById('recogida').textContent) || 0,
-    importe_datafono: parseFloat(document.getElementById('importe-datafono').value) || 0,
-    importe_factura: parseFloat(document.getElementById('importe-factura').value) || 0,
-    cierre_aplicacion: parseFloat(document.getElementById('cierre-aplicacion').value) || 0,
-    cierre_ventas: parseFloat(document.getElementById('cierre-ventas').value) || 0,
-    detalle_monedas: detalleMonedas,
-    detalle_billetes: detalleBilletes,
-    closed_by: session?.user?.id || null,
-    updated_at: new Date().toISOString()
+    store_code: storeCode, fecha: fechaHoy,
+    total_monedas: parseFloat(document.getElementById('monedas-real').textContent)||0,
+    total_billetes: parseFloat(document.getElementById('total-billetes').textContent)||0,
+    sobrante: parseFloat(document.getElementById('sobrante').textContent)||0,
+    recogida: parseFloat(document.getElementById('recogida').textContent)||0,
+    importe_datafono: parseFloat(document.getElementById('importe-datafono').value)||0,
+    importe_factura: parseFloat(document.getElementById('importe-factura').value)||0,
+    cierre_aplicacion: parseFloat(document.getElementById('cierre-aplicacion').value)||0,
+    cierre_ventas: parseFloat(document.getElementById('cierre-ventas').value)||0,
+    detalle_monedas: detalleMonedas, detalle_billetes: detalleBilletes,
+    closed_by: userId, updated_at: new Date().toISOString()
   };
 
   const { error } = await supabaseClient
     .from('cierres_caja')
-    .upsert(payload, { onConflict: 'store_code,fecha' });
+    .upsert(payload, { onConflict: 'store_code,fecha,closed_by' });
 
   if (error) { alert('Error guardando: ' + error.message); return; }
   alert('✓ Cierre del día guardado');
 }
+
+
 </script>
 </body>
 </html>
