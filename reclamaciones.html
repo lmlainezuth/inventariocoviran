@@ -434,7 +434,12 @@
 // CONFIG
 // ===========================================
 const SUPABASE_URL = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
-const PROVEEDORES = ['COVIRAN', 'CAMPO FRIO', 'EL POZO', 'ROCARSA SNACK', 'ROCARSA CHUCHES'];
+let PROVEEDORES = [];
+
+async function cargarProveedores() {
+  const { data } = await sb.from('brands').select('name').order('name');
+  PROVEEDORES = (data || []).map(b => b.name);
+}
 const SUPABASE_ANON_KEY = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let storeCode = localStorage.getItem('currentStore');
@@ -1210,7 +1215,7 @@ function cerrarScanner() {
 // ===========================================
 (async () => {
   if (!(await comprobarAuth())) return;
-  await cargarProductosCache();
+  await Promise.all([cargarProductosCache(), cargarProveedores()]);
   actualizarDatalist();
   cargarLista();
 })();
