@@ -5,466 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario - COVIRÁN</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            padding-bottom: 80px;
-        }
-        
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .header h1 {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        
-        .settings-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        /* Search Bar */
-        .search-container {
-            padding: 15px 20px;
-            background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%);
-        }
-        
-        .search-box {
-            background: rgba(255,255,255,0.9);
-            border-radius: 25px;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .search-box input {
-            flex: 1;
-            border: none;
-            background: none;
-            font-size: 16px;
-            outline: none;
-            color: #374151;
-        }
-        
-        .search-box input::placeholder {
-            color: #9ca3af;
-        }
-        
-        /* Filters */
-        .filters {
-            padding: 15px 20px;
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .filters::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .filter-btn {
-            padding: 8px 16px;
-            border: 1px solid #d1d5db;
-            background: white;
-            border-radius: 20px;
-            font-size: 14px;
-            color: #374151;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.3s;
-        }
-        
-        .filter-btn:hover {
-            background: #f3f4f6;
-        }
-        
-        .filter-btn.active {
-            background: #2563eb;
-            color: white;
-            border-color: #2563eb;
-        }
-
-        /* Dropdown Menu */
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.dropdown-content {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    background-color: white;
-    min-width: 200px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    border-radius: 8px;
-    z-index: 1000;
-    margin-top: 8px;
-    overflow: hidden;
-}
-
-.dropdown-content.show {
-    display: block;
-}
-
-.dropdown-item {
-    color: #374151;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-    font-size: 15px;
-    transition: background 0.2s;
-}
-
-.dropdown-item:hover {
-    background-color: #f3f4f6;
-}
-
-.dropdown-item:active {
-    background-color: #e5e7eb;
-}
-        
-        /* Product List */
-        .product-list {
-            padding: 0 10px;
-        }
-        
-        .product-item {
-            background: white;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .product-item:active {
-            transform: scale(0.98);
-            background: #f9fafb;
-        }
-        
-        .product-image {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            object-fit: cover;
-            background: #f3f4f6;
-            flex-shrink: 0;
-        }
-        
-        .product-info {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .product-name {
-            font-size: 15px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 4px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        .product-quantity {
-            font-size: 13px;
-            color: #6b7280;
-            margin-bottom: 2px;
-        }
-        
-        .product-code {
-            font-size: 12px;
-            color: #9ca3af;
-            font-family: monospace;
-        }
-        
-        .product-badge {
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        
-        .badge-min {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .badge-max {
-            background: #dcfce7;
-            color: #166534;
-        }
-        
-        .badge-normal {
-            background: #e0e7ff;
-            color: #3730a3;
-        }
-        
-        .badge-out {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-                .arrow-icon {
-            color: #d1d5db;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-        
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 8px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            color: #6b7280;
-            text-decoration: none;
-        }
-        
-        .nav-item.active {
-            color: #2563eb;
-        }
-        
-        .nav-icon {
-            font-size: 24px;
-        }
-        
-        .nav-label {
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #9ca3af;
-        }
-        
-        .empty-state-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        /* Modal para producto manual */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-}
-
-.modal.show {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.modal-content {
-    background-color: white;
-    padding: 30px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
-.modal-header {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: #1f2937;
-}
-
-.modal-input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 16px;
-    margin-bottom: 20px;
-}
-
-.modal-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.modal-btn {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.modal-btn-cancel {
-    background: #6b7280;
-    color: white;
-}
-
-.modal-btn-save {
-    background: #2563eb;
-    color: white;
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding-bottom: 80px; }
+        .header { background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
+        .settings-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 5px; }
+        .search-container { padding: 15px 20px; background: linear-gradient(135deg, #5a9fd4 0%, #4a8fc7 100%); }
+        .search-box { background: rgba(255,255,255,0.9); border-radius: 25px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; }
+        .search-box input { flex: 1; border: none; background: none; font-size: 16px; outline: none; color: #374151; }
+        .search-box input::placeholder { color: #9ca3af; }
+        .filters { padding: 15px 20px; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        .filters::-webkit-scrollbar { display: none; }
+        .filter-btn { padding: 8px 16px; border: 1px solid #d1d5db; background: white; border-radius: 20px; font-size: 14px; color: #374151; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.3s; }
+        .filter-btn:hover { background: #f3f4f6; }
+        .filter-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: white; min-width: 200px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 8px; z-index: 1000; margin-top: 8px; overflow: hidden; }
+        .dropdown-content.show { display: block; }
+        .dropdown-item { color: #374151; padding: 12px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-size: 15px; transition: background 0.2s; }
+        .dropdown-item:hover { background-color: #f3f4f6; }
+        .dropdown-item:active { background-color: #e5e7eb; }
+        .product-list { padding: 0 10px; }
+        .product-item { background: white; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.3s; }
+        .product-item:active { transform: scale(0.98); background: #f9fafb; }
+        .product-image { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #f3f4f6; flex-shrink: 0; }
+        .product-info { flex: 1; min-width: 0; }
+        .product-name { font-size: 15px; font-weight: 600; color: #1f2937; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .product-quantity { font-size: 13px; color: #6b7280; margin-bottom: 2px; }
+        .product-code { font-size: 12px; color: #9ca3af; font-family: monospace; }
+        .product-badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+        .badge-min { background: #fef3c7; color: #92400e; }
+        .badge-max { background: #dcfce7; color: #166534; }
+        .badge-normal { background: #e0e7ff; color: #3730a3; }
+        .badge-out { background: #fee2e2; color: #991b1b; }
+        .arrow-icon { color: #d1d5db; font-size: 18px; flex-shrink: 0; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; cursor: pointer; border: none; background: none; color: #6b7280; text-decoration: none; }
+        .nav-item.active { color: #2563eb; }
+        .nav-icon { font-size: 24px; }
+        .nav-label { font-size: 12px; font-weight: 500; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #9ca3af; }
+        .empty-state-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.show { display: flex; justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .modal-header { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #1f2937; }
+        .modal-input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; margin-bottom: 20px; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .modal-btn-cancel { background: #6b7280; color: white; }
+        .modal-btn-save { background: #2563eb; color: white; }
     </style>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 </head>
 <body>
-    <!-- Header -->
     <div class="header">
         <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-    <h1>📦 Inventario</h1>
-    <span id="storeName" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 12px; border-radius: 8px; font-size: 14px;">📍 ...</span>
-</div>
+            <h1>📦 Inventario</h1>
+            <span id="storeName" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 12px; border-radius: 8px; font-size: 14px;">📍 ...</span>
+        </div>
         <div class="dropdown">
-    <button class="settings-btn" onclick="toggleDropdown()">⚙️</button>
-    <div id="dropdownMenu" class="dropdown-content">
-        <button class="dropdown-item" onclick="createManualProduct()">
-            <span>➕</span>
-            <span>Crear producto manual</span>
-        </button>
-        <button class="dropdown-item" onclick="window.location.href='admin.html'">
-            <span>👑</span>
-            <span>Administración</span>
-        </button>
-        <button class="dropdown-item" onclick="window.location.href='pegar-sql.html'">
-    <span>📝</span>
-    <span>Pegar SQL</span>
-</button>
-<button class="dropdown-item" onclick="window.location.href='hoy.html'">
-    <span>📅</span>
-    <span>Insertados hoy</span>
-</button>
-        <button class="dropdown-item" onclick="logout()">
-    <span>🚪</span>
-    <span>Cerrar sesión</span>
-</button>
+            <button class="settings-btn" onclick="toggleDropdown()">⚙️</button>
+            <div id="dropdownMenu" class="dropdown-content">
+                <button class="dropdown-item" onclick="createManualProduct()"><span>➕</span><span>Crear producto manual</span></button>
+                <button class="dropdown-item" onclick="window.location.href='admin.html'"><span>👑</span><span>Administración</span></button>
+                <button class="dropdown-item" onclick="window.location.href='pegar-sql.html'"><span>📝</span><span>Pegar SQL</span></button>
+                <button class="dropdown-item" onclick="window.location.href='hoy.html'"><span>📅</span><span>Insertados hoy</span></button>
+                <button class="dropdown-item" onclick="logout()"><span>🚪</span><span>Cerrar sesión</span></button>
+            </div>
+        </div>
     </div>
-</div>
-    </div>
-    
-    <!-- Search Bar -->
+
     <div class="search-container">
         <div class="search-box">
             <span style="color: #9ca3af;">🔍</span>
             <input type="text" id="searchInput" placeholder="Buscar" onkeyup="filterProducts()">
         </div>
     </div>
-    
-<!-- Filters -->
-<div class="filters">
-    <button class="filter-btn" onclick="openFilterModal('order')">
-        Ordenar <span id="orderIndicator">▼</span>
-    </button>
-    <button class="filter-btn" onclick="openFilterModal('category')">
-        Categoría <span id="categoryIndicator">▼</span>
-    </button>
-    <button class="filter-btn" onclick="openFilterModal('brand')">
-        Marca <span id="brandIndicator">▼</span>
-    </button>
-    <button class="filter-btn" onclick="openFilterModal('location')">
-        Ubicación <span id="locationIndicator">▼</span>
-    </button>
-    <button class="filter-btn" onclick="openFilterModal('stock')">
-        Cantidad <span id="stockIndicator">▼</span>
-    </button>
-</div>
-    
-    <!-- Product List -->
-    <div class="product-list" id="productList">
-        <!-- Products will be loaded here -->
+
+    <div class="filters">
+        <button class="filter-btn" onclick="openFilterModal('order')">Ordenar <span id="orderIndicator">▼</span></button>
+        <button class="filter-btn" onclick="openFilterModal('category')">Categoría <span id="categoryIndicator">▼</span></button>
+        <button class="filter-btn" onclick="openFilterModal('brand')">Marca <span id="brandIndicator">▼</span></button>
+        <button class="filter-btn" onclick="openFilterModal('location')">Ubicación <span id="locationIndicator">▼</span></button>
+        <button class="filter-btn" onclick="openFilterModal('stock')">Cantidad <span id="stockIndicator">▼</span></button>
     </div>
-    
-    <!-- Bottom Navigation -->
+
+    <div class="product-list" id="productList"></div>
+
     <div class="bottom-nav">
-        <a href="index.html" class="nav-item">
-    <div class="nav-icon">💰</div>
-    <div class="nav-label">Cierre Caja</div>
-</a>
-<a href="inventario-lista.html" class="nav-item active">
-    <div class="nav-icon">📦</div>
-    <div class="nav-label">Inventario</div>
-</a>
- <a href="capturar-albaran.html" class="nav-item">
-    <div class="nav-icon">🧾</div>
-    <div class="nav-label">Albarán</div>
-</a>
-<a href="reclamaciones.html" class="nav-item">
-    <div class="nav-icon">⚠️</div>
-    <div class="nav-label">Reclamar</div>
-</a>
-<a href="scanner.html" class="nav-item">
-    <div class="nav-icon">📱</div>
-    <div class="nav-label">Escanear</div>
-</a>
+        <a href="index.html" class="nav-item"><div class="nav-icon">💰</div><div class="nav-label">Cierre Caja</div></a>
+        <a href="inventario-lista.html" class="nav-item active"><div class="nav-icon">📦</div><div class="nav-label">Inventario</div></a>
+        <a href="capturar-albaran.html" class="nav-item"><div class="nav-icon">🧾</div><div class="nav-label">Albarán</div></a>
+        <a href="reclamaciones.html" class="nav-item"><div class="nav-icon">⚠️</div><div class="nav-label">Reclamar</div></a>
+        <a href="scanner.html" class="nav-item"><div class="nav-icon">📱</div><div class="nav-label">Escanear</div></a>
     </div>
 
     <script>
-        // Verificar autenticación
-// Configurar Supabase
 const supabaseUrl = 'https://tuqrjktnaptfttqxzvzn.supabase.co';
 const supabaseKey = 'sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -481,28 +118,18 @@ const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     if (session.user.email === 'nohelia@coviran.es') {
         const pagina = window.location.pathname.split('/').pop() || 'index.html';
         const permitidas = ['index.html', 'scanner.html', 'login.html'];
-        if (!permitidas.some(p => pagina.includes(p))) {
-            window.location.href = 'index.html';
-            return;
-        }
+        if (!permitidas.some(p => pagina.includes(p))) { window.location.href = 'index.html'; return; }
         const aplicarRestricciones = () => {
             document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
                 const href = item.getAttribute('href') || '';
-                if (!href.includes('index.html') && !href.includes('scanner.html')) {
-                    item.style.display = 'none';
-                }
+                if (!href.includes('index.html') && !href.includes('scanner.html')) item.style.display = 'none';
             });
             document.querySelectorAll('.dropdown-item').forEach(item => {
-                if (!item.textContent.includes('Cerrar sesión')) {
-                    item.style.display = 'none';
-                }
+                if (!item.textContent.includes('Cerrar sesión')) item.style.display = 'none';
             });
         };
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', aplicarRestricciones);
-        } else {
-            aplicarRestricciones();
-        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicarRestricciones);
+        else aplicarRestricciones();
     }
 })();
 
@@ -510,43 +137,30 @@ async function logout() {
     if (confirm('¿Seguro que quieres cerrar sesión?')) {
         await supabaseClient.auth.signOut();
         localStorage.removeItem('inventoryAuth');
-        localStorage.removeItem('currentStore');  // ← añade esta línea
+        localStorage.removeItem('currentStore');
         window.location.href = 'login.html';
     }
 }
-        
-        // Gestión de tiendas
-        let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
 
-        async function showStoreName() {
+let currentStore = localStorage.getItem('currentStore') || 'IZTIETA';
+
+async function showStoreName() {
     try {
-        const { data: store } = await supabaseClient
-            .from('stores')
-            .select('name')
-            .eq('code', currentStore)
-            .maybeSingle();
+        const { data: store } = await supabaseClient.from('stores').select('name').eq('code', currentStore).maybeSingle();
         document.getElementById('storeName').textContent = '📍 ' + (store?.name ?? currentStore);
     } catch (error) {
         document.getElementById('storeName').textContent = '📍 ' + currentStore;
     }
 }
 showStoreName();
-        
-        let inventory = [];
-        let currentFilter = 'all';
-       let currentSort = 'expiry_asc';
-        let filters = {
-    category: 'all',
-    brand: 'all',
-    location: 'all',
-    stock: 'all'
-};
 
-// Cargar categorías y marcas al iniciar
+let inventory = [];
+let currentSort = 'expiry_asc';
+let filters = { category: 'all', brand: 'all', location: 'all', stock: 'all' };
+
 loadFilterOptions();
 
 async function loadFilterOptions() {
-    // Cargar categorías
     try {
         const { data: categories } = await supabaseClient.from('categories').select('*').order('name');
         const categoryList = document.getElementById('categoryList');
@@ -554,11 +168,8 @@ async function loadFilterOptions() {
         categories.forEach(cat => {
             categoryList.innerHTML += `<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('category', '${cat.name}')">📂 ${cat.name}</button>`;
         });
-    } catch (error) {
-        console.error('Error cargando categorías:', error);
-    }
+    } catch (error) { console.error('Error cargando categorías:', error); }
 
-    // Cargar marcas
     try {
         const { data: brands } = await supabaseClient.from('brands').select('*').order('name');
         const brandList = document.getElementById('brandList');
@@ -566,9 +177,7 @@ async function loadFilterOptions() {
         brands.forEach(brand => {
             brandList.innerHTML += `<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyFilter('brand', '${brand.name}')">🏷️ ${brand.name}</button>`;
         });
-    } catch (error) {
-        console.error('Error cargando marcas:', error);
-    }
+    } catch (error) { console.error('Error cargando marcas:', error); }
 }
 
 function getStockBadge(stock) {
@@ -580,8 +189,7 @@ function getStockBadge(stock) {
 
 function getExpiryBadge(expiryDate) {
     if (!expiryDate) return { type: 'normal', text: 'Sin fecha', color: '#6b7280', bg: '#f3f4f6' };
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    const today = new Date(); today.setHours(0,0,0,0);
     const expiry = new Date(expiryDate);
     const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
     if (diffDays < 0) return { type: 'expired', text: 'CADUCADO', color: '#ffffff', bg: '#991b1b' };
@@ -591,86 +199,81 @@ function getExpiryBadge(expiryDate) {
     return { type: 'ok', text: `${diffDays}d`, color: '#166534', bg: '#dcfce7' };
 }
 
-function openFilterModal(type) {
-    document.getElementById(type + 'Modal').classList.add('show');
-}
-
-function closeFilterModal(type) {
-    document.getElementById(type + 'Modal').classList.remove('show');
-}
-
-function applyOrder(order) {
-    currentSort = order;
-    closeFilterModal('order');
-    loadProducts();
-}
+function openFilterModal(type) { document.getElementById(type + 'Modal').classList.add('show'); }
+function closeFilterModal(type) { document.getElementById(type + 'Modal').classList.remove('show'); }
+function applyOrder(order) { currentSort = order; closeFilterModal('order'); loadProducts(); }
 
 function applyFilter(type, value) {
     filters[type] = value;
     closeFilterModal(type);
-    
-    // Actualizar indicadores
     const indicator = document.getElementById(type + 'Indicator');
-    if (value !== 'all') {
-        indicator.textContent = '●';
-        indicator.style.color = '#2563eb';
-    } else {
-        indicator.textContent = '▼';
-        indicator.style.color = '';
-    }
-    
+    if (value !== 'all') { indicator.textContent = '●'; indicator.style.color = '#2563eb'; }
+    else { indicator.textContent = '▼'; indicator.style.color = ''; }
     loadProducts();
 }
-        
-        // Cargar productos al iniciar
-        loadProducts();
-        
+
+loadProducts();
+
 async function loadProducts() {
     const container = document.getElementById('productList');
-    
     try {
         container.innerHTML = '<div class="empty-state"><div style="font-size: 32px;">⏳</div><div>Cargando productos...</div></div>';
-        
-        const { data: stockData, error: stockError } = await supabaseClient
-    .from('product_stock')
-    .select('id, product_code, store_code, quantity, min_quantity, max_quantity, purchase_price, public_price, batch_number, expiry_date, status').eq('store_code', currentStore)
-    .eq('status', 'activo')
-    .or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
-        if (stockError) throw stockError;
-        
-        if (!stockData || stockData.length === 0) {
+        const hoy = new Date().toISOString().split('T')[0];
+
+        // 1) Filtrar PRODUCTOS en el servidor por categoría/marca (viven en la tabla products)
+        let prodQuery = supabaseClient.from('products').select('*');
+        if (filters.category !== 'all') prodQuery = prodQuery.eq('category', filters.category);
+        if (filters.brand !== 'all') prodQuery = prodQuery.eq('brand', filters.brand);
+        const { data: products, error: prodErr } = await prodQuery;
+        if (prodErr) throw prodErr;
+
+        if (!products || !products.length) {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">📦</div>
-                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">No hay productos en esta tienda</div>
-                    <div>Comienza escaneando códigos de barras</div>
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">No hay productos</div>
+                    <div>Prueba con otro filtro o escanea códigos</div>
                 </div>`;
             return;
         }
-        
-        // Agrupar stock por product_code (un producto puede tener múltiples lotes)
+
+        // 2) Traer el stock SOLO de esos productos (en bloques de 200 códigos para no pasar límites)
+        const codes = products.map(p => p.code);
+        let stockData = [];
+        for (let i = 0; i < codes.length; i += 200) {
+            const { data, error } = await supabaseClient
+                .from('product_stock')
+                .select('id, product_code, store_code, quantity, min_quantity, max_quantity, purchase_price, public_price, batch_number, expiry_date, status')
+                .in('product_code', codes.slice(i, i + 200))
+                .eq('store_code', currentStore)
+                .eq('status', 'activo')
+                .or('expiry_date.is.null,expiry_date.gt.' + hoy);
+            if (error) throw error;
+            stockData = stockData.concat(data || []);
+        }
+
+        if (!stockData.length) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Sin stock en esta tienda</div>
+                    <div>Estos productos no tienen stock activo en ${currentStore}</div>
+                </div>`;
+            return;
+        }
+
+        // Agrupar stock por product_code (un producto puede tener varios lotes)
         const stockMap = {};
-        stockData.forEach(s => {
-            if (!stockMap[s.product_code]) stockMap[s.product_code] = [];
-            stockMap[s.product_code].push(s);
-        });
-        
-        const productCodes = [...new Set(stockData.map(s => s.product_code))];
-        const { data: products, error: productsError } = await supabaseClient
-            .from('products')
-            .select('*')
-            .in('code', productCodes);
-        
-        if (productsError) throw productsError;
-        
-        // Crear items planos: una fila por cada lote
+        stockData.forEach(s => { (stockMap[s.product_code] ||= []).push(s); });
+
+        // Una fila por cada lote
         inventory = [];
         products.forEach(p => {
             const lots = stockMap[p.code] || [];
             lots.forEach(lot => {
                 inventory.push({
                     ...p,
-                    stock_id: lot.id,  
+                    stock_id: lot.id,
                     lot_quantity: lot.quantity,
                     lot_min: lot.min_quantity,
                     lot_max: lot.max_quantity,
@@ -682,68 +285,38 @@ async function loadProducts() {
                 });
             });
         });
-        
-        let sortedInventory = [...inventory];
 
-        // Filtros
-        sortedInventory = sortedInventory.filter(item => {
-            if (filters.category !== 'all' && item.category !== filters.category) return false;
-            if (filters.brand !== 'all' && item.brand !== filters.brand) return false;
+        // Filtros que quedan en cliente (ubicación y stock). Categoría y marca ya van en el servidor.
+        let sortedInventory = inventory.filter(item => {
             if (filters.location !== 'all' && item.location !== filters.location) return false;
-            
             if (filters.stock === 'out' && item.lot_quantity > 0) return false;
             if (filters.stock === 'min' && item.lot_quantity > item.lot_min) return false;
             if (filters.stock === 'max' && (!item.lot_max || item.lot_quantity < item.lot_max)) return false;
-            if (filters.stock === 'expired') {
-                const badge = getExpiryBadge(item.expiry_date);
-                if (badge.type !== 'expired') return false;
-            }
-            if (filters.stock === 'critical') {
-                const badge = getExpiryBadge(item.expiry_date);
-                if (badge.type !== 'critical' && badge.type !== 'expired') return false;
-            }
-            
+            if (filters.stock === 'expired') { if (getExpiryBadge(item.expiry_date).type !== 'expired') return false; }
+            if (filters.stock === 'critical') { const t = getExpiryBadge(item.expiry_date).type; if (t !== 'critical' && t !== 'expired') return false; }
             return true;
         });
 
-        // Ordenar
         switch(currentSort) {
             case 'expiry_asc':
-                sortedInventory.sort((a, b) => {
-                    if (!a.expiry_date && !b.expiry_date) return 0;
-                    if (!a.expiry_date) return 1;
-                    if (!b.expiry_date) return -1;
-                    return new Date(a.expiry_date) - new Date(b.expiry_date);
-                });
+                sortedInventory.sort((a, b) => { if (!a.expiry_date && !b.expiry_date) return 0; if (!a.expiry_date) return 1; if (!b.expiry_date) return -1; return new Date(a.expiry_date) - new Date(b.expiry_date); });
                 break;
             case 'expiry_desc':
-                sortedInventory.sort((a, b) => {
-                    if (!a.expiry_date && !b.expiry_date) return 0;
-                    if (!a.expiry_date) return 1;
-                    if (!b.expiry_date) return -1;
-                    return new Date(b.expiry_date) - new Date(a.expiry_date);
-                });
+                sortedInventory.sort((a, b) => { if (!a.expiry_date && !b.expiry_date) return 0; if (!a.expiry_date) return 1; if (!b.expiry_date) return -1; return new Date(b.expiry_date) - new Date(a.expiry_date); });
                 break;
-            case 'created_desc':
-                sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                break;
-            case 'created_asc':
-                sortedInventory.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                break;
-            case 'name_asc':
-                sortedInventory.sort((a, b) => a.name.localeCompare(b.name));
-                break;
-            case 'name_desc':
-                sortedInventory.sort((a, b) => b.name.localeCompare(a.name));
-                break;
-            case 'code':
-                sortedInventory.sort((a, b) => a.code.localeCompare(b.code));
-                break;
-            case 'quantity':
-                sortedInventory.sort((a, b) => b.lot_quantity - a.lot_quantity);
-                break;
+            case 'created_desc': sortedInventory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); break;
+            case 'created_asc': sortedInventory.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); break;
+            case 'name_asc': sortedInventory.sort((a, b) => a.name.localeCompare(b.name)); break;
+            case 'name_desc': sortedInventory.sort((a, b) => b.name.localeCompare(a.name)); break;
+            case 'code': sortedInventory.sort((a, b) => a.code.localeCompare(b.code)); break;
+            case 'quantity': sortedInventory.sort((a, b) => b.lot_quantity - a.lot_quantity); break;
         }
-        
+
+        if (!sortedInventory.length) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔍</div><div style="font-size:18px;font-weight:600;margin-bottom:8px;">Sin resultados</div><div>Ningún lote cumple los filtros</div></div>`;
+            return;
+        }
+
         container.innerHTML = sortedInventory.map((item) => {
             const expiryBadge = getExpiryBadge(item.expiry_date);
             const stockBadge = getStockBadge({ quantity: item.lot_quantity, min_quantity: item.lot_min, max_quantity: item.lot_max });
@@ -751,7 +324,6 @@ async function loadProducts() {
             const priceDisplay = item.lot_public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600;">${Number(item.lot_public_price).toFixed(2)}€</div>` : '';
             const expiryDisplay = item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('es-ES') : 'Sin fecha';
             const batchDisplay = item.batch_number ? `Lote: ${item.batch_number}` : '';
-            
             return `
                 <div class="product-item" style="border-left: 4px solid ${expiryBadge.bg === '#f3f4f6' ? '#d1d5db' : expiryBadge.color};">
                     <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E';" onclick="viewProduct('${item.code}', '${item.stock_id}')">
@@ -769,7 +341,7 @@ async function loadProducts() {
                     <button onclick="event.stopPropagation(); deleteProduct('${item.code}', '${item.name.replace(/'/g, "\\'")}');" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; margin-left: 4px;">🗑️</button>
                 </div>`;
         }).join('');
-        
+
     } catch (error) {
         console.error('Error cargando productos:', error);
         container.innerHTML = `
@@ -780,85 +352,44 @@ async function loadProducts() {
             </div>`;
     }
 }
-function getExpiryBadge(expiryDate) {
-    if (!expiryDate) return { type: 'normal', text: 'Sin fecha', color: '#6b7280', bg: '#f3f4f6' };
-    
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const expiry = new Date(expiryDate);
-    const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return { type: 'expired', text: 'CADUCADO', color: '#ffffff', bg: '#991b1b' };
-    if (diffDays <= 15) return { type: 'critical', text: `${diffDays}d`, color: '#991b1b', bg: '#fee2e2' };
-    if (diffDays <= 30) return { type: 'warning', text: `${diffDays}d`, color: '#92400e', bg: '#fef3c7' };
-    if (diffDays <= 60) return { type: 'caution', text: `${diffDays}d`, color: '#9a3412', bg: '#ffedd5' };
-    return { type: 'ok', text: `${diffDays}d`, color: '#166534', bg: '#dcfce7' };
+
+function filterProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('.product-item').forEach(item => {
+        item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? 'flex' : 'none';
+    });
 }
-        function filterProducts() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const allItems = document.querySelectorAll('.product-item');
-            
-            allItems.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        }
-        
-              
-     function viewProduct(code, stockId) {
+
+function viewProduct(code, stockId) {
     let url = 'scanner.html?code=' + encodeURIComponent(code);
     if (stockId) url += '&stockId=' + encodeURIComponent(stockId);
     window.location.href = url;
-}     
-   async function deleteProduct(code, name) {
-    if (!confirm(`⚠️ ¿Marcar "${name}" como caducado en ${currentStore}?\n\nDejará de aparecer en la lista pero no se borra de la BD.`)) {
-        return;
-    }
-    
-    try {
-        const { error } = await supabaseClient
-            .from('product_stock')
-            .update({ status: 'caducado' })
-            .eq('product_code', code)
-            .eq('store_code', currentStore)
-            .eq('status', 'activo');
-        
-        if (error) throw error;
-        
-        alert('✅ Marcado como caducado');
-        loadProducts();
-        
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
 }
 
-// Cerrar el dropdown si se hace clic fuera de él
+async function deleteProduct(code, name) {
+    if (!confirm(`⚠️ ¿Marcar "${name}" como caducado en ${currentStore}?\n\nDejará de aparecer en la lista pero no se borra de la BD.`)) return;
+    try {
+        const { error } = await supabaseClient.from('product_stock').update({ status: 'caducado' })
+            .eq('product_code', code).eq('store_code', currentStore).eq('status', 'activo');
+        if (error) throw error;
+        alert('✅ Marcado como caducado');
+        loadProducts();
+    } catch (error) { alert('Error: ' + error.message); }
+}
+
 window.onclick = function(event) {
-    // No cerrar si se hace clic en el botón de ajustes o dentro del dropdown
     if (!event.target.matches('.settings-btn') && !event.target.closest('.dropdown-content')) {
         const dropdowns = document.getElementsByClassName('dropdown-content');
         for (let i = 0; i < dropdowns.length; i++) {
-            const openDropdown = dropdowns[i];
-            if (openDropdown.classList.contains('show')) {
-                openDropdown.classList.remove('show');
-            }
+            if (dropdowns[i].classList.contains('show')) dropdowns[i].classList.remove('show');
         }
     }
 }
 
 function createManualProduct() {
-    // Cerrar el dropdown
     document.getElementById('dropdownMenu').classList.remove('show');
-    // Abrir modal para ingresar código manual
     document.getElementById('manualProductModal').classList.add('show');
-    setTimeout(() => {
-        document.getElementById('manualCodeInput').focus();
-    }, 100);
+    setTimeout(() => document.getElementById('manualCodeInput').focus(), 100);
 }
 function closeManualModal() {
     document.getElementById('manualProductModal').classList.remove('show');
@@ -867,61 +398,32 @@ function closeManualModal() {
 
 async function confirmManualProduct() {
     const code = document.getElementById('manualCodeInput').value.trim();
-    
-    if (!code) {
-        alert('⚠️ Por favor ingresa un código o referencia');
-        return;
-    }
-    
-    if (code.length < 3) {
-        alert('⚠️ El código debe tener al menos 3 caracteres');
-        return;
-    }
-    
-    // Verificar si el código ya existe
+    if (!code) { alert('⚠️ Por favor ingresa un código o referencia'); return; }
+    if (code.length < 3) { alert('⚠️ El código debe tener al menos 3 caracteres'); return; }
     try {
-        const { data, error } = await supabaseClient
-            .from('products')
-            .select('code')
-            .eq('code', code)
-            .maybeSingle();
-        
+        const { data } = await supabaseClient.from('products').select('code').eq('code', code).maybeSingle();
         if (data) {
             if (confirm(`⚠️ El código "${code}" ya existe.\n\n¿Quieres editarlo?`)) {
-    window.location.href = `scanner.html?code=${encodeURIComponent(code)}&manual=true`;
-}
-return;
+                window.location.href = `scanner.html?code=${encodeURIComponent(code)}&manual=true`;
+            }
             return;
         }
-    } catch (error) {
-        console.error('Error verificando código:', error);
-    }
-    
-    // Redirigir a scanner.html con el código manual
-window.location.href = `scanner.html?code=${encodeURIComponent(code)}&manual=true`;
+    } catch (error) { console.error('Error verificando código:', error); }
+    window.location.href = `scanner.html?code=${encodeURIComponent(code)}&manual=true`;
 }
-// Permitir enviar con Enter en el modal
+
 document.addEventListener('DOMContentLoaded', function() {
     const manualInput = document.getElementById('manualCodeInput');
-    if (manualInput) {
-        manualInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                confirmManualProduct();
-            }
-        });
-    }
+    if (manualInput) manualInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') confirmManualProduct(); });
 });
-function toggleDropdown() {
-    document.getElementById('dropdownMenu').classList.toggle('show');
-}
+
+function toggleDropdown() { document.getElementById('dropdownMenu').classList.toggle('show'); }
     </script>
-<!-- Modal para crear producto manual -->
+
 <div id="manualProductModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">📝 Crear Producto Manual</div>
-        <p style="color: #6b7280; font-size: 14px; margin-bottom: 15px;">
-            Ingresa un código de barras o referencia única para el producto
-        </p>
+        <p style="color: #6b7280; font-size: 14px; margin-bottom: 15px;">Ingresa un código de barras o referencia única para el producto</p>
         <input type="text" id="manualCodeInput" class="modal-input" placeholder="Ej: MAN-001, REF-ABC123..." maxlength="50">
         <div class="modal-buttons">
             <button class="modal-btn modal-btn-cancel" onclick="closeManualModal()">Cancelar</button>
@@ -929,25 +431,24 @@ function toggleDropdown() {
         </div>
     </div>
 </div>
-<!-- Modal de Ordenar -->
+
 <div id="orderModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">Ordenar por</div>
         <div style="max-height: 400px; overflow-y: auto;">
-            <!-- Reemplazar el contenido del orderModal -->
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b; font-weight: 600;" onclick="applyOrder('expiry_asc')">🔥 Caducidad (próxima primero)</button>
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('expiry_desc')">📅 Caducidad (lejana primero)</button>
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_desc')">Fecha creación 🧓→👶</button>
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_asc')">Fecha creación 👶→🧓</button>
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_asc')">Alfabético A→Z</button>
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_desc')">Alfabético Z→A</button>
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('code')">Por código</button>
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('quantity')">Por cantidad</button> </div>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b; font-weight: 600;" onclick="applyOrder('expiry_asc')">🔥 Caducidad (próxima primero)</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('expiry_desc')">📅 Caducidad (lejana primero)</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_desc')">Fecha creación 🧓→👶</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('created_asc')">Fecha creación 👶→🧓</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_asc')">Alfabético A→Z</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('name_desc')">Alfabético Z→A</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('code')">Por código</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #f3f4f6; color: #374151;" onclick="applyOrder('quantity')">Por cantidad</button>
+        </div>
         <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('order')" style="width: 100%; margin-top: 10px;">Cerrar</button>
     </div>
 </div>
 
-<!-- Modal de Categoría -->
 <div id="categoryModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">Filtrar por Categoría</div>
@@ -956,7 +457,6 @@ function toggleDropdown() {
     </div>
 </div>
 
-<!-- Modal de Marca -->
 <div id="brandModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">Filtrar por Marca</div>
@@ -965,7 +465,6 @@ function toggleDropdown() {
     </div>
 </div>
 
-<!-- Modal de Ubicación -->
 <div id="locationModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">Filtrar por Ubicación</div>
@@ -979,7 +478,6 @@ function toggleDropdown() {
     </div>
 </div>
 
-<!-- Modal de Cantidad -->
 <div id="stockModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">Filtrar por Stock</div>
@@ -988,9 +486,8 @@ function toggleDropdown() {
             <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('stock', 'out')">❌ Agotados (0)</button>
             <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fef3c7; color: #92400e;" onclick="applyFilter('stock', 'min')">⚠️ Cantidad mínima</button>
             <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #dcfce7; color: #166534;" onclick="applyFilter('stock', 'max')">✅ Cantidad máxima</button>
-            <!-- Agregar dentro del stockModal, después de "Cantidad máxima" -->
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b;" onclick="applyFilter('stock', 'expired')">💀 Caducados</button>
-<button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b;" onclick="applyFilter('stock', 'critical')">🔥 Próximos a caducar (≤15d)</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b;" onclick="applyFilter('stock', 'expired')">💀 Caducados</button>
+            <button class="modal-btn" style="width: 100%; margin-bottom: 10px; background: #fee2e2; color: #991b1b;" onclick="applyFilter('stock', 'critical')">🔥 Próximos a caducar (≤15d)</button>
         </div>
         <button class="modal-btn modal-btn-cancel" onclick="closeFilterModal('stock')" style="width: 100%; margin-top: 10px;">Cerrar</button>
     </div>
