@@ -8,34 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <style>
 :root{
-  --cream:#fdf3e6;
-  --cream-2:#f7e7d2;
-  --ink:#3a2014;
-  --ink-soft:#8a6a55;
-  --berry:#d9456f;
-  --berry-deep:#b32d56;
-  --pistachio:#86a96b;
-  --vanilla:#f0cf8a;
-  --choco:#6b4226;
-  --card:#fffaf3;
-  --shadow:rgba(94,52,28,.16);
+  --cream:#fdf3e6; --cream-2:#f7e7d2; --ink:#3a2014; --ink-soft:#8a6a55;
+  --berry:#d9456f; --berry-deep:#b32d56; --pistachio:#86a96b; --vanilla:#f0cf8a;
+  --choco:#6b4226; --card:#fffaf3; --shadow:rgba(94,52,28,.16);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{
-  font-family:'DM Sans',sans-serif;
-  color:var(--ink);
+  font-family:'DM Sans',sans-serif;color:var(--ink);
   background:
     radial-gradient(120% 90% at 12% -10%, #ffe6c9 0%, transparent 55%),
     radial-gradient(120% 90% at 95% 0%, #ffd9e2 0%, transparent 50%),
     radial-gradient(120% 120% at 50% 120%, #e7f0d8 0%, transparent 55%),
     var(--cream);
-  min-height:100vh;
-  overflow-x:hidden;
+  min-height:100vh;overflow-x:hidden;
 }
-/* subtle sprinkle texture */
 body::before{
   content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
   background-image:
@@ -43,43 +33,38 @@ body::before{
     radial-gradient(circle, var(--pistachio) 1.5px, transparent 1.6px),
     radial-gradient(circle, var(--vanilla) 1.5px, transparent 1.6px);
   background-size:140px 140px,170px 170px,200px 200px;
-  background-position:0 0,40px 70px,90px 30px;
-  mix-blend-mode:multiply;
+  background-position:0 0,40px 70px,90px 30px;mix-blend-mode:multiply;
 }
 .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:0 18px 60px}
 
-/* HEADER */
 header{padding:34px 4px 10px;text-align:center}
-.eyebrow{
-  font-size:13px;letter-spacing:.42em;text-transform:uppercase;color:var(--berry-deep);
+.eyebrow{font-size:13px;letter-spacing:.42em;text-transform:uppercase;color:var(--berry-deep);
   font-weight:700;opacity:0;animation:rise .7s .05s forwards}
-h1{
-  font-family:'Fraunces',serif;font-weight:900;line-height:.92;
+h1{font-family:'Fraunces',serif;font-weight:900;line-height:.92;
   font-size:clamp(46px,13vw,92px);color:var(--ink);letter-spacing:-.02em;
   margin:6px 0 4px;opacity:0;animation:rise .8s .12s forwards}
 h1 em{font-style:italic;color:var(--berry);font-weight:500}
-.sub{
-  font-size:15px;color:var(--ink-soft);max-width:420px;margin:0 auto;
+.sub{font-size:15px;color:var(--ink-soft);max-width:420px;margin:0 auto;
   opacity:0;animation:rise .8s .2s forwards}
 .scoop{display:inline-block;animation:wobble 3.2s ease-in-out infinite}
 
-/* CONTROLS */
-.controls{
-  position:sticky;top:0;z-index:30;margin:22px -18px 0;padding:14px 18px;
-  background:linear-gradient(var(--cream) 60%, transparent);
-  display:flex;flex-direction:column;gap:12px}
-.searchbar{
-  display:flex;align-items:center;gap:10px;background:var(--card);
+.controls{position:sticky;top:0;z-index:30;margin:22px -18px 0;padding:14px 18px;
+  background:linear-gradient(var(--cream) 60%, transparent);display:flex;flex-direction:column;gap:12px}
+.searchbar{display:flex;align-items:center;gap:10px;background:var(--card);
   border:1.5px solid var(--cream-2);border-radius:40px;padding:12px 18px;
   box-shadow:0 6px 18px -10px var(--shadow);opacity:0;animation:rise .7s .26s forwards}
 .searchbar input{flex:1;border:none;background:none;outline:none;font:inherit;font-size:16px;color:var(--ink)}
 .searchbar input::placeholder{color:#c2a890}
+/* botón escanear dentro de la barra */
+.scan-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;border:none;cursor:pointer;
+  background:var(--berry);color:#fff;font:inherit;font-weight:700;font-size:14px;
+  padding:9px 14px;border-radius:30px;box-shadow:0 6px 14px -6px var(--berry)}
+.scan-btn:active{transform:scale(.96)}
 .row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;
   opacity:0;animation:rise .7s .32s forwards}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .chips::-webkit-scrollbar{display:none}
-.chip{
-  white-space:nowrap;border:1.5px solid var(--cream-2);background:var(--card);
+.chip{white-space:nowrap;border:1.5px solid var(--cream-2);background:var(--card);
   color:var(--ink-soft);padding:8px 15px;border-radius:30px;font-size:13.5px;font-weight:600;
   cursor:pointer;transition:.25s;flex-shrink:0}
 .chip:hover{border-color:var(--berry)}
@@ -92,23 +77,17 @@ h1 em{font-style:italic;color:var(--berry);font-weight:500}
 
 .count{font-size:13px;color:var(--ink-soft);padding:6px 4px 0;font-weight:500}
 
-/* GRID */
-.grid{display:grid;gap:16px;margin-top:8px;
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.grid{display:grid;gap:16px;margin-top:8px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .grid.list-mode{grid-template-columns:1fr}
 
-.card{
-  position:relative;background:var(--card);border-radius:24px;overflow:hidden;cursor:pointer;
-  border:1.5px solid rgba(255,255,255,.6);
-  box-shadow:0 14px 30px -20px var(--shadow);
+.card{position:relative;background:var(--card);border-radius:24px;overflow:hidden;cursor:pointer;
+  border:1.5px solid rgba(255,255,255,.6);box-shadow:0 14px 30px -20px var(--shadow);
   transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s;
   opacity:0;transform:translateY(22px) scale(.96);animation:pop .6s forwards}
 .card:hover{transform:translateY(-6px);box-shadow:0 24px 40px -22px var(--shadow)}
 .card:active{transform:scale(.97)}
-.scoop-art{
-  height:128px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
-.scoop-art::after{content:"";position:absolute;inset:0;
-  background:radial-gradient(60% 60% at 50% 30%, rgba(255,255,255,.55), transparent 70%)}
+.scoop-art{height:128px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.scoop-art::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 60% at 50% 30%, rgba(255,255,255,.55), transparent 70%)}
 .scoop-art .glyph{font-size:58px;filter:drop-shadow(0 8px 10px rgba(0,0,0,.18));
   transition:transform .4s cubic-bezier(.2,.9,.2,1);z-index:1}
 .card:hover .scoop-art .glyph{transform:scale(1.12) rotate(-5deg)}
@@ -127,7 +106,6 @@ h1 em{font-style:italic;color:var(--berry);font-weight:500}
 .price small{font-size:11px;font-weight:600}
 .tag-avail{font-size:11px;font-weight:700;color:var(--pistachio)}
 
-/* LIST MODE tweaks */
 .list-mode .card{display:flex;align-items:stretch}
 .list-mode .scoop-art{height:auto;width:104px;flex-shrink:0}
 .list-mode .scoop-art .glyph{font-size:46px}
@@ -135,30 +113,24 @@ h1 em{font-style:italic;color:var(--berry);font-weight:500}
 .list-mode .name{-webkit-line-clamp:1;min-height:0}
 .list-mode .pack-badge{top:8px;right:8px}
 
-/* DETAIL */
 .detail{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;
   background:rgba(58,32,20,0);pointer-events:none;transition:background .35s}
 .detail.show{background:rgba(58,32,20,.5);pointer-events:auto}
-.sheet{
-  width:100%;max-width:560px;max-height:94vh;overflow-y:auto;background:var(--cream);
+.sheet{width:100%;max-width:560px;max-height:94vh;overflow-y:auto;background:var(--cream);
   border-radius:34px 34px 0 0;transform:translateY(102%);transition:transform .42s cubic-bezier(.2,.85,.25,1);
   box-shadow:0 -20px 60px -20px rgba(58,32,20,.5)}
 .detail.show .sheet{transform:translateY(0)}
 .sheet-hero{height:240px;display:flex;align-items:center;justify-content:center;position:relative;
   border-radius:34px 34px 0 0;overflow:hidden}
-.sheet-hero::after{content:"";position:absolute;inset:0;
-  background:radial-gradient(70% 70% at 50% 25%, rgba(255,255,255,.5), transparent 70%)}
-.sheet-hero .glyph{font-size:120px;filter:drop-shadow(0 16px 18px rgba(0,0,0,.2));
-  animation:floaty 3.5s ease-in-out infinite;z-index:1}
-.grab{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:46px;height:5px;
-  border-radius:5px;background:rgba(255,255,255,.7);z-index:3}
+.sheet-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(70% 70% at 50% 25%, rgba(255,255,255,.5), transparent 70%)}
+.sheet-hero .glyph{font-size:120px;filter:drop-shadow(0 16px 18px rgba(0,0,0,.2));animation:floaty 3.5s ease-in-out infinite;z-index:1}
+.grab{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:46px;height:5px;border-radius:5px;background:rgba(255,255,255,.7);z-index:3}
 .close{position:absolute;top:14px;right:16px;z-index:3;width:38px;height:38px;border:none;cursor:pointer;
   border-radius:50%;background:rgba(255,255,255,.9);font-size:20px;color:var(--ink);
   display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -6px var(--shadow)}
 .sheet-body{padding:22px 24px 40px}
 .sheet-body .brand{font-size:12px}
-.sheet-body h2{font-family:'Fraunces',serif;font-weight:900;font-size:30px;line-height:1.05;
-  margin:4px 0 16px;letter-spacing:-.01em}
+.sheet-body h2{font-family:'Fraunces',serif;font-weight:900;font-size:30px;line-height:1.05;margin:4px 0 16px;letter-spacing:-.01em}
 .price-pill{display:inline-flex;align-items:baseline;gap:4px;background:var(--ink);color:var(--cream);
   font-family:'Fraunces',serif;font-weight:900;font-size:26px;padding:8px 18px;border-radius:30px;margin-bottom:20px}
 .price-pill small{font:600 13px 'DM Sans',sans-serif}
@@ -166,12 +138,7 @@ h1 em{font-style:italic;color:var(--berry);font-weight:500}
 .spec{background:var(--card);border:1.5px solid var(--cream-2);border-radius:18px;padding:14px 16px}
 .spec .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
 .spec .v{font-family:'Fraunces',serif;font-size:21px;font-weight:600;margin-top:3px}
-.spec.full{grid-column:1/-1}
-.avail-line{display:flex;align-items:center;gap:8px;margin-top:18px;font-size:14px;font-weight:600}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--pistachio);box-shadow:0 0 0 4px rgba(134,169,107,.25)}
-.dot.off{background:#cbb6a6;box-shadow:0 0 0 4px rgba(203,182,166,.25)}
 
-/* skeleton + states */
 .skel{height:210px;border-radius:24px;background:linear-gradient(100deg,#fbf0e0 30%,#fff7ec 50%,#fbf0e0 70%);
   background-size:200% 100%;animation:shimmer 1.3s infinite}
 .empty{text-align:center;padding:70px 20px;color:var(--ink-soft)}
@@ -181,6 +148,21 @@ h1 em{font-style:italic;color:var(--berry);font-weight:500}
   background:var(--ink);color:var(--cream);font-size:12px;font-weight:600;padding:8px 16px;border-radius:30px;
   box-shadow:0 10px 24px -10px rgba(58,32,20,.6);opacity:0;transition:opacity .4s}
 .demo-flag.show{opacity:.92}
+
+/* ESCÁNER (overlay) */
+.scanner{position:fixed;inset:0;z-index:120;background:rgba(58,32,20,.92);
+  display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.scanner.show{display:flex}
+.scanner h3{font-family:'Fraunces',serif;color:var(--cream);font-size:24px;margin-bottom:6px;text-align:center}
+.scanner p{color:#e9d7c5;font-size:14px;margin-bottom:18px;text-align:center}
+#reader{width:100%;max-width:420px;aspect-ratio:4/3;background:#000;border-radius:22px;overflow:hidden;
+  position:relative;box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
+#reader video,#reader canvas{width:100%!important;height:100%!important;object-fit:cover}
+#reader canvas.drawingBuffer{position:absolute;top:0;left:0}
+.scan-frame{position:absolute;inset:16% 12%;border:3px solid rgba(255,255,255,.85);border-radius:16px;z-index:5;pointer-events:none}
+.scanner-msg{color:var(--vanilla);font-size:13px;margin-top:14px;min-height:18px;text-align:center}
+.scanner-close{margin-top:22px;border:none;cursor:pointer;background:var(--cream);color:var(--ink);
+  font:inherit;font-weight:700;font-size:15px;padding:12px 28px;border-radius:30px}
 
 @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes pop{to{opacity:1;transform:none}}
@@ -202,6 +184,7 @@ h1 em{font-style:italic;color:var(--berry);font-weight:500}
     <div class="searchbar">
       <span>🔍</span>
       <input id="search" type="text" placeholder="Buscar sabor, marca…" autocomplete="off">
+      <button class="scan-btn" onclick="openScanner()">📷 Escanear</button>
     </div>
     <div class="row">
       <div class="chips" id="chips"></div>
@@ -220,15 +203,22 @@ h1 em{font-style:italic;color:var(--berry);font-weight:500}
   <div class="sheet" id="sheet"></div>
 </div>
 
+<!-- ESCÁNER -->
+<div class="scanner" id="scanner">
+  <h3>Escanea tu helado 🍦</h3>
+  <p>Apunta al código de barras del producto</p>
+  <div id="reader"><div class="scan-frame"></div></div>
+  <div class="scanner-msg" id="scannerMsg">Buscando código…</div>
+  <button class="scanner-close" onclick="closeScanner()">Cerrar</button>
+</div>
+
 <div class="demo-flag" id="demoFlag">Mostrando datos de ejemplo</div>
 
 <script>
-/* ---------- Supabase ---------- */
 const SUPA_URL='https://tuqrjktnaptfttqxzvzn.supabase.co';
 const SUPA_KEY='sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
 const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
-/* ---------- Fallback (los 39 helados del albarán) ---------- */
 const FALLBACK = [
  ['HELADO ORIGINAL VAINILLA CARTE D OR 1 L',6,10],['PIRULO FANTASMIKOS 18x75ml',1,10],
  ['MAXIBON NATA 24x140ml',1,10],['MAXIBON WAFFLE 24x140ml',1,10],
@@ -252,7 +242,6 @@ const FALLBACK = [
  ['CONO VAINILLA DISC CHOCO MILKA 120 G P-4',6,10]
 ].map((r,i)=>({code:'demo'+i,internal_code:'demo'+i,name:r[0],units_per_pack:r[1],iva:r[2],public_price:null,_qty:1}));
 
-/* ---------- Helpers de presentación ---------- */
 function brandOf(n){
   const u=n.toUpperCase();
   const m={'MAGNUM':'Magnum','UTOPIA':'Magnum','NESTLE':'Nestlé','MILKA':'Milka','KIT KAT':'Kit Kat',
@@ -289,7 +278,6 @@ function pretty(n){
 }
 const eur=v=>(v==null||v<=0)?null:Number(v).toFixed(2).replace('.',',')+' €';
 
-/* ---------- Estado ---------- */
 let DATA=[], view='grid', brand='Todas', q='';
 
 async function load(){
@@ -378,10 +366,9 @@ function renderSkeleton(){
   document.getElementById('grid').innerHTML=Array(8).fill('<div class="skel"></div>').join('');
 }
 
-/* ---------- Detalle ---------- */
-function openDetail(i){
-  const d=DATA[i], f=flavor(d.name), price=eur(d.public_price);
-  const inStock=d._qty>0;
+/* ---------- Detalle (solo lectura) ---------- */
+function buildDetail(d){
+  const f=flavor(d.name), price=eur(d.public_price);
   document.getElementById('sheet').innerHTML=`
     <div class="sheet-hero" style="background:linear-gradient(160deg,${f.c1},${f.c2})">
       <div class="grab"></div>
@@ -401,11 +388,89 @@ function openDetail(i){
   document.getElementById('detail').classList.add('show');
   document.body.style.overflow='hidden';
 }
+function openDetail(i){ buildDetail(DATA[i]); }
 function closeDetail(){
   document.getElementById('detail').classList.remove('show');
   document.body.style.overflow='';
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeScanner();}});
+
+/* ---------- Escáner ---------- */
+let scanning=false, scanLock=false;
+
+function openScanner(){
+  document.getElementById('scanner').classList.add('show');
+  document.getElementById('scannerMsg').textContent='Buscando código…';
+  document.body.style.overflow='hidden';
+  scanLock=false;
+  Quagga.init({
+    inputStream:{ name:"Live", type:"LiveStream", target:document.querySelector('#reader'),
+      constraints:{ facingMode:"environment" } },
+    decoder:{ readers:["ean_reader","ean_8_reader","upc_reader","upc_e_reader","code_128_reader"] },
+    locate:true, locator:{ halfSample:true, patchSize:"medium" }, frequency:10
+  }, function(err){
+    if(err){ document.getElementById('scannerMsg').textContent='No se pudo abrir la cámara 😕'; console.error(err); return; }
+    Quagga.start(); scanning=true;
+  });
+  Quagga.onDetected(onScan);
+}
+
+function onScan(result){
+  if(scanLock) return;
+  const code = result?.codeResult?.code;
+  if(!code || code.length<8) return;
+  scanLock=true;
+  beep();
+  lookupAndShow(code);
+}
+
+async function lookupAndShow(code){
+  document.getElementById('scannerMsg').textContent='Buscando producto…';
+  let prod=null;
+  // 1) buscar en lo ya cargado (helados)
+  prod = DATA.find(d => d.code===code || d.internal_code===code);
+  // 2) si no, buscar en Supabase (cualquier helado por code o internal_code)
+  if(!prod){
+    try{
+      const {data}=await sb.from('products').select('*')
+        .eq('category','Helados').or(`code.eq.${code},internal_code.eq.${code}`).limit(1);
+      if(data && data.length){
+        const p=data[0];
+        // sacar precio/stock
+        try{
+          const {data:st}=await sb.from('product_stock').select('public_price,quantity,status')
+            .eq('product_code',p.code).eq('status','activo');
+          let pr=0,qy=0;(st||[]).forEach(s=>{if(s.public_price>0&&(pr===0||s.public_price<pr))pr=s.public_price;qy+=Number(s.quantity||0);});
+          p.public_price=(p.public_price>0?p.public_price:(pr||null)); p._qty=qy;
+        }catch(_){}
+        prod=p;
+      }
+    }catch(_){}
+  }
+  if(prod){
+    closeScanner();
+    buildDetail(prod);
+  }else{
+    document.getElementById('scannerMsg').textContent='Ese no es uno de nuestros helados 🍦';
+    setTimeout(()=>{ scanLock=false; document.getElementById('scannerMsg').textContent='Buscando código…'; }, 1800);
+  }
+}
+
+function closeScanner(){
+  if(scanning){ try{ Quagga.offDetected(onScan); Quagga.stop(); }catch(_){} scanning=false; }
+  document.getElementById('scanner').classList.remove('show');
+  if(!document.getElementById('detail').classList.contains('show')) document.body.style.overflow='';
+}
+
+function beep(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=800; o.type='sine'; g.gain.value=0.3;
+    o.start(ctx.currentTime); o.stop(ctx.currentTime+0.1);
+  }catch(_){}
+}
 
 load();
 </script>
