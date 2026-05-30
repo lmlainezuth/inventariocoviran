@@ -324,6 +324,7 @@ async function loadProducts() {
             const priceDisplay = item.lot_public_price > 0 ? `<div style="font-size: 14px; color: #16a34a; font-weight: 600;">${Number(item.lot_public_price).toFixed(2)}€</div>` : '';
             const expiryDisplay = item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('es-ES') : 'Sin fecha';
             const batchDisplay = item.batch_number ? `Lote: ${item.batch_number}` : '';
+            const packDisplay = item.units_per_pack ? `📦 Caja: ${item.units_per_pack} ud` : '';
             return `
                 <div class="product-item" style="border-left: 4px solid ${expiryBadge.bg === '#f3f4f6' ? '#d1d5db' : expiryBadge.color};">
                     <img src="${imageUrl}" class="product-image" alt="${item.name}" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'%3E%3Crect width=\\'60\\' height=\\'60\\' fill=\\'%23f3f4f6\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' font-size=\\'24\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3E📦%3C/text%3E%3C/svg%3E';" onclick="viewProduct('${item.code}', '${item.stock_id}')">
@@ -331,6 +332,7 @@ async function loadProducts() {
                         <div class="product-name">${item.name}</div>
                         <div class="product-quantity">Cant: ${item.lot_quantity} ${item.unit || 'ud'} · ${batchDisplay}</div>
                         <div class="product-code">${item.code} ${item.internal_code ? '· Int: ' + item.internal_code : ''}</div>
+                        ${packDisplay ? `<div style="font-size: 12px; color: #6b7280; font-weight: 600;">${packDisplay}</div>` : ''}
                         <div style="font-size: 12px; color: ${expiryBadge.color}; font-weight: 600;">📅 ${expiryDisplay}</div>
                         ${priceDisplay}
                     </div>
