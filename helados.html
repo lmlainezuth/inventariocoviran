@@ -429,11 +429,11 @@ async function lookupAndShow(code){
   let prod=null;
   // 1) buscar en lo ya cargado (helados)
   prod = DATA.find(d => d.code===code || d.internal_code===code);
-  // 2) si no, buscar en Supabase (cualquier helado por code o internal_code)
+  // 2) si no, buscar en Supabase (CUALQUIER producto por code o internal_code)
   if(!prod){
     try{
       const {data}=await sb.from('products').select('*')
-        .eq('category','Helados').or(`code.eq.${code},internal_code.eq.${code}`).limit(1);
+        .or(`code.eq.${code},internal_code.eq.${code}`).limit(1);
       if(data && data.length){
         const p=data[0];
         // sacar precio/stock
@@ -451,7 +451,7 @@ async function lookupAndShow(code){
     closeScanner();
     buildDetail(prod);
   }else{
-    document.getElementById('scannerMsg').textContent='Ese no es uno de nuestros helados 🍦';
+    document.getElementById('scannerMsg').textContent='Producto no encontrado 🔍';
     setTimeout(()=>{ scanLock=false; document.getElementById('scannerMsg').textContent='Buscando código…'; }, 1800);
   }
 }
