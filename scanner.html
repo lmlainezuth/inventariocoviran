@@ -60,6 +60,19 @@ select { background: white; cursor: pointer; }
 .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
 .modal-btn-cancel { background: #6b7280; color: white; }
 .modal-btn-save { background: #2563eb; color: white; }
+/* Captura de código de barras (solo edición) */
+.ean-row { display: flex; gap: 8px; align-items: flex-end; }
+.ean-row > div { flex: 1; }
+.btn-scan-ean { flex: 0 0 auto; width: auto; background: #16a34a; color: white; padding: 10px 14px; font-size: 18px; border-radius: 6px; }
+.bc-ovl { position: fixed; inset: 0; z-index: 10000; background: #000; display: none; flex-direction: column; }
+.bc-ovl.show { display: flex; }
+.bc-ovl .bc-head { background: rgba(0,0,0,.7); color: #fff; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+.bc-ovl .bc-head h2 { font-size: 16px; flex: 1; }
+.bc-ovl .bc-close { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; width: auto; flex: 0; }
+.bc-view { flex: 1; position: relative; overflow: hidden; }
+.bc-view video, .bc-view canvas { width: 100% !important; height: 100% !important; object-fit: cover; }
+.bc-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 320px; height: 110px; border: 3px solid #16a34a; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,.4); pointer-events: none; }
+.bc-msg { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,.7); padding: 8px 14px; border-radius: 6px; font-size: 13px; }
 </style>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 </head>
@@ -159,6 +172,15 @@ select { background: white; cursor: pointer; }
                 <div class="form-group">
                     <label>Código Interno</label>
                     <input type="text" id="internalCode" placeholder="Ej: 401002">
+                </div>
+
+                <!-- Código de barras (solo al editar un producto existente) -->
+                <div class="form-group" id="barcodeGroup" style="display:none;">
+                    <label>Código de barras (EAN)</label>
+                    <div class="ean-row">
+                        <div><input type="text" id="barcodeInput" placeholder="Escanea o escribe el EAN"></div>
+                        <button type="button" class="btn-scan-ean" onclick="abrirEscanerEAN()">📷</button>
+                    </div>
                 </div>
 
                 <div class="form-group" id="lotSelectorGroup" style="display:none;">
@@ -406,6 +428,8 @@ async function loadProductData(code, preferredStockId = null) {
             document.getElementById('category').value = existingProduct.category || '';
             document.getElementById('brand').value = existingProduct.brand || '';
             document.getElementById('internalCode').value = existingProduct.internal_code || '';
+            document.getElementById('barcodeGroup').style.display = 'block';      // ← solo en edición
+            document.getElementById('barcodeInput').value = existingProduct.code || '';
             if (existingProduct.photo) {
                 document.getElementById('productPhoto').src = existingProduct.photo;
                 document.getElementById('productPhoto').style.display = 'block';
@@ -462,6 +486,7 @@ async function loadProductData(code, preferredStockId = null) {
             document.getElementById('result').innerHTML = `<div class="result-code">✅ Producto encontrado</div>`;
         } else {
             document.getElementById('unitsPerPack').value = 1;   // ← nuevo producto: por defecto 1
+            document.getElementById('barcodeGroup').style.display = 'none';   // ← oculto al crear
             document.getElementById('result').innerHTML = `<div class="result-code">🆕 Producto nuevo: <span id="scannedCode">${code}</span></div>`;
         }
 
@@ -554,6 +579,17 @@ async function saveProduct() {
         }
 
         if (existingProduct) {
+            // Si en edición se capturó/escribió un EAN distinto, cambiar el code (cascada a product_stock)
+            const nuevoBarcode = (document.getElementById('barcodeInput').value || '').trim();
+            if (nuevoBarcode && nuevoBarcode !== currentCode) {
+                const { data: yaExiste } = await supabaseClient.from('products').select('code').eq('code', nuevoBarcode).maybeSingle();
+                if (yaExiste) { alert('Ese código de barras ya pertenece a otro producto.'); return; }
+                const { error: eCode } = await supabaseClient.from('products').update({ code: nuevoBarcode }).eq('code', currentCode);
+                if (eCode) throw eCode;
+                currentCode = nuevoBarcode;
+                existingProduct.code = nuevoBarcode;
+            }
+
             if (confirm('Este código ya existe.\n\n¿Actualizar todo (SI) o solo sumar cantidad (NO)?')) {
                 await supabaseClient.from('products').update({
                     name, unit, category, brand, photo: currentPhotoBase64,
@@ -648,6 +684,8 @@ function clearProductForm() {
     document.getElementById('productForm').classList.remove('show');
     document.getElementById('scannerContainer').style.display = 'block';
     document.getElementById('internalCode').value = '';
+    document.getElementById('barcodeGroup').style.display = 'none';
+    document.getElementById('barcodeInput').value = '';
     document.getElementById('batchNumber').value = '';
     document.getElementById('expiryDate').value = '';
 }
@@ -666,6 +704,43 @@ async function logout() {
         localStorage.removeItem('inventoryAuth'); localStorage.removeItem('currentStore');
         window.location.href = 'login.html';
     }
+}
+
+/* ---------- Escáner de código de barras (modo edición) ---------- */
+let eanScanActivo = false;
+function abrirEscanerEAN() {
+    if (eanScanActivo) return;
+    if (isScanning) stopScanner();   // por si el escáner principal estuviera activo
+    eanScanActivo = true;
+    document.getElementById('eanOverlay').classList.add('show');
+    document.getElementById('eanMsg').textContent = 'Apunta al código de barras';
+    Quagga.init({
+        inputStream: { type: 'LiveStream', target: document.getElementById('eanView'),
+            constraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+        locator: { patchSize: 'medium', halfSample: true },
+        numOfWorkers: navigator.hardwareConcurrency || 2,
+        decoder: { readers: ['ean_reader', 'ean_8_reader', 'code_128_reader', 'upc_reader', 'upc_e_reader'] },
+        locate: true
+    }, function(err) {
+        if (err) { document.getElementById('eanMsg').textContent = 'No se pudo abrir la cámara'; console.error(err); return; }
+        Quagga.start();
+    });
+    Quagga.onDetected(onEanDetected);
+}
+
+function onEanDetected(result) {
+    const code = result?.codeResult?.code;
+    if (!code || !eanScanActivo || code.length < 8) return;
+    if (navigator.vibrate) navigator.vibrate(80);
+    document.getElementById('barcodeInput').value = code;
+    cerrarEscanerEAN();
+}
+
+function cerrarEscanerEAN() {
+    if (!eanScanActivo) return;
+    try { Quagga.offDetected(onEanDetected); Quagga.stop(); } catch (e) {}
+    document.getElementById('eanOverlay').classList.remove('show');
+    eanScanActivo = false;
 }
 </script>
 
@@ -688,6 +763,18 @@ async function logout() {
             <button class="modal-btn modal-btn-cancel" onclick="closeModal('brand')">Cancelar</button>
             <button class="modal-btn modal-btn-save" onclick="saveNewBrand()">Guardar</button>
         </div>
+    </div>
+</div>
+
+<!-- Overlay escáner de código de barras (modo edición) -->
+<div id="eanOverlay" class="bc-ovl">
+    <div class="bc-head">
+        <h2>Escanear código de barras</h2>
+        <button class="bc-close" onclick="cerrarEscanerEAN()">✕</button>
+    </div>
+    <div class="bc-view" id="eanView">
+        <div class="bc-frame"></div>
+        <div class="bc-msg" id="eanMsg">Apunta al código de barras</div>
     </div>
 </div>
 </body>
