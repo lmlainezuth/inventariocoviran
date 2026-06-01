@@ -293,10 +293,11 @@ let DATA=[], view='grid', brand='Todas', q='';
 
 async function load(){
   renderSkeleton();
-  let rows=null, demo=false;
+  let rows=null, demo=false, ok=false;
   try{
     const {data,error}=await sb.from('products').select('*').eq('category','Helados').order('name');
     if(error) throw error;
+    ok=true;
     if(data && data.length){
       const codes=data.map(p=>p.code);
       let stock={};
@@ -315,7 +316,7 @@ async function load(){
         _qty:stock[p.code]?.q ?? 0}));
     }
   }catch(e){ console.warn('Supabase no disponible, uso demo:',e.message); }
-  if(!rows || !rows.length){ rows=FALLBACK; demo=true; }
+  if(!ok){ rows=FALLBACK; demo=true; } else if(!rows){ rows=[]; }
   DATA=rows;
   if(demo) document.getElementById('demoFlag').classList.add('show');
   buildChips(); render();
