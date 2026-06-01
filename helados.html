@@ -388,7 +388,7 @@ function buildDetail(d){
       <span class="glyph">${f.g}</span>
       ${d.photo?`<img class="sheet-img" src="${d.photo}" alt="${pretty(d.name)}" onerror="this.remove()">`:''}
     </div>
-    < class="sheet-body">
+    <div class="sheet-body">
       <div class="brand">${brandOf(d.name)}</div>
       <h2>${pretty(d.name)}</h2>
       ${price?`<div class="price-pill">${price.replace(' €','')}<small>€</small></div>`:'<div class="price-pill" style="background:var(--cream-2);color:var(--ink-soft)">Sin precio</div>'}
