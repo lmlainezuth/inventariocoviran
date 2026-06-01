@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Nuestros Helados</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-<style>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Nuestros Helados</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap"
+      rel="stylesheet">
+    <script
+      src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+    <style>
 :root{
   --cream:#fdf3e6; --cream-2:#f7e7d2; --ink:#3a2014; --ink-soft:#8a6a55;
   --berry:#d9456f; --berry-deep:#b32d56; --pistachio:#86a96b; --vanilla:#f0cf8a;
@@ -171,53 +176,59 @@ h1 em{font-style:italic;color:var(--berry);font-weight:500}
 @keyframes floaty{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-14px) rotate(3deg)}}
 @media (min-width:640px){.detail{align-items:center}.sheet{border-radius:34px;max-height:88vh}.sheet-hero{border-radius:34px 34px 0 0}}
 </style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div class="eyebrow">🍦 Zona de antojos</div>
-    <h1>Helados <em>bien fríos</em> <span class="scoop">🍦</span></h1>
-    <p class="sub">Entras a por uno y sales con tres — pura matemática de verano. Toca el que más te tiente y míralo de cerca… si te atreves.</p>
-  </header>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="eyebrow">🍦 Zona de antojos</div>
+        <h1>Helados <em>bien fríos</em> <span class="scoop">🍦</span></h1>
+        <p class="sub">Entras a por uno y sales con tres — pura matemática de
+          verano. Toca el que más te tiente y míralo de cerca… si te
+          atreves.</p>
+      </header>
 
-  <div class="controls">
-    <div class="searchbar">
-      <span>🔍</span>
-      <input id="search" type="text" placeholder="Buscar sabor, marca…" autocomplete="off">
-      <button class="scan-btn" onclick="openScanner()">📷 Escanear</button>
-    </div>
-    <div class="row">
-      <div class="chips" id="chips"></div>
-      <div class="toggle">
-        <button id="btnGrid" class="active" onclick="setView('grid')">▦ Grid</button>
-        <button id="btnList" onclick="setView('list')">☰ Lista</button>
+      <div class="controls">
+        <div class="searchbar">
+          <span>🔍</span>
+          <input id="search" type="text" placeholder="Buscar sabor, marca…"
+            autocomplete="off">
+          <button class="scan-btn" onclick="openScanner()">📷 Escanear</button>
+        </div>
+        <div class="row">
+          <div class="chips" id="chips"></div>
+          <div class="toggle">
+            <button id="btnGrid" class="active" onclick="setView('grid')">▦
+              Grid</button>
+            <button id="btnList" onclick="setView('list')">☰ Lista</button>
+          </div>
+        </div>
       </div>
+
+      <div class="count" id="count"></div>
+      <div class="grid" id="grid"></div>
     </div>
-  </div>
 
-  <div class="count" id="count"></div>
-  <div class="grid" id="grid"></div>
-</div>
+    <div class="detail" id="detail"
+      onclick="if(event.target===this)closeDetail()">
+      <div class="sheet" id="sheet"></div>
+    </div>
 
-<div class="detail" id="detail" onclick="if(event.target===this)closeDetail()">
-  <div class="sheet" id="sheet"></div>
-</div>
+    <!-- ESCÁNER -->
+    <div class="scanner" id="scanner">
+      <h3>Escanea tu helado 🍦</h3>
+      <p>Apunta al código de barras del producto</p>
+      <div id="reader"><div class="scan-frame"></div></div>
+      <div class="scanner-msg" id="scannerMsg">Buscando código…</div>
+      <button class="scanner-close" onclick="closeScanner()">Cerrar</button>
+    </div>
 
-<!-- ESCÁNER -->
-<div class="scanner" id="scanner">
-  <h3>Escanea tu helado 🍦</h3>
-  <p>Apunta al código de barras del producto</p>
-  <div id="reader"><div class="scan-frame"></div></div>
-  <div class="scanner-msg" id="scannerMsg">Buscando código…</div>
-  <button class="scanner-close" onclick="closeScanner()">Cerrar</button>
-</div>
+    <div class="demo-flag" id="demoFlag">Mostrando datos de ejemplo</div>
 
-<div class="demo-flag" id="demoFlag">Mostrando datos de ejemplo</div>
-
-<script>
+    <script>
 const SUPA_URL='https://tuqrjktnaptfttqxzvzn.supabase.co';
 const SUPA_KEY='sb_publishable_QZNrwjcdpTOoNzolU8MqOQ_EnO2fxr4';
 const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+const STORE = (new URLSearchParams(location.search).get('t') || 'IZTIETA').toUpperCase();
 
 const FALLBACK = [
  ['HELADO ORIGINAL VAINILLA CARTE D OR 1 L',6,10],['PIRULO FANTASMIKOS 18x75ml',1,10],
@@ -292,14 +303,14 @@ async function load(){
       try{
         const {data:st}=await sb.from('product_stock')
           .select('product_code,public_price,quantity,status')
-          .in('product_code',codes).eq('status','activo');
+          .in('product_code',codes).eq('status','activo').eq('store_code',STORE);
         (st||[]).forEach(s=>{
           const e=stock[s.product_code]||(stock[s.product_code]={p:0,q:0});
           if(s.public_price>0 && (e.p===0||s.public_price<e.p)) e.p=s.public_price;
           e.q+=Number(s.quantity||0);
         });
       }catch(_){}
-      rows=data.map(p=>({...p,
+      rows=data.filter(p=>stock[p.code]).map(p=>({...p,
         public_price:(p.public_price>0?p.public_price:(stock[p.code]?.p||null)),
         _qty:stock[p.code]?.q ?? 0}));
     }
@@ -376,13 +387,15 @@ function buildDetail(d){
       <span class="glyph">${f.g}</span>
       ${d.photo?`<img class="sheet-img" src="${d.photo}" alt="${pretty(d.name)}" onerror="this.remove()">`:''}
     </div>
-    <div class="sheet-body">
+    < class="sheet-body">
       <div class="brand">${brandOf(d.name)}</div>
       <h2>${pretty(d.name)}</h2>
       ${price?`<div class="price-pill">${price.replace(' €','')}<small>€</small></div>`:'<div class="price-pill" style="background:var(--cream-2);color:var(--ink-soft)">Sin precio</div>'}
       <div class="specs">
         <div class="spec"><div class="k">Peso</div><div class="v">${formatOf(d.name)}</div></div>
         <div class="spec"><div class="k">Uds. por caja</div><div class="v">${d.units_per_pack||1}</div></div>
+        <div class="spec"><div class="k">Código interno</div><div class="v">${d.internal_code||'—'}</div></div>
+        <div class="spec"><div class="k">Código (EAN)</div><div class="v">${d.code||'—'}</div></div>
       </div>
     </div>`;
   document.getElementById('detail').classList.add('show');
@@ -439,7 +452,7 @@ async function lookupAndShow(code){
         // sacar precio/stock
         try{
           const {data:st}=await sb.from('product_stock').select('public_price,quantity,status')
-            .eq('product_code',p.code).eq('status','activo');
+            .eq('product_code',p.code).eq('status','activo').eq('store_code',STORE);
           let pr=0,qy=0;(st||[]).forEach(s=>{if(s.public_price>0&&(pr===0||s.public_price<pr))pr=s.public_price;qy+=Number(s.quantity||0);});
           p.public_price=(p.public_price>0?p.public_price:(pr||null)); p._qty=qy;
         }catch(_){}
@@ -474,5 +487,5 @@ function beep(){
 
 load();
 </script>
-</body>
+  </body>
 </html>
