@@ -315,7 +315,7 @@ body {
     <div class="container">
         <div class="header">
     <h1>CIERRE DE CAJA</h1>
-    <div class="date-display">Fecha: <span id="fecha"></span></div>
+    <div class="date-display">Fecha: <input type="date" id="fecha" style="border:none;border-radius:5px;padding:5px 8px;font-size:15px;color:#2c3e50;"></div>
     <a href="historico-caja.html" style="display:inline-block;margin-top:8px;color:white;text-decoration:underline;font-size:14px">📊 Ver histórico</a>
     <div class="dropdown">
         <button class="settings-btn" onclick="toggleDropdown()">⚙️</button>
@@ -469,7 +469,7 @@ body {
 
         <!-- RECOGIDA -->
         <div class="summary">RECOGIDA</div>
-        <div class="recogida" id="recogida">0.00 €</div>
+        <div class="recogida"><input type="number" id="recogida" min="0" step="0.01" value="0" style="width:75%;text-align:center;font-size:22px;font-weight:bold;border:2px solid #fff;border-radius:8px;padding:6px;background:#fff;color:#e67e22;"> €</div>
 
         <!-- DATÁFONO -->
         <div class="section">
@@ -656,11 +656,21 @@ function cargarDatos() {
     }
 }
 
-// Mostrar fecha actual
+// Fecha seleccionable
 const fechaElement = document.getElementById('fecha');
-const hoy = new Date();
-const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
-fechaElement.textContent = hoy.toLocaleDateString('es-ES', opciones);
+const _h = new Date();
+fechaElement.value = `${_h.getFullYear()}-${String(_h.getMonth()+1).padStart(2,'0')}-${String(_h.getDate()).padStart(2,'0')}`;
+fechaElement.addEventListener('change', async () => {
+    recogidaManual = false;
+    monedasInputs.forEach(i => i.value = '');
+    billetesInputs.forEach(i => i.value = '');
+    document.getElementById('importe-datafono').value = '';
+    document.getElementById('importe-factura').value = '';
+    document.getElementById('recogida').value = '0';
+    calcularMonedas();
+    calcularBilletes();
+    await cargarCierreDeHoy();
+});
 
 // Función para formatear números a euros
 function formatEuros(numero) {
@@ -732,13 +742,14 @@ function calcularRecogida() {
     const sobrante = parseFloat(document.getElementById('sobrante').textContent) || 0;
     const totalRecogida = totalBilletes + sobrante;
     
-    document.getElementById('recogida').textContent = formatEuros(totalRecogida);
+    if (!recogidaManual) document.getElementById('recogida').value = totalRecogida.toFixed(2);
     calcularVentaDia();
+
 }
 
 // Calcular venta del día (recogida + datáfono + factura)
 function calcularVentaDia() {
-    const recogida = parseFloat(document.getElementById('recogida').textContent) || 0;
+    const recogida = parseFloat(document.getElementById('recogida').value) || 0;
     const datafono = parseFloat(document.getElementById('importe-datafono').value) || 0;
     const factura = parseFloat(document.getElementById('importe-factura').value) || 0;
     
@@ -767,15 +778,23 @@ document.getElementById('importe-datafono').addEventListener('input', () => {
 });
 
 // Event listener para facturas
+// Event listener para facturas
 document.getElementById('importe-factura').addEventListener('input', () => {
     calcularVentaDia();
     guardarDatos();
 });
 
+// Recogida manual
+let recogidaManual = false;
+document.getElementById('recogida').addEventListener('input', () => {
+    recogidaManual = true;
+    calcularVentaDia();
+});
+
 async function cargarCierreDeHoy() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) return;
-  const fechaHoy = new Date().toISOString().slice(0, 10);
+  const fechaHoy = document.getElementById('fecha').value;
   const storeCode = localStorage.getItem('currentStore') || 'IZTIETA';
 
   const { data } = await supabaseClient
@@ -792,6 +811,16 @@ async function cargarCierreDeHoy() {
 
   calcularMonedas();
   calcularBilletes();
+
+  if (data.recogida != null) {
+    const recCalc = (parseFloat(totalBilletesElement.textContent)||0) + (parseFloat(document.getElementById('sobrante').textContent)||0);
+    if (Math.abs(data.recogida - recCalc) > 0.001) {
+      recogidaManual = true;
+      document.getElementById('recogida').value = data.recogida;
+      calcularVentaDia();
+    }
+  }
+
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -839,6 +868,8 @@ function limpiarDatosCaja() {
         billetesInputs.forEach(input => input.value = '');
         document.getElementById('importe-datafono').value = '';
         document.getElementById('importe-factura').value = '';
+        recogidaManual = false;
+        document.getElementById('recogida').value = '0';
         
         // Recalcular
         calcularMonedas();
@@ -850,7 +881,7 @@ function limpiarDatosCaja() {
 
 async function guardarCierreDelDia() {
   const storeCode = localStorage.getItem('currentStore') || 'IZTIETA';
-  const fechaHoy = new Date().toISOString().slice(0, 10);
+  const fechaHoy = document.getElementById('fecha').value;
   const { data: { session } } = await supabaseClient.auth.getSession();
   const userId = session?.user?.id || null;
 
@@ -871,7 +902,7 @@ async function guardarCierreDelDia() {
     total_monedas: parseFloat(document.getElementById('monedas-real').textContent)||0,
     total_billetes: parseFloat(document.getElementById('total-billetes').textContent)||0,
     sobrante: parseFloat(document.getElementById('sobrante').textContent)||0,
-    recogida: parseFloat(document.getElementById('recogida').textContent)||0,
+    recogida: parseFloat(document.getElementById('recogida').value)||0,
     importe_datafono: parseFloat(document.getElementById('importe-datafono').value)||0,
     importe_factura: parseFloat(document.getElementById('importe-factura').value)||0,
     cierre_aplicacion: parseFloat(document.getElementById('cierre-aplicacion').value)||0,
